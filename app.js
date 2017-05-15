@@ -17,9 +17,19 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-//set middleware route
-var middlewareRoute = require('./routes/middleware');
-app.use('', middlewareRoute);
+//set account routes
+var accountsRoutes = require('./routes/route_accounts');
+app.use('', accountsRoutes);
+
+//set competition routes
+var competitionRoutes = require('./routes/route_competitions');
+app.use('', competitionRoutes);
+
+
+//set user routes
+var userRoutes = require('./routes/route_users');
+app.use('', userRoutes);
+
 
 
 
