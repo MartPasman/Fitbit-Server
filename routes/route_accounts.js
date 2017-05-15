@@ -9,6 +9,7 @@ var mongoose = require('mongoose');
 var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
+
 var jwt = require('jsonwebtoken');
 
 var logResponse = require('../index').logResponse;
