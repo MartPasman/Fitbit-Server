@@ -18,6 +18,7 @@ module.exports = mongoose.model('result', resultSchema);
 var competitionSchema = new Schema({
     id: {type: Number, required:true},
     goal: {type: Number, required:true},
+    defaultgoal: {type: Number, required:true},
     start: {type: Date, required:true},
     end: {type: Date, required:true},
     results: [resultSchema]
