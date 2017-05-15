@@ -9,10 +9,15 @@ var mongoose = require('mongoose');
 var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
+var Fitbit = require('fitbit');
+var consumer_key = '228HTD';
+var client_secret = '41764caf3b48fa811ce514ef38c62791';
+
+var app = express();
 
 var jwt = require('jsonwebtoken');
 
-var logResponse = require('../index').logResponse;
+var logResponse = require('../app').logResponse;
 
 
 app.post('/login', function (req, res) {
@@ -70,3 +75,23 @@ app.post('/login', function (req, res) {
         }
     });
 });
+
+app.get('/oauth', function(req,res){
+    var client = new Fitbit(consumer_key, client_secret);
+
+    client.getRequestToken(function (err,token,tokenSecret) {
+        if (err){
+            //do something!
+            return;
+        }
+
+        req.session.oauth = {
+            requestToken: token,
+            requestTokenSecret: tokenSecret
+        };
+        res.redirect(client.authorizeUrl(token));
+    })
+
+});
+
+module.exports = app;

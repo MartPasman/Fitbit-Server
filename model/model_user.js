@@ -30,7 +30,7 @@ var userSchema = new Schema({
     fitbit: {type: fitbitSchema, required: false},
     goals: {type: [goalSchema], required: false},
     email: {type: String, required: true},
-    active: {type: bool, required: true, default: true},
+    active: {type: Boolean, required: true, default: true},
     handicap: {type: Number, required: false, default: 1},
     type: {type: Number, required: true, default: 1}
 });
