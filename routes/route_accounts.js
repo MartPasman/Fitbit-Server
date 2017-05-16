@@ -92,6 +92,30 @@ app.get('/oauth', function(req,res){
         res.redirect(client.authorizeUrl(token));
     })
 
+
+});
+
+//on return from authentication
+app.get('/oauth_callback', function(req,res){
+    var verifier = req.query.oauth_verifier,
+        oauthSettings = req.session.oauth,
+        client = new Fitbit(consumer_key, client_secret);
+
+    //get accestoken
+    client.getAccessToken(
+        oauthSettings.requestToken,
+        oauthSettings.requestTokenSecret,
+        verifier,
+        function (err,token,secret) {
+            if(err){
+                //Do something!
+                return;
+            }
+
+            oauthSettings.accesToken = token;
+            oauthSettings.accessTokenSecret = secret;
+        }
+    )
 });
 
 module.exports = app;
