@@ -35,19 +35,14 @@ app.use(function (req, res, next) {
 //set account routes
 var accountsRoutes = require('./routes/route_accounts');
 app.use('accounts/', accountsRoutes);
-
-//set competition routes
-var competitionRoutes = require('./routes/route_competitions');
-app.use('competitions/', competitionRoutes);
-
-
-//set user routes
-var userRoutes = require('./routes/route_users');
-app.use('accounts/users/', userRoutes);
-
-
-
-
+//
+// //set competition routes
+// var competitionRoutes = require('./routes/route_competitions');
+// app.use('competitions/', competitionRoutes);
+//
+// //set user routes
+// var userRoutes = require('./routes/route_users');
+// app.use('accounts/users/', userRoutes);
 
 //sends a 400 (bad request if the user send a invalid request)
 app.use(function (error, req, res, next) {
