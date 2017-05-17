@@ -28,53 +28,59 @@ app.post("/users", function (req, res) {
 
     //check if every field is entered
     if (!req.body.password
-    || !req.body.email || !req.body.role || !req.body.handicap || !req.body.type){
+        || !req.body.email || !req.body.role || !req.body.handicap || !req.body.type) {
 
-       return res.status(400).send({error: "Not every field is (correctly) filled in"});
+        return res.status(400).send({error: "Not every field is (correctly) filled in"});
     }
 
     //check if all fields are entered
-    if (req.body.password && req.body.email && req.body.role && req.body.handicap && req.body.type)
-    {
+    if (req.body.password && req.body.email && req.body.role && req.body.handicap && req.body.type) {
 
-        if(req.body.password < 8){
+        if (req.body.password < 8) {
             return res.status(400).send({error: "Password must be at least 8 characters long"});
         }
 
         var email = req.body.email.toLowerCase();
 
-        if (!validateEmail(email)){
-            return res.status(400).send({error:"Email address is not valid"});
+        if (!validateEmail(email)) {
+            return res.status(400).send({error: "Email address is not valid"});
         }
 
-        if (req.body.type < 1 || req.body.type > 3){
+        if (req.body.type < 1 || req.body.type > 3) {
             return res.status(400).send({error: "Type is not valid"});
         }
 
         //find email if found do not make account
         User.find({email: email}, function (err, user) {
-            if (user.length > 0){
+            if (user.length > 0) {
                 return res.status(400).send({error: "Email address already exists"});
             }
 
 
-            var id = (Math.random() * 20000 ) + 10000;
+            var idexists = true;
+            while (idexists) {
+                var id = (Math.random() * 20000 ) + 10000;
 
-            //TODO: check if id already exists
+                User.find({id: id}, function (err, user) {
+                    if (user.length <= 0) {
+                        idexists = false;
+                    }
+                });
+            }
 
             bcrypt.genSalt(10, function (err, salt) {
-                if (err){
+                if (err) {
                     return res.status(500).send({error: err.message});
                 }
 
                 bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
-                    if (err){
+                    if (err) {
                         return res.status(500).send({error: err.message});
                     }
 
                     var account = new User({
-                        id : id,
-                        password : hashed,
+                        id: id,
+                        password: hashed,
                         email: email,
                         active: true,
                         type: req.body.type
@@ -86,7 +92,7 @@ app.post("/users", function (req, res) {
                             return res.status(500).send({error: err.message});
                         }
                     });
-                    res.status(201).send({id:id});
+                    res.status(201).send({id: id});
 
                 });
             });
@@ -96,7 +102,6 @@ app.post("/users", function (req, res) {
 });
 
 
-
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
@@ -104,7 +109,7 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
-    console.log('\tID:\t' + req.body.id+ '\n\tpassword:\t*****');
+    console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     User.findOne({id: req.body.id}, {_id: 0, __v: 0}, function (err, user) {
@@ -153,7 +158,7 @@ app.post('/login', function (req, res) {
     });
 });
 
-app.get('/oauth', function(req,res){
+app.get('/oauth', function (req, res) {
 
     var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
     res.redirect(authURL);
@@ -161,7 +166,7 @@ app.get('/oauth', function(req,res){
 });
 
 //on return from authentication
-app.get('/oauth_callback', function(req,res){
+app.get('/oauth_callback', function (req, res) {
     console.log(req.query.code);
 
     access_token = client.getAccessToken(req.query.code, 'http://localhost:3000/accounts/kaas');
