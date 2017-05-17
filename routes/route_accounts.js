@@ -9,9 +9,13 @@ var mongoose = require('mongoose');
 var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
-var Fitbit = require('fitbit');
+var fitbitClient = require('fitbit-node');
 var consumer_key = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
+var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
+var client = new fitbitClient(consumer_key, client_secret);
+var access_token;
+
 
 var app = express();
 
@@ -77,45 +81,23 @@ app.post('/login', function (req, res) {
 });
 
 app.get('/oauth', function(req,res){
-    var client = new Fitbit(consumer_key, client_secret);
 
-    client.getRequestToken(function (err,token,tokenSecret) {
-        if (err){
-            //do something!
-            return;
-        }
-
-        req.session.oauth = {
-            requestToken: token,
-            requestTokenSecret: tokenSecret
-        };
-        res.redirect(client.authorizeUrl(token));
-    })
-
+    var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
+    res.redirect(authURL);
 
 });
 
 //on return from authentication
 app.get('/oauth_callback', function(req,res){
-    var verifier = req.query.oauth_verifier,
-        oauthSettings = req.session.oauth,
-        client = new Fitbit(consumer_key, client_secret);
+    console.log(req.query.code);
 
-    //get accestoken
-    client.getAccessToken(
-        oauthSettings.requestToken,
-        oauthSettings.requestTokenSecret,
-        verifier,
-        function (err,token,secret) {
-            if(err){
-                //Do something!
-                return;
-            }
+    access_token = client.getAccessToken(req.query.code, 'http://localhost:3000/accounts/kaas');
+    // TODO: retrieve access token and save in datamodel
+    // redirect client to account connect pag
 
-            oauthSettings.accesToken = token;
-            oauthSettings.accessTokenSecret = secret;
-        }
-    )
+
+    //res.redirect(access_token);
 });
+
 
 module.exports = app;

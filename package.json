@@ -12,6 +12,7 @@
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
     "fitbit": "0.0.7",
+    "fitbit-node": "^2.0.5",
     "mocha": "^3.4.1",
     "mongoose": "^4.9.9",
     "shortid": "^2.2.8"
