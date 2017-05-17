@@ -26,13 +26,13 @@ app.use(bodyParser.urlencoded({extended: true}));
 //sends a 400 (bad request if the user send a invalid request)
 app.use(function (error, req, res, next) {
     if (error instanceof SyntaxError) {
-        res.status(400).json({"status": "invalid request"});
+        res.status(400).json({'status': 'invalid request'});
     } else {
         next();
     }
 });
 
-app.get('/', function () {
+app.get('/', function (req, res) {
     res.status(200).send({'Hello,': ' World!'});
 });
 
