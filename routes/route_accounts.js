@@ -4,7 +4,7 @@
  */
 
 var express = require("express");
-var router = express.Router();
+// var router = express.Router();
 var mongoose = require('mongoose');
 var User = require('../model/model_user');
 var shortid = require('shortid');

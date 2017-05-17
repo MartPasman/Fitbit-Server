@@ -1,8 +1,5 @@
 /**
- * Created by martpasman on 15-05-17.
- */
-/**
- *  The index
+ * Created on 15-05-17.
  */
 var express = require('express');
 var app = express();
@@ -15,29 +12,28 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 //set account routes
-var accountsRoutes = require('./routes/route_accounts');
-app.use('/accounts', accountsRoutes);
+// var accountsRoutes = require('./routes/route_accounts');
+// app.use('/accounts', accountsRoutes);
 
 //set competition routes
 // var competitionRoutes = require('./routes/route_competitions');
 // app.use('/competitions', competitionRoutes);
-//
-//
-// //set user routes
+
+//set user routes
 // var userRoutes = require('./routes/route_users');
 // app.use('/accounts/users', userRoutes);
-//
 
-
-
-
-//sends a 400(bad request if the user send a invalid request)
+//sends a 400 (bad request if the user send a invalid request)
 app.use(function (error, req, res, next) {
     if (error instanceof SyntaxError) {
-        res.status(400).json({"status": "invalid request"});
+        res.status(400).json({'status': 'invalid request'});
     } else {
         next();
     }
+});
+
+app.get('/', function (req, res) {
+    res.status(200).send({'Hello,': ' World!'});
 });
 
 //listen on port 3000
@@ -46,9 +42,9 @@ app.listen(3000, function () {
 });
 
 var logResponse = function (code, message, depth) {
-    if (depth == undefined) depth = '\t';
-    if (message == undefined) message = '';
-    if (code == undefined) return;
+    if (depth === undefined) depth = '\t';
+    if (message === undefined) message = '';
+    if (code === undefined) return;
 
     var COLOR_200 = '\u001B[32m';
     var COLOR_300 = '\u001B[33m';
