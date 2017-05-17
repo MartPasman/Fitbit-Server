@@ -21,7 +21,80 @@ var app = express();
 
 var jwt = require('jsonwebtoken');
 
-var logResponse = require('../app').logResponse;
+/**
+ * Make new account
+ */
+app.post("/users", function (req, res) {
+
+    //check if every field is entered
+    if (!req.body.password
+    || !req.body.email || !req.body.role || !req.body.handicap || !req.body.type){
+
+       return res.status(400).send({error: "Not every field is (correctly) filled in"});
+    }
+
+    //check if all fields are entered
+    if (req.body.password && req.body.email && req.body.role && req.body.handicap && req.body.type)
+    {
+
+        if(req.body.password < 8){
+            return res.status(400).send({error: "Password must be at least 8 characters long"});
+        }
+
+        var email = req.body.email.toLowerCase();
+
+        if (!validateEmail(email)){
+            return res.status(400).send({error:"Email address is not valid"});
+        }
+
+        if (req.body.type < 1 || req.body.type > 3){
+            return res.status(400).send({error: "Type is not valid"});
+        }
+
+        //find email if found do not make account
+        User.find({email: email}, function (err, user) {
+            if (user.length > 0){
+                return res.status(400).send({error: "Email address already exists"});
+            }
+
+
+            var id = (Math.random() * 20000 ) + 10000;
+
+            //TODO: check if id already exists
+
+            bcrypt.genSalt(10, function (err, salt) {
+                if (err){
+                    return res.status(500).send({error: err.message});
+                }
+
+                bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
+                    if (err){
+                        return res.status(500).send({error: err.message});
+                    }
+
+                    var account = new User({
+                        id : id,
+                        password : hashed,
+                        email: email,
+                        active: true,
+                        type: req.body.type
+                    });
+
+
+                    account.save(function (err, result) {
+                        if (err) {
+                            return res.status(500).send({error: err.message});
+                        }
+                    });
+                    res.status(201).send({id:id});
+
+                });
+            });
+        });
+    }
+
+});
+
 
 
 app.post('/login', function (req, res) {
@@ -98,6 +171,18 @@ app.get('/oauth_callback', function(req,res){
 
     //res.redirect(access_token);
 });
+
+
+/**
+ * Check if a given email is a valid email
+ * @param email
+ * @returns {boolean}
+ */
+function validateEmail(email) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+}
+var logResponse = require('../app').logResponse;
 
 
 module.exports = app;
