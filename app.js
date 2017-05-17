@@ -32,10 +32,13 @@ app.use(function (error, req, res, next) {
     }
 });
 
+app.get('/', function () {
+    res.status(200).send({'Hello,': ' World!'});
+});
+
 //listen on port 3000
 app.listen(3000, function () {
     console.log('Listening on port 3000!');
-    console.log('(:');
 });
 
 var logResponse = function (code, message, depth) {
