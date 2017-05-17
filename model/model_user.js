@@ -26,7 +26,6 @@ module.exports = mongoose.model('goal', goalSchema);
 var userSchema = new Schema({
     id: {type: Number, required: true, unique: true},
     password: {type: String, required: true},
-    salt: {type: String, required: true},
     fitbit: {type: fitbitSchema, required: false},
     goals: {type: [goalSchema], required: false},
     email: {type: String, required: true},

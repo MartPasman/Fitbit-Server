@@ -10,7 +10,6 @@ var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
 var fitbitClient = require('fitbit-node');
-var request = require('request');
 var consumer_key = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
@@ -32,7 +31,7 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
-    console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
+    console.log('\tID:\t' + req.body.id+ '\n\tpassword:\t*****');
 
     // Find the user
     User.findOne({id: req.body.id}, {_id: 0, __v: 0}, function (err, user) {
@@ -86,7 +85,6 @@ app.get('/oauth/:id', function (req, res) {
 
     //TODO: Check if not empty blablabla and save.
     var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
-    console.log(authURL);
     res.redirect(authURL);
 
 });
@@ -95,6 +93,9 @@ app.get('/oauth/:id', function (req, res) {
 app.get('/oauth_callback', function (req, res) {
     console.log(req.query.code);
 
+    access_token = client.getAccessToken(req.query.code, 'http://localhost:3000/accounts/kaas');
+    // TODO: retrieve access token and save in datamodel
+    // redirect client to account connect pag
 
     var options = {
         url: 'https://api.fitbit.com/oauth2/token',
@@ -112,7 +113,16 @@ app.get('/oauth_callback', function (req, res) {
 
 });
 
-app.get('/accestoken_callback',function(req,res){
-    res.send(200);
-});
+/**
+ * Check if a given email is a valid email
+ * @param email
+ * @returns {boolean}
+ */
+function validateEmail(email) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+}
+var logResponse = require('../app').logResponse;
+
+
 module.exports = app;
