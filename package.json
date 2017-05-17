@@ -1,10 +1,13 @@
 {
-  "name": "fitbitrest",
+  "name": "FitbitREST",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no tests specified\" && exit 1",
+    "start": "forever start app.js",
+    "restart": "forever restart app.js",
+    "stop": "forever stop app.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +17,7 @@
     "fitbit": "0.0.7",
     "mocha": "^3.4.1",
     "mongoose": "^4.9.9",
-    "shortid": "^2.2.8"
+    "shortid": "^2.2.8",
+    "forever": "^0.15.3"
   }
 }
