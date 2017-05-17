@@ -11,9 +11,27 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
+// set all the permissions
+app.use(function (req, res, next) {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Credentials", "true");
+    res.set("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,DELETE");
+    res.set("Access-Control-Allow-Headers", "Authorization");
+
+    // respond to pre-flight options requests
+    if (req.method == "OPTIONS") {
+        return res.status(200).send();
+    }
+
+    // log request
+    console.log('\u001B[36m[' + (new Date().toLocaleString()) + ']\u001B[0m \u001B[35m' + req.method + '\u001B[0m ' + req.url + ' called from ' + req.connection.remoteAddress);
+
+    next();
+});
+
 //set account routes
-// var accountsRoutes = require('./routes/route_accounts');
-// app.use('/accounts', accountsRoutes);
+var accountsRoutes = require('./routes/route_accounts');
+app.use('/accounts', accountsRoutes);
 
 //set competition routes
 // var competitionRoutes = require('./routes/route_competitions');
