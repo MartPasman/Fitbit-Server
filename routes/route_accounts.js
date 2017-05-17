@@ -10,6 +10,7 @@ var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
 var fitbitClient = require('fitbit-node');
+var request = require('request');
 var consumer_key = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
@@ -31,7 +32,7 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
-    console.log('\tID:\t' + req.body.id+ '\n\tpassword:\t*****');
+    console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     User.findOne({id: req.body.id}, {_id: 0, __v: 0}, function (err, user) {
@@ -80,24 +81,38 @@ app.post('/login', function (req, res) {
     });
 });
 
-app.get('/oauth', function(req,res){
+app.get('/oauth/:id', function (req, res) {
+  //  req.param.id
 
+    //TODO: Check if not empty blablabla and save.
     var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
+    console.log(authURL);
     res.redirect(authURL);
 
 });
 
 //on return from authentication
-app.get('/oauth_callback', function(req,res){
+app.get('/oauth_callback', function (req, res) {
     console.log(req.query.code);
 
-    access_token = client.getAccessToken(req.query.code, 'http://localhost:3000/accounts/kaas');
-    // TODO: retrieve access token and save in datamodel
-    // redirect client to account connect pag
 
+    var options = {
+        url: 'https://api.fitbit.com/oauth2/token',
+        headers: {
+            'Authorization': ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
+            'Content-Type': ' application/x-www-form-urlencoded'
+        },
+        body: "client_id=228HTD&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
 
-    //res.redirect(access_token);
+    };
+
+    request.post(options, function (error, response, body) {
+        console.log(response);
+    });
+
 });
 
-
+app.get('/accestoken_callback',function(req,res){
+    res.send(200);
+});
 module.exports = app;
