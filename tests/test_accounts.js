@@ -13,8 +13,13 @@ describe("Fitbit koppelen unittest", function(done){
     it("")
 })
 
-
+/**
+ * Test for testing the accounts/login/ path
+ */
 describe("Login", function () {
+    /**
+     * Testing a correct login expect 201 with access token
+     */
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
@@ -26,6 +31,9 @@ describe("Login", function () {
         });
     });
 
+    /**
+     * Testing a login path with a wrong password expected 400
+     */
     context("POST accounts/login/  Wrong password", function () {
         it("Should response 400 because, wrong password", function (done) {
             server.post('/accounts/login/')
@@ -37,6 +45,9 @@ describe("Login", function () {
         });
     });
 
+    /**
+     * Testing a login path with a wrong id expected 400
+     */
     context("POST accounts/login/  Wrong id", function () {
         it("Should response 400 because, wrong id", function (done) {
             server.post('/accounts/login/')
@@ -48,6 +59,9 @@ describe("Login", function () {
         });
     });
 
+    /**
+     * Testing a login path with no information in the json expected 400
+     */
     context("POST accounts/login/  empty information", function () {
         it("Should response 400 because, empty information passed", function (done) {
             server.post('/accounts/login/')
@@ -59,6 +73,9 @@ describe("Login", function () {
         });
     });
 
+    /**
+     * Testing a login path with no json given expected 400
+     */
     context("POST accounts/login/  No json", function () {
         it("Should response 400 because, No json passed", function (done) {
             server.post('/accounts/login/')
@@ -70,6 +87,9 @@ describe("Login", function () {
         });
     });
 
+    /**
+     * Testing a login with a non numeric id expected 400
+     */
     context("POST accounts/login/  non numeric id", function () {
         it("Should response 400 because, id is not numeric", function (done) {
             server.post('/accounts/login/')
