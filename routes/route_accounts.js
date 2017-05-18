@@ -232,11 +232,10 @@ app.get('/oauth_callback', function (req, res) {
     var options = {
         url: 'https://api.fitbit.com/oauth2/token',
         headers: {
-            'Authorization': ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
+            Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
             'Content-Type': ' application/x-www-form-urlencoded'
         },
         body: "client_id=228HTD&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
-
     };
     //send the request
     request.post(options, function (error, response, body) {
@@ -254,8 +253,6 @@ app.get('/oauth_callback', function (req, res) {
         User.findOneAndUpdate({id: currUser.id}, {$set: { fitbit: json}}, function(err,res){
             console.log(res);
         });
-
-
     });
 });
 
