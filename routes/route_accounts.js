@@ -15,6 +15,7 @@ var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
 var client = new fitbitClient(consumer_key, client_secret);
 var access_token;
+var request = require('request');
 
 
 var app = express();
