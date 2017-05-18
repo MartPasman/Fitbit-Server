@@ -107,24 +107,24 @@ app.post("/users", function (req, res) {
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
-        logResponse(400, 'id or password is not supplied');
+       // logResponse(400, 'id or password is not supplied');
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
     console.log('\tID:\t' + req.body.id+ '\n\tpassword:\t*****');
 
     // Find the user
-    User.findOne({id: req.body.id}, {_id: 0, __v: 0}, function (err, user) {
+    User.findOne({id: req.body.id}, function (err, user) {
 
         // Check to see whether an error occurred
         if (err) {
-            logResponse(500, err.message);
+          //  logResponse(500, err.message);
             return res.status(500).send({error: err.message});
         }
 
         // Check to see whether a user was found
         if (!user) {
-            logResponse(400, 'Invalid credentials');
+         //   logResponse(400, 'Invalid credentials');
             return res.status(400).send({error: "Invalid credentials"});
         }
 
@@ -132,12 +132,12 @@ app.post('/login', function (req, res) {
             // Check to see whether the given password matches the password of the user
             bcrypt.compare(req.body.password, user.password, function (err, success) {
                 if (err) {
-                    logResponse(500, err.message);
+                 //   logResponse(500, err.message);
                     return res.status(500).send({error: err.message});
                 }
 
                 if (!success) {
-                    logResponse(400, 'Invalid credentials');
+                 //   logResponse(400, 'Invalid credentials');
                     return res.status(400).send({error: "Invalid credentials"});
                 }
 
@@ -147,18 +147,18 @@ app.post('/login', function (req, res) {
                 // sign json web token (expires in 12 hours)
                 var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
 
-               logResponse(201, 'Token created and in body');
+               //logResponse(201, 'Token created and in body');
                 res.status(201).send({
                     succes: token
                 });
             });
         } catch (err) {
             // if the bcrypt fails
-            logResponse(500, err.message);
+            //logResponse(500, err.message);
             return res.status(500).send({error: err.message});
         }
     });
-    logResponse(500);
+    //logResponse(500);
     return res.status(500).send();
 
 });

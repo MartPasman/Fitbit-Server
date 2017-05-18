@@ -10,9 +10,18 @@ var app = express();
 //app.use(express.static('public'));
 
 // Parse application/json
+var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+
+mongoose.Promise = global.Promise;
+
+var options = {server: {socketOptions: {keepAlive: 1}}};
+mongoose.connect('mongodb://localhost:27017/database', options);
+mongoose.connection.on('error', function (err) {
+    console.log('Could not connect to MongoDB server: ' + err);
+});
 
 // set all the permissions
 app.use(function (req, res, next) {

@@ -10,7 +10,6 @@ var fitbitSchema = new Schema({
     refreshtoken: {type: String, required:true}
 });
 
-module.exports = mongoose.model('fitbit', fitbitSchema);
 
 var goalSchema = new Schema({
     id: {type: Number, required:true},
@@ -21,7 +20,6 @@ var goalSchema = new Schema({
 
 });
 
-module.exports = mongoose.model('goal', goalSchema);
 
 var userSchema = new Schema({
     id: {type: Number, required: true, unique: true},
