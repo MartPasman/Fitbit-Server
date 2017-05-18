@@ -20,8 +20,88 @@ var access_token;
 var app = express();
 
 var jwt = require('jsonwebtoken');
-
 var logResponse = require('../app').logResponse;
+
+/**
+ * Make new account
+ */
+app.post("/users", function (req, res) {
+
+    //check if every field is entered
+    if (!req.body.password
+        || !req.body.email || !req.body.handicap || !req.body.type) {
+
+        return res.status(400).send({error: "Not every field is (correctly) filled in"});
+    }
+
+    //check if all fields are entered
+    if (req.body.password && req.body.email &&
+        req.body.handicap && req.body.type) {
+
+        if (req.body.password < 8) {
+            return res.status(400).send({error: "Password must be at least 8 characters long"});
+        }
+
+        var email = req.body.email.toLowerCase();
+
+        if (!validateEmail(email)) {
+            return res.status(400).send({error: "Email address is not valid"});
+        }
+
+        if (req.body.type < 1 || req.body.type > 3) {
+            return res.status(400).send({error: "Type is not valid"});
+        }
+
+        //find email if found do not make account
+        User.find({email: email}, function (err, user) {
+            if (user.length > 0) {
+                return res.status(400).send({error: "Email address already exists"});
+            }
+
+
+            var idexists = true;
+            while (idexists) {
+                var id = (Math.random() * 20000 ) + 10000;
+
+                User.find({id: id}, function (err, user) {
+                    if (user.length <= 0) {
+                        idexists = false;
+                    }
+                });
+            }
+
+            bcrypt.genSalt(10, function (err, salt) {
+                if (err) {
+                    return res.status(500).send({error: err.message});
+                }
+
+                bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
+                    if (err) {
+                        return res.status(500).send({error: err.message});
+                    }
+
+                    var account = new User({
+                        id: id,
+                        password: hashed,
+                        email: email,
+                        active: true,
+                        type: req.body.type
+                    });
+
+
+                    account.save(function (err, result) {
+                        if (err) {
+                            return res.status(500).send({error: err.message});
+                        }
+                    });
+                    res.status(201).send({id: id});
+
+                });
+            });
+        });
+    }
+
+});
 
 
 app.post('/login', function (req, res) {
@@ -67,7 +147,7 @@ app.post('/login', function (req, res) {
                 // sign json web token (expires in 12 hours)
                 var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
 
-                logResponse(201, 'Token created and in body');
+               logResponse(201, 'Token created and in body');
                 res.status(201).send({
                     succes: token
                 });
@@ -78,6 +158,9 @@ app.post('/login', function (req, res) {
             return res.status(500).send({error: err.message});
         }
     });
+    logResponse(500);
+    return res.status(500).send();
+
 });
 
 app.get('/oauth/:id', function (req, res) {
@@ -122,7 +205,5 @@ function validateEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(email);
 }
-var logResponse = require('../app').logResponse;
-
 
 module.exports = app;
