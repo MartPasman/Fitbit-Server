@@ -43,7 +43,7 @@ app.use(function (req, res, next) {
 
 //set account routes
 var accountsRoutes = require('./routes/route_accounts');
-app.use('/accounts/', accountsRoutes);
+app.use('/accounts', accountsRoutes);
 //
 // //set competition routes
 // var competitionRoutes = require('./routes/route_competitions');
