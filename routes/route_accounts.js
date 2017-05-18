@@ -20,7 +20,6 @@ var request = require('request');
 var app = express();
 
 var jwt = require('jsonwebtoken');
-var logResponse = require('../app').logResponse;
 
 /**
  * Make new account
@@ -141,13 +140,23 @@ app.get('/testnewuser', function (req, res) {
 
 });
 
+app.get('/testdeleteuser/:id', function(req,res){
+    User.find({id: req.params.id}, function(err,resss){
+        if(err){
+            res.status(404).send();
+        }
+        res.status(201).send({"message" : "deleted user."});
+    }).remove().exec()
+
+
+});
+
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
         logResponse(401, 'id or password is not supplied');
         return res.status(401).send({error: 'id or password is not supplied'});
     }
-
 
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
@@ -156,13 +165,10 @@ app.post('/login', function (req, res) {
         logResponse(401, 'id is not numeric');
         return res.status(401).send({error: 'id is not numerics'});
     } else {
-
         User.findOne({id: req.body.id}, function (err, user) {
-
 
             // Check to see whether an error occurred
             if (err) {
-
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message});
             }
@@ -172,7 +178,6 @@ app.post('/login', function (req, res) {
                 logResponse(401, 'Invalid credentials');
                 return res.status(401).send({error: "Invalid credentials"});
             }
-
 
             try {
                 // Check to see whether the given password matches the password of the user
@@ -211,16 +216,17 @@ app.post('/login', function (req, res) {
         });
     }
 });
+
 var currUser;
-app.get('/oauth/:id', function (req, res) {
+app.get('/connect/:id', function (req, res) {
     // ID of the requested user
     var id = req.params.id;
 
     // Find the user that is requested
     User.findOne({id: id}, function (err, myUser) {
-        if (err)
-            console.log("error in finding user");
-
+        if (err) {
+            res.status(404).send({"message": "user not found!"});
+        }
         currUser = myUser;
 
     });
@@ -249,6 +255,9 @@ app.get('/oauth_callback', function (req, res) {
     };
     //send the request
     request.post(options, function (error, response, body) {
+        if (error) {
+            res.status(500).send();
+        }
         console.log(body);
 
         var parsedRes = JSON.parse(body);
@@ -260,8 +269,11 @@ app.get('/oauth_callback', function (req, res) {
         };
 
         //find the requested user and add the fitbit
-        User.findOneAndUpdate({id: currUser.id}, {$set: {fitbit: json}}, function (err, res) {
-            console.log(res);
+        User.findOneAndUpdate({id: currUser.id}, {$set: {fitbit: json}}, function (err, result) {
+            if (err) {
+                res.status(404).send({"message": "user not found!"});
+            }
+            res.status(201).send({"message": "user connected!"});
         });
     });
 });
