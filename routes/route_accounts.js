@@ -94,7 +94,7 @@ app.post("/users", function (req, res) {
                             return res.status(500).send({error: err.message});
                         }
                     });
-                    res.status(201).send({id: id});
+                    return res.status(201).send({id: id});
 
                 });
             });
@@ -103,11 +103,48 @@ app.post("/users", function (req, res) {
 
 });
 
+app.get('/testnewuser',function(req,res){
+
+    var password = "chill";
+    bcrypt.genSalt(10, function (err, salt) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        bcrypt.hash(password, salt, undefined, function (err, hashed) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            var account = new User({
+                id: 123,
+                password: hashed,
+                email: 'kaas@hotie.com',
+                active: true,
+                type: 1
+            });
+
+            account.save(function (err, result) {
+                if (err) {
+                    return res.status(500).send({error: err.message});
+                }
+                res.status(201).send(result);
+            });
+
+        });
+
+
+
+    });
+
+});
 
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
-        // logResponse(400, 'id or password is not supplied');
+        logResponse(400, 'id or password is not supplied');
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
@@ -116,28 +153,31 @@ app.post('/login', function (req, res) {
     // Find the user
     User.findOne({id: req.body.id}, function (err, user) {
 
+
         // Check to see whether an error occurred
         if (err) {
-            //  logResponse(500, err.message);
+
+            logResponse(500, err.message);
             return res.status(500).send({error: err.message});
         }
 
         // Check to see whether a user was found
         if (!user) {
-            //   logResponse(400, 'Invalid credentials');
+            logResponse(400, 'Invalid credentials');
             return res.status(400).send({error: "Invalid credentials"});
         }
+
 
         try {
             // Check to see whether the given password matches the password of the user
             bcrypt.compare(req.body.password, user.password, function (err, success) {
                 if (err) {
-                    //   logResponse(500, err.message);
+                    logResponse(500, err.message);
                     return res.status(500).send({error: err.message});
                 }
 
                 if (!success) {
-                    //   logResponse(400, 'Invalid credentials');
+                    logResponse(400, 'Invalid credentials');
                     return res.status(400).send({error: "Invalid credentials"});
                 }
 
@@ -147,19 +187,18 @@ app.post('/login', function (req, res) {
                 // sign json web token (expires in 12 hours)
                 var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
 
-                //logResponse(201, 'Token created and in body');
-                res.status(201).send({
-                    succes: token
+               logResponse(201, 'Token created and in body');
+               return res.status(201).send({
+                   success: token,
+                   permission: user.type
                 });
             });
         } catch (err) {
             // if the bcrypt fails
-            //logResponse(500, err.message);
+            logResponse(500, err.message);
             return res.status(500).send({error: err.message});
         }
     });
-    //logResponse(500);
-    return res.status(500).send();
 
 });
 var currUser;
@@ -218,8 +257,26 @@ app.get('/oauth_callback', function (req, res) {
 
 
     });
-
 });
+
+var logResponse = function (code, message, depth) {
+    if (depth === undefined) depth = '\t';
+    if (message === undefined) message = '';
+    if (code === undefined) return;
+
+    var COLOR_200 = '\u001B[32m';
+    var COLOR_300 = '\u001B[33m';
+    var COLOR_400 = '\u001B[31m';
+    var COLOR_500 = '\u001B[34m';
+    var COLOR_RESET = '\u001B[0m';
+
+    var color = COLOR_200;
+    if (code >= 300) color = COLOR_300;
+    if (code >= 400) color = COLOR_400;
+    if (code >= 500) color = COLOR_500;
+
+    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
+};
 
 /**
  * Check if a given email is a valid email
