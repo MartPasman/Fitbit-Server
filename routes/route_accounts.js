@@ -27,11 +27,13 @@ var logResponse = require('../app').logResponse;
  */
 app.post("/users", function (req, res) {
 
+    //todo check if logged in
+
     //check if every field is entered
     if (!req.body.password
         || !req.body.email || !req.body.handicap || !req.body.type) {
 
-        return res.status(400).send({error: "Not every field is (correctly) filled in"});
+        return res.status(400).send({error: "Not every field is (correctly) filled in."});
     }
 
     //check if all fields are entered
@@ -39,36 +41,36 @@ app.post("/users", function (req, res) {
         req.body.handicap && req.body.type) {
 
         if (req.body.password < 8) {
-            return res.status(400).send({error: "Password must be at least 8 characters long"});
+            return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
 
         var email = req.body.email.toLowerCase();
 
         if (!validateEmail(email)) {
-            return res.status(400).send({error: "Email address is not valid"});
+            return res.status(400).send({error: "Email address is not valid."});
         }
 
         if (req.body.type < 1 || req.body.type > 3) {
-            return res.status(400).send({error: "Type is not valid"});
+            return res.status(400).send({error: "Type is not valid."});
         }
 
         //find email if found do not make account
         User.find({email: email}, function (err, user) {
             if (user.length > 0) {
-                return res.status(400).send({error: "Email address already exists"});
+                return res.status(400).send({error: "Email address already exists."});
             }
 
 
-            var idexists = true;
-            while (idexists) {
+            // var idexists = true;
+            // while (idexists) {
                 var id = (Math.random() * 20000 ) + 10000;
-
-                User.find({id: id}, function (err, user) {
-                    if (user.length <= 0) {
-                        idexists = false;
-                    }
-                });
-            }
+            //
+            //     User.find({id: id}, function (err, user) {
+            //         if (user.length <= 0) {
+            //             idexists = false;
+            //         }
+            //     });
+            // }
 
             bcrypt.genSalt(10, function (err, salt) {
                 if (err) {
@@ -95,12 +97,11 @@ app.post("/users", function (req, res) {
                         }
                     });
                     return res.status(201).send({id: id});
-
                 });
             });
         });
     }
-
+    return res.status(400).send({error: "Not every field is (correctly) filled in."})
 });
 
 app.get('/testnewuser', function (req, res) {
@@ -237,11 +238,10 @@ app.get('/oauth_callback', function (req, res) {
     var options = {
         url: 'https://api.fitbit.com/oauth2/token',
         headers: {
-            'Authorization': ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
+            Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
             'Content-Type': ' application/x-www-form-urlencoded'
         },
         body: "client_id=228HTD&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
-
     };
     //send the request
     request.post(options, function (error, response, body) {
@@ -259,8 +259,6 @@ app.get('/oauth_callback', function (req, res) {
         User.findOneAndUpdate({id: currUser.id}, {$set: {fitbit: json}}, function (err, res) {
             console.log(res);
         });
-
-
     });
 });
 
