@@ -164,9 +164,10 @@ app.post('/login', function (req, res) {
 });
 var currUser;
 app.get('/oauth/:id', function (req, res) {
+    // ID of the requested user
      var id = req.params.id;
 
-
+    // Find the user that is requested
      User.findOne({id: id}, function(err, myUser){
         if(err)
             console.log("error in finding user");
@@ -175,21 +176,20 @@ app.get('/oauth/:id', function (req, res) {
 
       });
 
-
-    //TODO: Check if not empty blablabla and save.
+    // get the authorisation URL to get the acces code from fitbit.com
     var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
+    //redirect to this URL to let the user login
     res.redirect(authURL);
 
 });
 
-//on return from authentication
+/**
+ * user logs in on fitbit.com, fitbit comes back to this ULR containing the acces code
+ */
 app.get('/oauth_callback', function (req, res) {
     console.log(req.query.code);
 
-    access_token = client.getAccessToken(req.query.code, 'http://localhost:3000/accounts/kaas');
-    // TODO: retrieve access token and save in datamodel
-    // redirect client to account connect pag
-
+    // build the request for the accesstoken
     var options = {
         url: 'https://api.fitbit.com/oauth2/token',
         headers: {
@@ -199,7 +199,7 @@ app.get('/oauth_callback', function (req, res) {
         body: "client_id=228HTD&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
 
     };
-
+    //send the request
     request.post(options, function (error, response, body) {
         console.log(body);
 
@@ -211,6 +211,7 @@ app.get('/oauth_callback', function (req, res) {
             userid: currUser.id, accesToken: access_token, refreshtoken: refresh_token
         };
 
+        //find the requested user and add the fitbit
         User.findOneAndUpdate({id: currUser.id}, {$set: { fitbit: json}}, function(err,res){
             console.log(res);
         });
@@ -220,24 +221,6 @@ app.get('/oauth_callback', function (req, res) {
 
 });
 
-app.get('/testnewuser',function(req,res){
-    var account = new User({
-        id: 12345,
-        password: 'chill',
-        email: 'kaas@hotie.com',
-        active: true,
-        type: 1
-    });
-
-
-    account.save(function (err, result) {
-        if (err) {
-            return res.status(500).send({error: err.message});
-        }
-    });
-    res.status(201).send({id: 12345});
-
-});
 /**
  * Check if a given email is a valid email
  * @param email
