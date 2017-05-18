@@ -144,8 +144,8 @@ app.get('/testnewuser', function (req, res) {
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
-        logResponse(400, 'id or password is not supplied');
-        return res.status(400).send({error: 'id or password is not supplied'});
+        logResponse(401, 'id or password is not supplied');
+        return res.status(401).send({error: 'id or password is not supplied'});
     }
 
 
@@ -153,8 +153,8 @@ app.post('/login', function (req, res) {
 
     // Find the user
     if (isNaN(req.body.id)) {
-        logResponse(400, 'id is not numeric');
-        return res.status(400).send({error: 'id is not numerics'});
+        logResponse(401, 'id is not numeric');
+        return res.status(401).send({error: 'id is not numerics'});
     } else {
 
         User.findOne({id: req.body.id}, function (err, user) {
@@ -169,8 +169,8 @@ app.post('/login', function (req, res) {
 
             // Check to see whether a user was found
             if (!user) {
-                logResponse(400, 'Invalid credentials');
-                return res.status(400).send({error: "Invalid credentials"});
+                logResponse(401, 'Invalid credentials');
+                return res.status(401).send({error: "Invalid credentials"});
             }
 
 
@@ -183,10 +183,14 @@ app.post('/login', function (req, res) {
                     }
 
                     if (!success) {
-                        logResponse(400, 'Invalid credentials');
-                        return res.status(400).send({error: "Invalid credentials"});
+                        logResponse(401, 'Invalid credentials');
+                        return res.status(401).send({error: "Invalid credentials"});
                     }
 
+                    if(!user.active){
+                        logResponse(403, 'User inactive');
+                        return res.status(403).send({error: "User inactive"});
+                    }
                     // remove sensitive data
                     user.password = undefined;
 

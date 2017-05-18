@@ -24,6 +24,7 @@ mongoose.Promise = global.Promise;
 
 var options = {server: {socketOptions: {keepAlive: 1}}};
 mongoose.connect('mongodb://myUserAdmin:abc123@178.21.116.109:27017/admin', options);
+//mongoose.connect('mongodb://localhost:27017/database', options);
 mongoose.connection.on('error', function (err) {
     console.log('Could not connect to MongoDB server: ' + err);
 });
@@ -55,8 +56,8 @@ app.use('/accounts', accountsRoutes);
 // app.use('competitions/', competitionRoutes);
 //
 // //set user routes
-// var userRoutes = require('./routes/route_users');
-// app.use('accounts/users/', userRoutes);
+var userRoutes = require('./routes/route_users');
+app.use('/accounts/users/', userRoutes);
 
 /*
  //sends a 400 (bad request if the user send a invalid request)
