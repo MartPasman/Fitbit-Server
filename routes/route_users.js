@@ -19,7 +19,7 @@ var jwt = require('jsonwebtoken');
 var logResponse = require('../app').logResponse;
 
 
-app.post('/newGoal', function (req, res) {
+app.post('/addGoal', function (req, res) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
