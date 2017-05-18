@@ -249,12 +249,13 @@ app.get('/oauth_callback', function (req, res) {
             userid: currUser.id, accesToken: access_token, refreshtoken: refresh_token
         };
 
-        User.findOneAndUpdate({id: currUser.id}, {$set: { fitbit: json}}, function(err,res){
+        User.findOneAndUpdate({id: currUser.id}, {$set: {fitbit: json}}, function (err, res) {
             console.log(res);
         });
 
 
     });
+});
 
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
