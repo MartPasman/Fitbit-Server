@@ -4,6 +4,11 @@
 var express = require('express');
 var app = express();
 
+// jwt private key
+var privateKey = 'r2f9u0rcqjucr98cr2yc890qu98cr3qr93c298mq';
+// set private key:
+app.set('private-key', privateKey);
+
 //set database information
 //var database = require('./module/database');
 
