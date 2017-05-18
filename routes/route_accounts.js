@@ -148,21 +148,17 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
-
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     if (isNaN(req.body.id)) {
         logResponse(400, 'id is not numeric');
-        return res.status(400).send({error: 'id is not numerics'});
+        return res.status(400).send({error: 'id is not numeric'});
     } else {
-
         User.findOne({id: req.body.id}, function (err, user) {
-
 
             // Check to see whether an error occurred
             if (err) {
-
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message});
             }
@@ -172,7 +168,6 @@ app.post('/login', function (req, res) {
                 logResponse(400, 'Invalid credentials');
                 return res.status(400).send({error: "Invalid credentials"});
             }
-
 
             try {
                 // Check to see whether the given password matches the password of the user
@@ -207,6 +202,7 @@ app.post('/login', function (req, res) {
         });
     }
 });
+
 var currUser;
 app.get('/oauth/:id', function (req, res) {
     // ID of the requested user
