@@ -130,8 +130,9 @@ app.get('/testnewuser',function(req,res){
                 if (err) {
                     return res.status(500).send({error: err.message});
                 }
+                res.status(201).send(result);
             });
-            res.status(201).send({id: 123});
+
         });
 
 
