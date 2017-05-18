@@ -11,7 +11,7 @@ var server = supertest.agent("http://localhost:3000");
 
 describe("Fitbit koppelen unittest", function(done){
     it("")
-})
+});
 
 /**
  * Test for testing the accounts/login/ path
@@ -100,5 +100,97 @@ describe("Login", function () {
                 });
         });
     });
+});
+
+
+/**
+ * Tests for testing the accounts/users path
+ */
+describe("Sign up", function () {
+    /**
+     * Testing a correct sign up expect 201 with id returned
+     */
+    context("POST accounts/users/  Correct", function () {
+        it("Should response 201 with id", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "testtest",
+                    email: "romy@live.nl",
+                    handicap: 2,
+                    type: 3
+                })
+                .expect(201)
+                .expect(function (res) {
+                   if (isNaN(res.id)){
+                       throw new Error("Id not given back");
+                   }
+                })
+                .end(done);
+        });
+    });
+
+
+    /**
+     * Testing a failed sign up expect 400 empty fields
+     */
+    context("POST accounts/users/  failed", function () {
+        it("Should response 400 empty fields", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "",
+                    email: "",
+                    type: 3,
+                    handicap: 2
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body) throw new Error("Empty password and email")
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed sign up expect 400 password too short
+     */
+    context("POST accounts/users/  failed", function () {
+        it("Should response 400 empty password too short", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "aa",
+                    email: "romy@live.nl",
+                    type: 3,
+                    handicap: 2
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body) throw new Error("Password too short")
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed sign up expect 400 password too short
+     */
+    context("POST accounts/users/  failed", function () {
+        it("Should response 400 empty password too short", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "aa",
+                    email: "romy@live.nl",
+                    type: 3,
+                    handicap: 2
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body) throw new Error("Password too short")
+                })
+                .end(done);
+        });
+    });
+
+
+
 
 });
