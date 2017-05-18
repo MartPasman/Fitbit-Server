@@ -103,7 +103,7 @@ app.post("/users", function (req, res) {
 
 });
 
-app.get('/testnewuser',function(req,res){
+app.get('/testnewuser', function (req, res) {
 
     var password = "chill";
     bcrypt.genSalt(10, function (err, salt) {
@@ -136,7 +136,6 @@ app.get('/testnewuser',function(req,res){
         });
 
 
-
     });
 
 });
@@ -148,72 +147,78 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
+
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
-    User.findOne({id: req.body.id}, function (err, user) {
+    if (isNaN(req.body.id)) {
+        logResponse(400, 'id is not numeric');
+        return res.status(400).send({error: 'id is not numerics'});
+    } else {
+
+        User.findOne({id: req.body.id}, function (err, user) {
 
 
-        // Check to see whether an error occurred
-        if (err) {
+            // Check to see whether an error occurred
+            if (err) {
 
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
-        }
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
 
-        // Check to see whether a user was found
-        if (!user) {
-            logResponse(400, 'Invalid credentials');
-            return res.status(400).send({error: "Invalid credentials"});
-        }
+            // Check to see whether a user was found
+            if (!user) {
+                logResponse(400, 'Invalid credentials');
+                return res.status(400).send({error: "Invalid credentials"});
+            }
 
 
-        try {
-            // Check to see whether the given password matches the password of the user
-            bcrypt.compare(req.body.password, user.password, function (err, success) {
-                if (err) {
-                    logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
-                }
+            try {
+                // Check to see whether the given password matches the password of the user
+                bcrypt.compare(req.body.password, user.password, function (err, success) {
+                    if (err) {
+                        logResponse(500, err.message);
+                        return res.status(500).send({error: err.message});
+                    }
 
-                if (!success) {
-                    logResponse(400, 'Invalid credentials');
-                    return res.status(400).send({error: "Invalid credentials"});
-                }
+                    if (!success) {
+                        logResponse(400, 'Invalid credentials');
+                        return res.status(400).send({error: "Invalid credentials"});
+                    }
 
-                // remove sensitive data
-                user.password = undefined;
+                    // remove sensitive data
+                    user.password = undefined;
 
-                // sign json web token (expires in 12 hours)
-                var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
+                    // sign json web token (expires in 12 hours)
+                    var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
 
-               logResponse(201, 'Token created and in body');
-               return res.status(201).send({
-                   success: token,
-                   permission: user.type
+                    logResponse(201, 'Token created and in body');
+                    return res.status(201).send({
+                        success: token,
+                        permission: user.type
+                    });
                 });
-            });
-        } catch (err) {
-            // if the bcrypt fails
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
-        }
-    });
-
+            } catch (err) {
+                // if the bcrypt fails
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+        });
+    }
 });
 var currUser;
 app.get('/oauth/:id', function (req, res) {
     // ID of the requested user
-     var id = req.params.id;
+    var id = req.params.id;
 
     // Find the user that is requested
-     User.findOne({id: id}, function(err, myUser){
-        if(err)
+    User.findOne({id: id}, function (err, myUser) {
+        if (err)
             console.log("error in finding user");
 
-            currUser = myUser;
+        currUser = myUser;
 
-      });
+    });
 
     // get the authorisation URL to get the acces code from fitbit.com
     var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
@@ -251,7 +256,7 @@ app.get('/oauth_callback', function (req, res) {
         };
 
         //find the requested user and add the fitbit
-        User.findOneAndUpdate({id: currUser.id}, {$set: { fitbit: json}}, function(err,res){
+        User.findOneAndUpdate({id: currUser.id}, {$set: {fitbit: json}}, function (err, res) {
             console.log(res);
         });
 
@@ -286,6 +291,15 @@ var logResponse = function (code, message, depth) {
 function validateEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(email);
+}
+
+/**
+ * Function to determine if something is numeric
+ * @param n is a string
+ * @returns {boolean}
+ */
+function isNumeric(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 module.exports = app;
