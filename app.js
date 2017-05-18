@@ -7,7 +7,7 @@ var app = express();
 //set database information
 //var database = require('./module/database');
 
-app.use(express.static('public'));
+//app.use(express.static('public'));
 
 // Parse application/json
 var bodyParser = require('body-parser');
@@ -22,19 +22,19 @@ app.use(function (req, res, next) {
     res.set("Access-Control-Allow-Headers", "Authorization");
 
     // respond to pre-flight options requests
-    if (req.method == "OPTIONS") {
+    if (req.method === "OPTIONS") {
         return res.status(200).send();
     }
 
     // log request
     console.log('\u001B[36m[' + (new Date().toLocaleString()) + ']\u001B[0m \u001B[35m' + req.method + '\u001B[0m ' + req.url + ' called from ' + req.connection.remoteAddress);
 
-    next();
+    return next();
 });
 
 //set account routes
 var accountsRoutes = require('./routes/route_accounts');
-app.use('accounts/', accountsRoutes);
+app.use('/accounts/', accountsRoutes);
 //
 // //set competition routes
 // var competitionRoutes = require('./routes/route_competitions');
@@ -43,7 +43,7 @@ app.use('accounts/', accountsRoutes);
 // //set user routes
 // var userRoutes = require('./routes/route_users');
 // app.use('accounts/users/', userRoutes);
-
+/*
 //sends a 400 (bad request if the user send a invalid request)
 app.use(function (error, req, res, next) {
     if (error instanceof SyntaxError) {
@@ -52,6 +52,7 @@ app.use(function (error, req, res, next) {
         next();
     }
 });
+*/
 
 app.get('/api', function (req, res) {
     res.status(200).send({'Hello,': ' World!'});
