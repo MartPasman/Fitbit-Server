@@ -14,7 +14,6 @@ var consumer_key = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
 var client = new fitbitClient(consumer_key, client_secret);
-var access_token;
 var request = require('request');
 
 
@@ -148,7 +147,7 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
-    console.log('\tID:\t' + req.body.id+ '\n\tpassword:\t*****');
+    console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     User.findOne({id: req.body.id}, function (err, user) {
@@ -201,9 +200,19 @@ app.post('/login', function (req, res) {
     });
 
 });
-
+var currUser;
 app.get('/oauth/:id', function (req, res) {
-  //  req.param.id
+     var id = req.params.id;
+
+
+     User.findOne({id: id}, function(err, myUser){
+        if(err)
+            console.log("error in finding user");
+
+            currUser = myUser;
+
+      });
+
 
     //TODO: Check if not empty blablabla and save.
     var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
@@ -230,10 +239,22 @@ app.get('/oauth_callback', function (req, res) {
     };
 
     request.post(options, function (error, response, body) {
-        console.log(response);
-    });
+        console.log(body);
 
-});
+        var parsedRes = JSON.parse(body);
+        var access_token = parsedRes.access_token;
+        var refresh_token = parsedRes.refresh_token;
+
+        var json = {
+            userid: currUser.id, accesToken: access_token, refreshtoken: refresh_token
+        };
+
+        User.findOneAndUpdate({id: currUser.id}, {$set: { fitbit: json}}, function(err,res){
+            console.log(res);
+        });
+
+
+    });
 
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
