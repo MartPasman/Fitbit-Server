@@ -3,6 +3,7 @@
  * account aanpassen, goal aanmaken, goal aanpassen, goal ophalen
  */
 var express = require("express");
+var request = require("request");
 // var router = express.Router();
 var mongoose = require('mongoose');
 var User = require('../model/model_user');
@@ -18,8 +19,55 @@ var app = express();
 var jwt = require('jsonwebtoken');
 var logResponse = require('../app').logResponse;
 
+/**
+ * TODO
+ */
+app.get('/:id/stats/total', function (req, res) {
 
-app.post('/addGoal', function (req, res) {
+    // check if a valid id was provided
+    if (req.param.id === undefined || isNaN(req.param.id)) {
+        return res.status(400).send({error: 'No valid user id provided'});
+    }
+
+    const userid = req.param.id;
+
+    // get the authorization token from the database
+    User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
+        if (err) {
+            return res.status(500).send({error: 'MongoDB error: ' + err.message});
+        }
+
+        // no user found with the given id
+        if (!user) {
+            return res.status(404).send({error: 'User account could not be found.'});
+        }
+
+        // no fitbit connected to this account
+        if (user.fitbit === undefined) {
+            return res.status(412).send({error: 'User account not connected to a Fitbit.'});
+        }
+
+        const authToken = user.fitbit.accessToken;
+
+        request('https://api.fitbit.com/1/user/' + userid + '/activities.json', function (error, response, body) {
+            if (error === undefined || response.statusCode !== 200) {
+                return res.status(500).send({error: 'Fitbit API error: ' + error.message});
+            }
+
+            const stats = JSON.parse(body);
+            return res.status(200).send({success: stats});
+        });
+    });
+});
+
+/**
+ * TODO
+ */
+app.get('/:id/stats/week/last', function (req, res) {
+
+});
+
+app.post('/:id/goals', function (req, res) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {

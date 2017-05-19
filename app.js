@@ -57,7 +57,7 @@ app.use('/accounts', accountsRoutes);
 //
 // //set user routes
 var userRoutes = require('./routes/route_users');
-app.use('/accounts/users/', userRoutes);
+app.use('/accounts/users', userRoutes);
 
 /*
  //sends a 400 (bad request if the user send a invalid request)

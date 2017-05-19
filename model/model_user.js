@@ -6,7 +6,7 @@ var Schema = mongoose.Schema;
 
 var fitbitSchema = new Schema({
     userid: {type: String, required:true},
-    accesToken: {type: String, required:true},
+    accessToken: {type: String, required:true},
     refreshtoken: {type: String, required:true}
 });
 
