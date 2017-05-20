@@ -175,7 +175,7 @@ app.use('/', function (req, res, next) {
         res.user = decoded._doc;
 
         if (res.user.type !== 3) {
-            logResponse(403, err.message);
+            logResponse(403, "Not authorized to make this request");
             return res.status(403).send({error: "Not authorized to make this request"});
         }
 
