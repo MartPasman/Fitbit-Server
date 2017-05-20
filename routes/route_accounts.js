@@ -159,7 +159,11 @@ app.get('/connect/:id', function (req, res) {
 
 });
 
-
+/**
+ * Checks if user is logged in and if user is administrator
+ * all requests below this function will automatically go through this one first!
+ * If your page doesn't need to be requested by admin, put it above this function
+ */
 app.use('/', function (req, res, next) {
 
     console.log('\tAuthentication required...');
@@ -169,7 +173,7 @@ app.use('/', function (req, res, next) {
             return res.status(401).send({error: "User is not logged in."});
         }
 
-        // Hier kan je de user uit je res ophalen.
+        // Save user for future purposes
         res.user = decoded._doc;
 
         if (res.user.type !== 3) {
