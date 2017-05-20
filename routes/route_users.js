@@ -106,11 +106,14 @@ app.get('/:id/stats/total', function (req, res) {
 });
 
 /**
- * Get the steps and sleep stats for the last seven days
+ * Get the steps and sleep stats from the last seven days
  */
 app.get('/:id/stats/weeks/last', function (req, res) {
 
+    // prepare the API call
     prepareAPICall(req, res, function (accessToken, userid) {
+
+        // get the steps from last week
         request.get('https://api.fitbit.com/1/user/' + userid + '/activities/steps/date/today/7d.json',
             {
                 headers: {
@@ -122,13 +125,46 @@ app.get('/:id/stats/weeks/last', function (req, res) {
                     return res.status(response.statusCode).send({error: 'Fitbit API error.'});
                 }
 
-                const stats = JSON.parse(body);
-                logResponse(200, 'Stats collected successfully.');
-                return res.status(200).send(
+                const steps = JSON.parse(body);
+
+                // get the right time period
+                var today = new Date();
+                var lastWeek = new Date();
+                lastWeek.setDate(today.getDate() - 7);
+
+                // get the sleep from last week
+                request.get('https://api.fitbit.com/1/user/' + userid + '/sleep/date/' + getYYYYMMDD(lastWeek) + '/' + getYYYYMMDD(today) + '.json',
                     {
-                        success: stats["activities-steps"]
-                    }
-                );
+                        headers: {
+                            Authorization: 'Bearer ' + accessToken
+                        }
+                    }, function (error, response, body) {
+                        if (error !== undefined && response.statusCode !== 200) {
+                            logResponse(response.statusCode, 'Fitbit API error.');
+                            return res.status(response.statusCode).send({error: 'Fitbit API error.'});
+                        }
+
+                        // use only the data we want
+                        const sleep = JSON.parse(body).sleep;
+                        var sleepData = [];
+                        for (var i = 0; i < sleep.length; i++) {
+                            sleepData[i] = {
+                                date: sleep.dateOfSleep,
+                                duration: sleep.duration,
+                                timeInBed: sleep.timeInBed
+                            };
+                        }
+
+                        logResponse(200, 'Stats collected successfully.');
+                        return res.status(200).send(
+                            {
+                                success: {
+                                    steps: steps["activities-steps"],
+                                    sleep: sleepData
+                                }
+                            }
+                        );
+                    });
             });
     });
 });
@@ -186,5 +222,15 @@ var logResponse = function (code, message, depth) {
 
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 };
+
+function getYYYYMMDD(date) {
+    var mm = date.getMonth() + 1;
+    var dd = date.getDate();
+
+    return [date.getFullYear(),
+        (mm > 9 ? '' : '0') + mm,
+        (dd > 9 ? '' : '0') + dd
+    ].join('-');
+}
 
 module.exports = app;
