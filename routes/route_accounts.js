@@ -127,7 +127,8 @@ app.post('/login', function (req, res) {
                     logResponse(201, 'Token created and in body');
                     return res.status(201).send({
                         success: token,
-                        permission: user.type
+                        permission: user.type,
+                        userid: req.body.id
                     });
                 });
             } catch (err) {
