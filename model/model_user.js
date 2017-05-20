@@ -5,19 +5,19 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var fitbitSchema = new Schema({
-    userid: {type: String, required:true},
-    accessToken: {type: String, required:true},
-    refreshtoken: {type: String, required:true}
+    userid: {type: String, required: true},
+    accessToken: {type: String, required: true},
+    refreshToken: {type: String, required: true}
 });
 
 
 var goalSchema = new Schema({
-    id: {type: Number, required:false},
-    start: {type: Date, required:true},
-    end: {type: Date, required:true},
-    progress: {type: Number, required:true, default: 0},
-    percentage: {type: Number, required:true, default: 0},
-    goal: {type: Number, required:true}
+    id: {type: Number, required: false},
+    start: {type: Date, required: true},
+    end: {type: Date, required: true},
+    progress: {type: Number, required: true, default: 0},
+    percentage: {type: Number, required: true, default: 0},
+    goal: {type: Number, required: true}
 });
 
 

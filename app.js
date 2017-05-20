@@ -9,11 +9,6 @@ var privateKey = 'r2f9u0rcqjucr98cr2yc890qu98cr3qr93c298mq';
 // set private key:
 app.set('private-key', privateKey);
 
-//set database information
-//var database = require('./module/database');
-
-//app.use(express.static('public'));
-
 // Parse application/json
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
@@ -50,25 +45,14 @@ app.use(function (req, res, next) {
 //set account routes
 var accountsRoutes = require('./routes/route_accounts');
 app.use('/accounts', accountsRoutes);
-//
+
 // //set competition routes
 // var competitionRoutes = require('./routes/route_competitions');
 // app.use('competitions/', competitionRoutes);
-//
+
 // //set user routes
 var userRoutes = require('./routes/route_users');
 app.use('/accounts/users', userRoutes);
-
-/*
- //sends a 400 (bad request if the user send a invalid request)
- app.use(function (error, req, res, next) {
- if (error instanceof SyntaxError) {
- res.status(400).json({'status': 'invalid request'});
- } else {
- next();
- }
- });
- */
 
 app.get('/api', function (req, res) {
     res.status(200).send({'Hello,': ' World!'});

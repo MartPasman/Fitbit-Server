@@ -17,7 +17,7 @@ var client = new fitbitClient(consumer_key, client_secret);
 var request = require('request');
 
 
-var app = express();
+var app = express.Router();
 
 var jwt = require('jsonwebtoken');
 
@@ -242,7 +242,11 @@ app.get('/connect/:id', function (req, res) {
  * user logs in on fitbit.com, fitbit comes back to this ULR containing the acces code
  */
 app.get('/oauth_callback', function (req, res) {
-    console.log(req.query.code);
+    if (currUser === undefined) {
+        logResponse(500, 'currUser: ' + currUser);
+        return res.status(500).send({error: 'currUser: ' + currUser});
+    }
+    const user = currUser;
 
     // build the request for the accesstoken
     var options = {
@@ -258,18 +262,15 @@ app.get('/oauth_callback', function (req, res) {
         if (error) {
             res.status(500).send();
         }
-        console.log(body);
 
         var parsedRes = JSON.parse(body);
-        var access_token = parsedRes.access_token;
-        var refresh_token = parsedRes.refresh_token;
 
         var json = {
-            userid: currUser.id, accesToken: access_token, refreshtoken: refresh_token
+            userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
         };
 
         //find the requested user and add the fitbit
-        User.findOneAndUpdate({id: currUser.id}, {$set: {fitbit: json}}, function (err, result) {
+        User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
             if (err) {
                 res.status(404).send({"message": "user not found!"});
             }
@@ -278,16 +279,16 @@ app.get('/oauth_callback', function (req, res) {
     });
 });
 
-var logResponse = function (code, message, depth) {
+function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
     if (code === undefined) return;
 
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
+    const COLOR_200 = '\u001B[32m';
+    const COLOR_300 = '\u001B[33m';
+    const COLOR_400 = '\u001B[31m';
+    const COLOR_500 = '\u001B[34m';
+    const COLOR_RESET = '\u001B[0m';
 
     var color = COLOR_200;
     if (code >= 300) color = COLOR_300;
@@ -295,7 +296,7 @@ var logResponse = function (code, message, depth) {
     if (code >= 500) color = COLOR_500;
 
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-};
+}
 
 /**
  * Check if a given email is a valid email
@@ -305,15 +306,6 @@ var logResponse = function (code, message, depth) {
 function validateEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(email);
-}
-
-/**
- * Function to determine if something is numeric
- * @param n is a string
- * @returns {boolean}
- */
-function isNumeric(n) {
-    return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 module.exports = app;
