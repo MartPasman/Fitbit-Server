@@ -6,7 +6,7 @@
 var mocha = require('mocha');
 var supertest = require('supertest');
 var should = require('should');
-
+var User = require('../model/model_user');
 var server = supertest.agent("http://localhost:3000");
 
 describe("Fitbit koppelen unittest", function(done){
@@ -107,21 +107,33 @@ describe("Login", function () {
  * Tests for testing the accounts/users path
  */
 describe("Sign up", function () {
+    var authToken;
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 14776, password: "testtest"})
+            .expect(201)
+            .end(function (err, result) {
+                authToken = result.body.success;
+                done();
+            });
+    });
+
     /**
      * Testing a correct sign up expect 201 with id returned
+     * if 400 romy@live.nl already exists, remove manually first
      */
     context("POST accounts/users/  Correct", function () {
         it("Should response 201 with id", function (done) {
             server.post('/accounts/users')
                 .send({
                     password : "testtest",
-                    email: "romy@live.nl",
+                    email: "aap@live.nl",
                     handicap: 2,
                     type: 3
-                })
+                }).set("Authorization", authToken)
                 .expect(201)
                 .expect(function (res) {
-                   if (isNaN(res.id)){
+                   if (!res.body.id){
                        throw new Error("Id not given back");
                    }
                 })
@@ -138,10 +150,8 @@ describe("Sign up", function () {
             server.post('/accounts/users')
                 .send({
                     password : "",
-                    email: "",
-                    type: 3,
-                    handicap: 2
-                })
+                    email: ""
+                }).set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Empty password and email")
@@ -154,14 +164,14 @@ describe("Sign up", function () {
      * Testing a failed sign up expect 400 password too short
      */
     context("POST accounts/users/  failed", function () {
-        it("Should response 400 empty password too short", function (done) {
+        it("Should response 400 password too short", function (done) {
             server.post('/accounts/users')
                 .send({
                     password : "aa",
-                    email: "romy@live.nl",
+                    email: "romy1@live.nl",
                     type: 3,
                     handicap: 2
-                })
+                }).set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Password too short")
@@ -171,26 +181,85 @@ describe("Sign up", function () {
     });
 
     /**
-     * Testing a failed sign up expect 400 password too short
+     * Testing a failed sign up expect 400 email not valid
      */
     context("POST accounts/users/  failed", function () {
-        it("Should response 400 empty password too short", function (done) {
+        it("Should response 400  email not valid", function (done) {
             server.post('/accounts/users')
                 .send({
-                    password : "aa",
-                    email: "romy@live.nl",
+                    password : "asdfghjkl",
+                    email: "romy@.nl",
                     type: 3,
                     handicap: 2
-                })
+                }).set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
-                    if (!res.body) throw new Error("Password too short")
+                    if (!res.body) throw new Error("Email not valid")
                 })
                 .end(done);
         });
     });
 
 
+    /**
+     * Testing a failed sign up expect 400 type not valid
+     */
+    context("POST accounts/users/  failed", function () {
+        it("Should response 400  type not valid", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "asdfghjkl",
+                    email: "romy2@live.nl",
+                    type: 4,
+                    handicap: 2
+                }).set("Authorization", authToken)
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body) throw new Error("Type not valid")
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed sign up expect 400 handicap not valid
+     */
+    context("POST accounts/users/  failed", function () {
+        it("Should response 400  handicap not valid", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "asdfghjkl",
+                    email: "romy3@live.nl",
+                    type: 2,
+                    handicap: 4
+                }).set("Authorization", authToken)
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body) throw new Error("Handicap not valid")
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed sign up expect 400 email already exists
+     */
+    context("POST accounts/users/  failed", function () {
+        it("Should response 400  email already exists", function (done) {
+            server.post('/accounts/users')
+                .send({
+                    password : "asdfghjkl",
+                    email: "aap@live.nl",
+                    type: 2,
+                    handicap: 2
+                }).set("Authorization", authToken)
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body) throw new Error("Email already exists")
+                })
+                .end(done);
+        });
+    });
 
 
 });
