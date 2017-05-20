@@ -20,8 +20,6 @@ var request = require('request');
 var app = express.Router();
 
 var jwt = require('jsonwebtoken');
-var logResponse = require('../app').logResponse;
-
 
 app.get('/testnewuser', function (req, res) {
 
