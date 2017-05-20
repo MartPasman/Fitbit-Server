@@ -42,17 +42,17 @@ app.use(function (req, res, next) {
     return next();
 });
 
+//set user routes
+var userRoutes = require('./routes/route_users');
+app.use('/users', userRoutes);
+
 //set account routes
 var accountsRoutes = require('./routes/route_accounts');
 app.use('/accounts', accountsRoutes);
 
-// //set competition routes
+//set competition routes
 // var competitionRoutes = require('./routes/route_competitions');
-// app.use('competitions/', competitionRoutes);
-
-// //set user routes
-var userRoutes = require('./routes/route_users');
-app.use('/accounts/users', userRoutes);
+// app.use('/competitions', competitionRoutes);
 
 app.get('/api', function (req, res) {
     res.status(200).send({'Hello,': ' World!'});
