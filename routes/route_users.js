@@ -168,6 +168,99 @@ app.post('/:id/goals', function (req, res) {
     }
 });
 
+
+app.post('/addGoal', function (req, res) {
+
+
+    if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
+        logResponse(401, 'Wrong information supplied');
+        return res.status(401).send({error: "Wrong information supplied"});
+    } else {
+        var json = {
+            goal: req.body.goal,
+            start: req.body.start,
+            end: req.body.end
+        };
+
+        User.findOneAndUpdate({id: res.user.id}, {$push: {goals: json}}, function (err, result) {
+            // Check to see whether an error occurred
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            // Check to see whether a user was found
+            if (!result) {
+                logResponse(401, 'User not found');
+                return res.status(401).send({error: "User not found"});
+            }
+
+            logResponse(201, 'Goal created');
+            return res.status(201).send({
+                success: true
+            });
+        });
+    }
+});
+
+app.get('/getGoals/:offset', function (req, res) {
+    User.findOne({id: res.user.id}, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(401, 'User not found');
+            return res.status(401).send({error: "User not found"});
+        }
+
+        if (req.params.offset > result.goals.length) {
+            logResponse(401, 'Offset exceeded goals');
+            return res.status(401).send({error: "Offset exceeded goals"});
+        }
+
+        var addition = 5;
+        if (result.goals.length - req.params.offset < 5) {
+            var addition = result.goals.length - req.params.offset;
+        }
+
+        var slicedarray = result.goals.slice(req.params.offset, req.params.offset + addition);
+        logResponse(201, 'Goals send');
+        return res.status(201).send({
+            success: true,
+            totalgoals: result.goals.length,
+            goals: slicedarray
+        });
+    });
+
+});
+
+app.get('/deleteGoal/:id', function (req, res) {
+
+        User.update( {id: res.user.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.id)}}}, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(404, 'User not found');
+            return res.status(401).send({error: "User not found"});
+        }
+
+        logResponse(201, 'Goal removed');
+        return res.status(201).send({
+            success: true
+        });
+    });
+
+});
+
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
@@ -186,5 +279,6 @@ var logResponse = function (code, message, depth) {
 
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 };
+
 
 module.exports = app;

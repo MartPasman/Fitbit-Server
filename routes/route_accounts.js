@@ -21,88 +21,6 @@ var app = express.Router();
 
 var jwt = require('jsonwebtoken');
 
-/**
- * Make new account
- */
-app.post("/users", function (req, res) {
-
-    //todo check if logged in
-
-    //check if every field is entered
-    if (!req.body.password
-        || !req.body.email || !req.body.handicap || !req.body.type) {
-
-        return res.status(400).send({error: "Not every field is (correctly) filled in."});
-    }
-
-    //check if all fields are entered
-    if (req.body.password && req.body.email &&
-        req.body.handicap && req.body.type) {
-
-        if (req.body.password < 8) {
-            return res.status(400).send({error: "Password must be at least 8 characters long."});
-        }
-
-        var email = req.body.email.toLowerCase();
-
-        if (!validateEmail(email)) {
-            return res.status(400).send({error: "Email address is not valid."});
-        }
-
-        if (req.body.type < 1 || req.body.type > 3) {
-            return res.status(400).send({error: "Type is not valid."});
-        }
-
-        //find email if found do not make account
-        User.find({email: email}, function (err, user) {
-            if (user.length > 0) {
-                return res.status(400).send({error: "Email address already exists."});
-            }
-
-
-            // var idexists = true;
-            // while (idexists) {
-                var id = (Math.random() * 20000 ) + 10000;
-            //
-            //     User.find({id: id}, function (err, user) {
-            //         if (user.length <= 0) {
-            //             idexists = false;
-            //         }
-            //     });
-            // }
-
-            bcrypt.genSalt(10, function (err, salt) {
-                if (err) {
-                    return res.status(500).send({error: err.message});
-                }
-
-                bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
-                    if (err) {
-                        return res.status(500).send({error: err.message});
-                    }
-
-                    var account = new User({
-                        id: id,
-                        password: hashed,
-                        email: email,
-                        active: true,
-                        type: req.body.type
-                    });
-
-
-                    account.save(function (err, result) {
-                        if (err) {
-                            return res.status(500).send({error: err.message});
-                        }
-                    });
-                    return res.status(201).send({id: id});
-                });
-            });
-        });
-    }
-    return res.status(400).send({error: "Not every field is (correctly) filled in."})
-});
-
 app.get('/testnewuser', function (req, res) {
 
     var password = "chill";
@@ -154,29 +72,33 @@ app.get('/testdeleteuser/:id', function(req,res){
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
-        logResponse(401, 'id or password is not supplied');
-        return res.status(401).send({error: 'id or password is not supplied'});
+        logResponse(400, 'id or password is not supplied');
+        return res.status(400).send({error: 'id or password is not supplied'});
     }
+
 
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     if (isNaN(req.body.id)) {
-        logResponse(401, 'id is not numeric');
-        return res.status(401).send({error: 'id is not numerics'});
+        logResponse(400, 'id is not numeric');
+        return res.status(400).send({error: 'id is not numerics'});
     } else {
+
         User.findOne({id: req.body.id}, function (err, user) {
+
 
             // Check to see whether an error occurred
             if (err) {
+
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message});
             }
 
             // Check to see whether a user was found
             if (!user) {
-                logResponse(401, 'Invalid credentials');
-                return res.status(401).send({error: "Invalid credentials"});
+                logResponse(400, 'Invalid credentials');
+                return res.status(400).send({error: "Invalid credentials"});
             }
 
             try {
@@ -188,8 +110,8 @@ app.post('/login', function (req, res) {
                     }
 
                     if (!success) {
-                        logResponse(401, 'Invalid credentials');
-                        return res.status(401).send({error: "Invalid credentials"});
+                        logResponse(400, 'Invalid credentials');
+                        return res.status(400).send({error: "Invalid credentials"});
                     }
 
                     if(!user.active){
@@ -217,7 +139,6 @@ app.post('/login', function (req, res) {
         });
     }
 });
-
 var currUser;
 app.get('/connect/:id', function (req, res) {
     // ID of the requested user
@@ -238,6 +159,106 @@ app.get('/connect/:id', function (req, res) {
     res.redirect(authURL);
 
 });
+
+
+app.use('/', function (req, res, next) {
+
+    console.log('\tAuthentication required...');
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: "User is not logged in."});
+        }
+
+        // Hier kan je de user uit je res ophalen.
+        res.user = decoded._doc;
+
+        if (res.user.type !== 3) {
+            logResponse(403, "Not authorized to make this request");
+            return res.status(403).send({error: "Not authorized to make this request"});
+        }
+
+        console.log('\tpassed');
+
+        next();
+    });
+
+});
+/**
+ * Make new account
+ */
+app.post("/users", function (req, res) {
+
+        //check if every field is entered
+        if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
+            return res.status(400).send({error: "Not every field is (correctly) filled in."});
+        }
+
+        //check if all fields are entered
+        if (req.body.password && req.body.email &&
+            req.body.handicap && req.body.type) {
+
+            if (req.body.password.length < 8) {
+                return res.status(400).send({error: "Password must be at least 8 characters long."});
+            }
+
+            var email = req.body.email.toLowerCase();
+
+            if (!validateEmail(email)) {
+                return res.status(400).send({error: "Email address is not valid."});
+            }
+
+            if (isNaN(req.body.type) || req.body.type < 1 || req.body.type > 3) {
+                return res.status(400).send({error: "Type is not valid."});
+            }
+
+            if (isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
+                return res.status(400).send({error: "Handicap is not valid."});
+            }
+
+            //find email if found do not make account
+            User.find({email: email}, function (err, user) {
+                console.log(user);
+                if (user.length > 0) {
+                    return res.status(400).send({error: "Email address already exists."});
+                }
+
+                generateId(function (id) {
+                    bcrypt.genSalt(10, function (err, salt) {
+                        if (err) {
+                            return res.status(500).send({error: err.message});
+                        }
+
+                        bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
+                            if (err) {
+                                return res.status(500).send({error: err.message});
+                            }
+
+                            var account = new User({
+                                id: id,
+                                password: hashed,
+                                email: email,
+                                active: true,
+                                type: req.body.type,
+                                handicap: req.body.handicap
+                            });
+
+
+                            account.save(function (err, result) {
+                                if (err) {
+                                    return res.status(500).send({error: err.message});
+                                }
+                                return res.status(201).send({id: id});
+                            });
+                        });
+                    });
+                });
+            });
+        } else {
+            return res.status(400).send({error: "Not every field is (correctly) filled in."});
+        }
+});
+
 
 /**
  * user logs in on fitbit.com, fitbit comes back to this ULR containing the acces code
@@ -307,6 +328,32 @@ function logResponse(code, message, depth) {
 function validateEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(email);
+}
+
+/**
+ * Function to determine if something is numeric
+ * @param n is a string
+ * @returns {boolean}
+ */
+function isNumeric(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
+/**
+ * Function to generate unique id and check if it already exists
+ * @param callback
+ */
+function generateId(callback) {
+
+    var id = Math.ceil((Math.random() * 20000 ) + 10000);
+
+    User.find({id: id}, function (err, user) {
+        if (user.length === 0) {
+            callback(id);
+        } else {
+            generateId(callback);
+        }
+    });
 }
 
 module.exports = app;
