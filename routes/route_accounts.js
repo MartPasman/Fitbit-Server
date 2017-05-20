@@ -191,7 +191,7 @@ app.use('/', function (req, res, next) {
 /**
  * Make new account
  */
-app.post("/users", function (req, res) {
+app.post("/", function (req, res) {
 
         //check if every field is entered
         if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
