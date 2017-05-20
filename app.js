@@ -23,7 +23,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 mongoose.Promise = global.Promise;
 
 var options = {server: {socketOptions: {keepAlive: 1}}};
-mongoose.connect('mongodb://178.21.116.109:27017/admin', options);
+mongoose.connect('mongodb://localhost:27017', options);
 mongoose.connection.on('error', function (err) {
     console.log('Could not connect to MongoDB server: ' + err);
 });
