@@ -149,35 +149,33 @@ app.get('/oauth/:id', function (req, res) {
 });
 
 
-// app.use('/', function (req, res, next) {
+app.use('/', function (req, res, next) {
 
-//    console.log('\tAuthentication required...');
-//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-//         if (err) {
-//             logResponse(401, err.message);
-//             return res.status(401).send({error: "Not authorized to make this requested."});
-//         }
-//
-//         // Hier kan je de user uit je res ophalen.
-//         res.user = decoded._doc;
-//
-//         if (res.user.type != 3){
-//             logResponse(401, err.message);
-//             return res.status(401).send({error: "Not authorized to make this requested."});
-//         }
-//
-//         console.log('\tpassed');
-//
-//         next();
-//     });
-//
-// });
+   console.log('\tAuthentication required...');
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: "Not authorized to make this requested."});
+        }
+
+        // Hier kan je de user uit je res ophalen.
+        res.user = decoded._doc;
+
+        if (res.user.type != 3){
+            logResponse(401, err.message);
+            return res.status(401).send({error: "Not authorized to make this requested."});
+        }
+
+        console.log('\tpassed');
+
+        next();
+    });
+
+});
 /**
  * Make new account
  */
 app.post("/users", function (req, res) {
-
-
 
     //check if every field is entered
     if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
@@ -191,7 +189,6 @@ app.post("/users", function (req, res) {
         if (req.body.password.length < 8) {
             return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
-
 
         var email = req.body.email.toLowerCase();
 
@@ -211,7 +208,6 @@ app.post("/users", function (req, res) {
         User.find({email: email}, function (err, user) {
             console.log(user);
             if (user.length > 0) {
-                logResponse(400, "haiii");
                 return res.status(400).send({error: "Email address already exists."});
             }
 
@@ -228,7 +224,6 @@ app.post("/users", function (req, res) {
 
                 var id =  Math.ceil((Math.random() * 20000 ) + 10000);
 
-logResponse(200, "hoi");
                 bcrypt.genSalt(10, function (err, salt) {
                     if (err) {
                         return res.status(500).send({error: err.message});
@@ -253,7 +248,6 @@ logResponse(200, "hoi");
                             if (err) {
                                 return res.status(500).send({error: err.message});
                             }
-                            logResponse(201, "id " + id);
                             return res.status(201).send({id: id});
                         });
                     });
