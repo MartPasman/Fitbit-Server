@@ -20,12 +20,12 @@ var jwt = require('jsonwebtoken');
 app.use('/', function (req, res, next) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        // if (err) {
-        //     logResponse(401, err.message);
-        //     return res.status(401).send({error: 'Failed to authenticate token.'});
-        // }
-        //
-        // res.user = decoded._doc;
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: 'Failed to authenticate token.'});
+        }
+
+        res.user = decoded._doc;
         next();
     });
 });
@@ -47,10 +47,10 @@ function prepareAPICall(req, res, callback) {
     const userid = req.params.id;
 
     // check if the user that requests the data is the user whose data is requested
-    // if (res.user.type !== 3 && res.user.id !== userid) {
-    //     logResponse(403, 'User does not have permission to make this request.');
-    //     return res.status(403).send({error: 'User does not have permission to make this request.'});
-    // }
+    if (res.user.type !== 3 && res.user.id !== userid) {
+        logResponse(403, 'User does not have permission to make this request.');
+        return res.status(403).send({error: 'User does not have permission to make this request.'});
+    }
 
     // get the authorization token from the database
     User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
