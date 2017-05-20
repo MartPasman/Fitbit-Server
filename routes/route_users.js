@@ -15,17 +15,39 @@ var app = express.Router();
 var jwt = require('jsonwebtoken');
 
 /**
- * TODO
+ * Authorization
+ */
+app.use('/', function (req, res, next) {
+
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: 'Failed to authenticate token.'});
+        }
+
+        res.user = decoded._doc;
+        next();
+    });
+});
+
+/**
+ * Get the total amount of steps of a certain user
  */
 app.get('/:id/stats/total', function (req, res) {
 
     // check if a valid id was provided
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, 'No valid user id provided: ' + req.params.id);
-        return res.status(400).send({error: 'No valid user id provided'});
+        return res.status(400).send({error: 'No valid user id provided.'});
     }
 
     const userid = req.params.id;
+
+    // check if the user that requests the data is the user whose data is requested
+    if (res.user.type !== 3 && res.user.id !== userid) {
+        logResponse(403, 'User does not have permission to make this request.');
+        return res.status(403).send({error: 'User does not have permission to make this request.'});
+    }
 
     // get the authorization token from the database
     User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
@@ -56,13 +78,19 @@ app.get('/:id/stats/total', function (req, res) {
             }, function (error, response, body) {
                 logResponse(response.statusCode, body);
                 if (error !== undefined || response.statusCode !== 200) {
-                    // logResponse(500, 'Fitbit API error: ' + error.message);
-                    // return res.status(500).send({error: 'Fitbit API error: ' + error.message});
+                    logResponse(response.statusCode, 'Fitbit API error.');
+                    return res.status(response.statusCode).send({error: 'Fitbit API error.'});
                 }
 
                 const stats = JSON.parse(body);
                 logResponse(200, 'Stats collected successfully.');
-                return res.status(200).send({success: stats});
+                return res.status(200).send(
+                    {
+                        success: {
+                            steps: stats.success.lifetime.total.steps
+                        }
+                    }
+                );
             });
     });
 });
@@ -76,41 +104,34 @@ app.get('/:id/stats/week/last', function (req, res) {
 
 app.post('/:id/goals', function (req, res) {
 
-    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        if (err) {
-            logResponse(401, err.message);
-            return res.status(401).send({error: 'Failed to authenticate token'});
-        }
+    if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
+        logResponse(401, 'Wrong information supplied');
+        return res.status(401).send({error: "Wrong information supplied"});
+    } else {
+        var json = {
+            goal: req.body.goal,
+            start: req.body.start,
+            end: req.body.end
+        };
 
-        if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
-            logResponse(401, 'Wrong information supplied');
-            return res.status(401).send({error: "Wrong information supplied"});
-        } else {
-            var json = {
-                goal: req.body.goal,
-                start: req.body.start,
-                end: req.body.end
-            };
+        User.findOneAndUpdate({id: decoded._doc.id}, {$push: {goals: json}}, function (err, result) {
+            // Check to see whether an error occurred
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
 
-            User.findOneAndUpdate({id: decoded._doc.id}, {$push: {goals: json}}, function (err, result) {
-                // Check to see whether an error occurred
-                if (err) {
-                    logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
-                }
+            // Check to see whether a user was found
+            if (!result) {
+                logResponse(401, 'User not found');
+                return res.status(401).send({error: "User not found"});
+            }
 
-                // Check to see whether a user was found
-                if (!result) {
-                    logResponse(401, 'User not found');
-                    return res.status(401).send({error: "User not found"});
-                }
-
-                return res.status(201).send({
-                    success: true
-                });
+            return res.status(201).send({
+                success: true
             });
-        }
-    });
+        });
+    }
 });
 
 var logResponse = function (code, message, depth) {
