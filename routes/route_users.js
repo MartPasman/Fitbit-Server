@@ -20,21 +20,24 @@ var jwt = require('jsonwebtoken');
 app.use('/', function (req, res, next) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        if (err) {
-            logResponse(401, err.message);
-            return res.status(401).send({error: 'Failed to authenticate token.'});
-        }
-
-        res.user = decoded._doc;
+        // if (err) {
+        //     logResponse(401, err.message);
+        //     return res.status(401).send({error: 'Failed to authenticate token.'});
+        // }
+        //
+        // res.user = decoded._doc;
         next();
     });
 });
 
 /**
- * Get the total amount of steps of a certain user
+ * Prepares an API call to the Fitbit API by checking authorization,
+ * user existence, fitbit object extistence.
+ * @param req original request object
+ * @param res response object
+ * @param callback what to do when we prepared the API call
  */
-app.get('/:id/stats/total', function (req, res) {
-
+function prepareAPICall(req, res, callback) {
     // check if a valid id was provided
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, 'No valid user id provided: ' + req.params.id);
@@ -44,10 +47,10 @@ app.get('/:id/stats/total', function (req, res) {
     const userid = req.params.id;
 
     // check if the user that requests the data is the user whose data is requested
-    if (res.user.type !== 3 && res.user.id !== userid) {
-        logResponse(403, 'User does not have permission to make this request.');
-        return res.status(403).send({error: 'User does not have permission to make this request.'});
-    }
+    // if (res.user.type !== 3 && res.user.id !== userid) {
+    //     logResponse(403, 'User does not have permission to make this request.');
+    //     return res.status(403).send({error: 'User does not have permission to make this request.'});
+    // }
 
     // get the authorization token from the database
     User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
@@ -68,16 +71,23 @@ app.get('/:id/stats/total', function (req, res) {
             return res.status(412).send({error: 'User account not connected to a Fitbit.'});
         }
 
-        const authToken = user.fitbit.accessToken;
+        callback(user.fitbit.accessToken, user.fitbit.userid);
+    });
+}
 
-        request.get('https://api.fitbit.com/1/user/' + user.fitbit.userid + '/activities.json',
+/**
+ * Get the total amount of steps of a certain user
+ */
+app.get('/:id/stats/total', function (req, res) {
+
+    prepareAPICall(req, res, function (accessToken, userid) {
+        request.get('https://api.fitbit.com/1/user/' + userid + '/activities.json',
             {
                 headers: {
-                    Authorization: 'Bearer ' + authToken
+                    Authorization: 'Bearer ' + accessToken
                 }
             }, function (error, response, body) {
-                logResponse(response.statusCode, body);
-                if (error !== undefined || response.statusCode !== 200) {
+                if (error !== undefined && response.statusCode !== 200) {
                     logResponse(response.statusCode, 'Fitbit API error.');
                     return res.status(response.statusCode).send({error: 'Fitbit API error.'});
                 }
@@ -87,7 +97,7 @@ app.get('/:id/stats/total', function (req, res) {
                 return res.status(200).send(
                     {
                         success: {
-                            steps: stats.success.lifetime.total.steps
+                            steps: stats.lifetime.total.steps
                         }
                     }
                 );
@@ -96,12 +106,36 @@ app.get('/:id/stats/total', function (req, res) {
 });
 
 /**
- * TODO
+ * Get the steps and sleep stats for the last seven days
  */
-app.get('/:id/stats/week/last', function (req, res) {
+app.get('/:id/stats/weeks/last', function (req, res) {
 
+    prepareAPICall(req, res, function (accessToken, userid) {
+        request.get('https://api.fitbit.com/1/user/' + userid + '/activities/steps/date/today/7d.json',
+            {
+                headers: {
+                    Authorization: 'Bearer ' + accessToken
+                }
+            }, function (error, response, body) {
+                if (error !== undefined && response.statusCode !== 200) {
+                    logResponse(response.statusCode, 'Fitbit API error.');
+                    return res.status(response.statusCode).send({error: 'Fitbit API error.'});
+                }
+
+                const stats = JSON.parse(body);
+                logResponse(200, 'Stats collected successfully.');
+                return res.status(200).send(
+                    {
+                        success: stats["activities-steps"]
+                    }
+                );
+            });
+    });
 });
 
+/**
+ *
+ */
 app.post('/:id/goals', function (req, res) {
 
     if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
