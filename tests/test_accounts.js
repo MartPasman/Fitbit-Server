@@ -64,10 +64,10 @@ describe("Login", function () {
      * Testing a login path with a wrong password expected 400
      */
     context("POST accounts/login/  Wrong password", function () {
-        it("Should response 400 because, wrong password", function (done) {
+        it("Should response 401 because, wrong password", function (done) {
             server.post('/accounts/login/')
                 .send({ id: '123', password: 'afdasf'})
-                .expect(400)
+                .expect(401)
                 .end(function(err, res){
                     done(err);
                 });
@@ -78,10 +78,10 @@ describe("Login", function () {
      * Testing a login path with a wrong id expected 400
      */
     context("POST accounts/login/  Wrong id", function () {
-        it("Should response 400 because, wrong id", function (done) {
+        it("Should response 401 because, wrong id", function (done) {
             server.post('/accounts/login/')
                 .send({ id: '1232314', password: 'chill'})
-                .expect(400)
+                .expect(401)
                 .end(function(err, res){
                     done(err);
                 });
@@ -95,7 +95,7 @@ describe("Login", function () {
         it("Should response 400 because, empty information passed", function (done) {
             server.post('/accounts/login/')
                 .send({ id: '', password: ''})
-                .expect(400)
+                .expect(401)
                 .end(function(err, res){
                     done(err);
                 });
@@ -106,10 +106,10 @@ describe("Login", function () {
      * Testing a login path with no json given expected 400
      */
     context("POST accounts/login/  No json", function () {
-        it("Should response 400 because, No json passed", function (done) {
+        it("Should response 401 because, No json passed", function (done) {
             server.post('/accounts/login/')
                 .send()
-                .expect(400)
+                .expect(401)
                 .end(function(err, res){
                     done(err);
                 });
@@ -120,10 +120,10 @@ describe("Login", function () {
      * Testing a login with a non numeric id expected 400
      */
     context("POST accounts/login/  non numeric id", function () {
-        it("Should response 400 because, id is not numeric", function (done) {
+        it("Should response 401 because, id is not numeric", function (done) {
             server.post('/accounts/login/')
                 .send({ id: 'notnumeric', password: 'chill'})
-                .expect(400)
+                .expect(401)
                 .end(function(err, res){
                     done(err);
                 });
