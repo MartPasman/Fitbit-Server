@@ -172,7 +172,7 @@ app.post('/:id/goals', function (req, res) {
 });
 
 
-app.post('/addGoal', function (req, res) {
+app.post('/goal/add', function (req, res) {
 
 
     if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
@@ -206,7 +206,7 @@ app.post('/addGoal', function (req, res) {
     }
 });
 
-app.get('/getGoals/:offset', function (req, res) {
+app.get('/goal/:offset', function (req, res) {
     User.findOne({id: res.user.id}, function (err, result) {
         // Check to see whether an error occurred
         if (err) {
@@ -241,7 +241,7 @@ app.get('/getGoals/:offset', function (req, res) {
 
 });
 
-app.get('/deleteGoal/:id', function (req, res) {
+app.get('/goal/delete/:id', function (req, res) {
 
         User.update( {id: res.user.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.id)}}}, function (err, result) {
         // Check to see whether an error occurred
