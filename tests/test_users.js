@@ -196,7 +196,6 @@ context("DELETE /users/goal/delete/:id  Failed no id", function () {
             });
     });
 });
-});
 
 /**
  * Test for testing the accounts/login/ path
