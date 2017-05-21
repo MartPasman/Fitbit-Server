@@ -20,12 +20,12 @@ var jwt = require('jsonwebtoken');
 app.use('/', function (req, res, next) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        // if (err) {
-        //     logResponse(401, err.message);
-        //     return res.status(401).send({error: 'Failed to authenticate token.'});
-        // }
-        //
-        // res.user = decoded._doc;
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: 'Failed to authenticate token.'});
+        }
+
+        res.user = decoded._doc;
         next();
     });
 });
@@ -47,10 +47,10 @@ function prepareAPICall(req, res, callback) {
     const userid = req.params.id;
 
     // check if the user that requests the data is the user whose data is requested
-    // if (res.user.type !== 3 && res.user.id !== userid) {
-    //     logResponse(403, 'User does not have permission to make this request.');
-    //     return res.status(403).send({error: 'User does not have permission to make this request.'});
-    // }
+    if (res.user.type !== 3 && res.user.id !== userid) {
+        logResponse(403, 'User does not have permission to make this request.');
+        return res.status(403).send({error: 'User does not have permission to make this request.'});
+    }
 
     // get the authorization token from the database
     User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
@@ -202,6 +202,99 @@ app.post('/:id/goals', function (req, res) {
             });
         });
     }
+});
+
+
+app.post('/goal/add', function (req, res) {
+
+
+    if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
+        logResponse(401, 'Wrong information supplied');
+        return res.status(401).send({error: "Wrong information supplied"});
+    } else {
+        var json = {
+            goal: req.body.goal,
+            start: req.body.start,
+            end: req.body.end
+        };
+
+        User.findOneAndUpdate({id: res.user.id}, {$push: {goals: json}}, function (err, result) {
+            // Check to see whether an error occurred
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            // Check to see whether a user was found
+            if (!result) {
+                logResponse(401, 'User not found');
+                return res.status(401).send({error: "User not found"});
+            }
+
+            logResponse(201, 'Goal created');
+            return res.status(201).send({
+                success: true
+            });
+        });
+    }
+});
+
+app.get('/goal/:offset', function (req, res) {
+    User.findOne({id: res.user.id}, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(401, 'User not found');
+            return res.status(401).send({error: "User not found"});
+        }
+
+        if (req.params.offset > result.goals.length) {
+            logResponse(401, 'Offset exceeded goals');
+            return res.status(401).send({error: "Offset exceeded goals"});
+        }
+
+        var addition = 5;
+        if (result.goals.length - req.params.offset < 5) {
+            addition = result.goals.length - req.params.offset;
+        }
+
+        var slicedarray = result.goals.slice(req.params.offset, req.params.offset + addition);
+        logResponse(201, 'Goals send');
+        return res.status(201).send({
+            success: true,
+            totalgoals: result.goals.length,
+            goals: slicedarray
+        });
+    });
+
+});
+
+app.get('/goal/delete/:id', function (req, res) {
+
+        User.update( {id: res.user.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.id)}}}, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(404, 'User not found');
+            return res.status(401).send({error: "User not found"});
+        }
+
+        logResponse(201, 'Goal removed');
+        return res.status(201).send({
+            success: true
+        });
+    });
+
 });
 
 var logResponse = function (code, message, depth) {
