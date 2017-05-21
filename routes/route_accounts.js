@@ -37,11 +37,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                id: 123,
+                id: 321,
                 password: hashed,
-                email: 'kaas@hotie.com',
+                email: 'ham@hotie.com',
                 active: true,
-                type: 1
+                type: 3
             });
 
             account.save(function (err, result) {
@@ -58,12 +58,12 @@ app.get('/testnewuser', function (req, res) {
 
 });
 
-app.get('/testdeleteuser/:id', function(req,res){
-    User.find({id: req.params.id}, function(err,resss){
-        if(err){
+app.get('/testdeleteuser/:id', function (req, res) {
+    User.find({id: req.params.id}, function (err, resss) {
+        if (err) {
             res.status(404).send();
         }
-        res.status(201).send({"message" : "deleted user."});
+        res.status(201).send({"message": "deleted user."});
     }).remove().exec()
 
 
@@ -114,7 +114,7 @@ app.post('/login', function (req, res) {
                         return res.status(400).send({error: "Invalid credentials"});
                     }
 
-                    if(!user.active){
+                    if (!user.active) {
                         logResponse(403, 'User inactive');
                         return res.status(403).send({error: "User inactive"});
                     }
@@ -168,6 +168,7 @@ app.get('/connect/:id', function (req, res) {
 app.use('/', function (req, res, next) {
 
     console.log('\tAuthentication required...');
+    console.log(req.app.get('private-key'));
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -176,7 +177,6 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-
         if (res.user.type !== 3) {
             logResponse(403, "Not authorized to make this request");
             return res.status(403).send({error: "Not authorized to make this request"});
@@ -193,6 +193,10 @@ app.use('/', function (req, res, next) {
  */
 app.post("/", function (req, res) {
 
+    // if (res.user.isEmpty()) {
+    //     return res.status(401).send({error: "User is not logged in."})
+    // }
+    // else {
         //check if every field is entered
         if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
             return res.status(400).send({error: "Not every field is (correctly) filled in."});
@@ -261,6 +265,7 @@ app.post("/", function (req, res) {
         } else {
             return res.status(400).send({error: "Not every field is (correctly) filled in."});
         }
+    // }
 });
 
 
