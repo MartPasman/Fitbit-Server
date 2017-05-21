@@ -47,7 +47,7 @@ function prepareAPICall(req, res, callback) {
     const userid = req.params.id;
 
     // check if the user that requests the data is the user whose data is requested
-    if (res.user.type !== 3 && res.user.id !== userid) {
+    if (res.user.type !== 3 && parseInt(res.user.id) !== parseInt(userid)) {
         logResponse(403, 'User does not have permission to make this request.');
         return res.status(403).send({error: 'User does not have permission to make this request.'});
     }
