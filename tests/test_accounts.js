@@ -9,27 +9,26 @@ var should = require('should');
 var User = require('../model/model_user');
 var server = supertest.agent("http://localhost:3000");
 
-describe("Fitbit koppelen unittest", function(){
-    before(function(done){
+describe("Fitbit koppelen unittest", function () {
+    before(function (done) {
         server.get('/accounts/testnewuser')
             .expect(201)
-            .end(function(err,res){
-               done(err);
+            .end(function (err, res) {
+                done(err);
             });
     });
 
 
-
-    it("should connect a fitbit to a user and return 201", function(done){
+    it("should connect a fitbit to a user and return 201", function (done) {
         server.get('/accounts/connect/123')
             .expect(302)
-            .end(function(err){
+            .end(function (err) {
                 done(err);
-            })
+            });
     });
 
 
-    after(function(done){
+    after(function (done) {
         server.get('/accounts/testdeleteuser/123')
             .expect(201)
             .end(function (err) {
@@ -38,7 +37,7 @@ describe("Fitbit koppelen unittest", function(){
     });
 
 });
-describe("Fitbit koppelen unittest", function(done){
+describe("Fitbit koppelen unittest", function (done) {
     it("")
 });
 
@@ -52,9 +51,9 @@ describe("Login", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({ id: '123', password: 'chill'})
+                .send({id: '123', password: 'chill'})
                 .expect(201)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -66,9 +65,9 @@ describe("Login", function () {
     context("POST accounts/login/  Wrong password", function () {
         it("Should response 401 because, wrong password", function (done) {
             server.post('/accounts/login/')
-                .send({ id: '123', password: 'afdasf'})
+                .send({id: '123', password: 'afdasf'})
                 .expect(401)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -80,9 +79,9 @@ describe("Login", function () {
     context("POST accounts/login/  Wrong id", function () {
         it("Should response 401 because, wrong id", function (done) {
             server.post('/accounts/login/')
-                .send({ id: '1232314', password: 'chill'})
+                .send({id: '1232314', password: 'chill'})
                 .expect(401)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -94,9 +93,9 @@ describe("Login", function () {
     context("POST accounts/login/  empty information", function () {
         it("Should response 400 because, empty information passed", function (done) {
             server.post('/accounts/login/')
-                .send({ id: '', password: ''})
+                .send({id: '', password: ''})
                 .expect(401)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -110,7 +109,7 @@ describe("Login", function () {
             server.post('/accounts/login/')
                 .send()
                 .expect(401)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -122,9 +121,9 @@ describe("Login", function () {
     context("POST accounts/login/  non numeric id", function () {
         it("Should response 401 because, id is not numeric", function (done) {
             server.post('/accounts/login/')
-                .send({ id: 'notnumeric', password: 'chill'})
+                .send({id: 'notnumeric', password: 'chill'})
                 .expect(401)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -136,10 +135,11 @@ describe("Login", function () {
  * Tests for testing the accounts/users path
  */
 describe("Sign up", function () {
-    var authToken;
+    var authToken = "";
+
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: 14776, password: "testtest"})
+            .send({id: 321, password: "chill"})
             .expect(201)
             .end(function (err, result) {
                 authToken = result.body.success;
@@ -149,38 +149,77 @@ describe("Sign up", function () {
 
     /**
      * Testing a correct sign up expect 201 with id returned
-     * if 400 romy@live.nl already exists, remove manually first
+     * if 400 app@live.nl already exists, remove manually first
      */
-    context("POST accounts/users/  Correct", function () {
+    context("POST accounts/  Correct", function () {
         it("Should response 201 with id", function (done) {
-            server.post('/accounts/users')
+            server.post('/accounts/')
                 .send({
-                    password : "testtest",
+                    password: "testtest",
                     email: "aap@live.nl",
                     handicap: 2,
-                    type: 3
+                    type: 2
                 }).set("Authorization", authToken)
                 .expect(201)
                 .expect(function (res) {
-                   if (!res.body.id){
-                       throw new Error("Id not given back");
-                   }
+                    if (!res.body.id) {
+                        throw new Error("Id not given back");
+                    }
                 })
                 .end(done);
         });
     });
 
+    // /**
+    //  * Testing a sign up expect 403 forbidden
+    //  */
+    // context("POST accounts/  Correct", function () {
+    //     it("Should response 403 forbidden", function (done) {
+    //         server.post('/accounts/')
+    //             .send({
+    //                 password: "testtest",
+    //                 email: "aap@live.nl",
+    //                 handicap: 2,
+    //                 type: 3
+    //             }).set("Authorization", 123)
+    //             .expect(403)
+    //             .expect(function (res) {
+    //                 if (!res.body.id) {
+    //                     throw new Error("Id not given back");
+    //                 }
+    //             })
+    //             .end(done);
+    //     });
+    // });
 
     /**
-     * Testing a failed sign up expect 400 empty fields
+     * Testing a sign up expect 401 not logged in
      */
-    context("POST accounts/users/  failed", function () {
-        it("Should response 400 empty fields", function (done) {
-            server.post('/accounts/users')
+    context("POST accounts/  Failed", function () {
+        it("Should response 401 not logged in", function (done) {
+            server.post('/accounts/')
                 .send({
-                    password : "",
+                    password: "testtest",
+                    email: "aapje@live.nl",
+                    handicap: 2,
+                    type: 3
+                })
+                .expect(401)
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a sign up expect 400 empty fields
+     */
+    context("POST accounts/  failed", function () {
+        it("Should response 400 empty fields", function (done) {
+            server.post('/accounts/')
+                .send({
+                    password: "",
                     email: ""
-                }).set("Authorization", authToken)
+                })
+                .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Empty password and email")
@@ -190,17 +229,18 @@ describe("Sign up", function () {
     });
 
     /**
-     * Testing a failed sign up expect 400 password too short
+     * Testing a sign up expect 400 password too short
      */
-    context("POST accounts/users/  failed", function () {
+    context("POST accounts/  failed", function () {
         it("Should response 400 password too short", function (done) {
-            server.post('/accounts/users')
+            server.post('/accounts/')
                 .send({
-                    password : "aa",
+                    password: "aa",
                     email: "romy1@live.nl",
                     type: 3,
                     handicap: 2
-                }).set("Authorization", authToken)
+                })
+                .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Password too short")
@@ -210,17 +250,18 @@ describe("Sign up", function () {
     });
 
     /**
-     * Testing a failed sign up expect 400 email not valid
+     * Testing a sign up expect 400 email not valid
      */
-    context("POST accounts/users/  failed", function () {
+    context("POST accounts/  failed", function () {
         it("Should response 400  email not valid", function (done) {
-            server.post('/accounts/users')
+            server.post('/accounts/')
                 .send({
-                    password : "asdfghjkl",
+                    password: "asdfghjkl",
                     email: "romy@.nl",
                     type: 3,
                     handicap: 2
-                }).set("Authorization", authToken)
+                })
+                .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Email not valid")
@@ -231,17 +272,18 @@ describe("Sign up", function () {
 
 
     /**
-     * Testing a failed sign up expect 400 type not valid
+     * Testing a sign up expect 400 type not valid
      */
-    context("POST accounts/users/  failed", function () {
+    context("POST accounts/  failed", function () {
         it("Should response 400  type not valid", function (done) {
-            server.post('/accounts/users')
+            server.post('/accounts/')
                 .send({
-                    password : "asdfghjkl",
+                    password: "asdfghjkl",
                     email: "romy2@live.nl",
                     type: 4,
                     handicap: 2
-                }).set("Authorization", authToken)
+                })
+                .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Type not valid")
@@ -251,17 +293,18 @@ describe("Sign up", function () {
     });
 
     /**
-     * Testing a failed sign up expect 400 handicap not valid
+     * Testing a sign up expect 400 handicap not valid
      */
-    context("POST accounts/users/  failed", function () {
+    context("POST accounts/  failed", function () {
         it("Should response 400  handicap not valid", function (done) {
-            server.post('/accounts/users')
+            server.post('/accounts/')
                 .send({
-                    password : "asdfghjkl",
+                    password: "asdfghjkl",
                     email: "romy3@live.nl",
                     type: 2,
                     handicap: 4
-                }).set("Authorization", authToken)
+                })
+                .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Handicap not valid")
@@ -271,17 +314,18 @@ describe("Sign up", function () {
     });
 
     /**
-     * Testing a failed sign up expect 400 email already exists
+     * Testing a sign up expect 400 email already exists
      */
-    context("POST accounts/users/  failed", function () {
+    context("POST accounts/  failed", function () {
         it("Should response 400  email already exists", function (done) {
-            server.post('/accounts/users')
+            server.post('/accounts/')
                 .send({
-                    password : "asdfghjkl",
+                    password: "asdfghjkl",
                     email: "aap@live.nl",
                     type: 2,
                     handicap: 2
-                }).set("Authorization", authToken)
+                })
+                .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
                     if (!res.body) throw new Error("Email already exists")
