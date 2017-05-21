@@ -138,6 +138,10 @@ app.get('/:id/stats/weeks/last', function (req, res) {
  */
 app.post('/:id/goals', function (req, res) {
 
+    if (req.body.start == undefined || req.body.end == undefined || req.body.goal == undefined) {
+        logResponse(401, 'Wrong information supplied');
+        return res.status(401).send({error: "Wrong information supplied"});
+    }
     if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
         logResponse(401, 'Wrong information supplied');
         return res.status(401).send({error: "Wrong information supplied"});
@@ -171,10 +175,13 @@ app.post('/:id/goals', function (req, res) {
 
 app.post('/goal/add', function (req, res) {
 
-
-    if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
-        logResponse(401, 'Wrong information supplied');
-        return res.status(401).send({error: "Wrong information supplied"});
+    if (req.body.start == undefined || req.body.end == undefined || req.body.goal == undefined) {
+        logResponse(400, 'Wrong information supplied');
+        return res.status(400).send({error: "Wrong information supplied"});
+    }
+    if (!Date.parse(req.body.start) || !Date.parse(req.body.end) || isNaN(req.body.goal)) {
+        logResponse(400, 'Wrong information supplied');
+        return res.status(400).send({error: "Wrong information supplied"});
     } else {
         var json = {
             goal: req.body.goal,
@@ -191,8 +198,8 @@ app.post('/goal/add', function (req, res) {
 
             // Check to see whether a user was found
             if (!result) {
-                logResponse(401, 'User not found');
-                return res.status(401).send({error: "User not found"});
+                logResponse(404, 'User not found');
+                return res.status(404).send({error: "User not found"});
             }
 
             logResponse(201, 'Goal created');
@@ -203,7 +210,45 @@ app.post('/goal/add', function (req, res) {
     }
 });
 
-app.get('/goal/:offset', function (req, res) {
+
+
+app.delete('/goal/delete/:id?', function (req, res) {
+
+
+    if (req.params.id == undefined) {
+        logResponse(400, 'No id supplied');
+        return res.status(400).send({error: "No id supplied"});
+    }
+
+    User.update({id: res.user.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.id)}}}, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
+        }
+
+        logResponse(201, 'Goal removed');
+        return res.status(201).send({
+            success: true
+        });
+    });
+
+
+});
+
+app.get('/goal/:offset?', function (req, res) {
+
+    if (req.params.offset == undefined || req.params.offset == '' ) {
+        logResponse(400, 'No offset supplied');
+        return res.status(400).send({error: "No offset supplied"});
+    }
+
     User.findOne({id: res.user.id}, function (err, result) {
         // Check to see whether an error occurred
         if (err) {
@@ -213,13 +258,13 @@ app.get('/goal/:offset', function (req, res) {
 
         // Check to see whether a user was found
         if (!result) {
-            logResponse(401, 'User not found');
-            return res.status(401).send({error: "User not found"});
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
         }
 
         if (req.params.offset > result.goals.length) {
-            logResponse(401, 'Offset exceeded goals');
-            return res.status(401).send({error: "Offset exceeded goals"});
+            logResponse(404, 'Offset exceeded goals');
+            return res.status(404).send({error: "Offset exceeded goals"});
         }
 
         var addition = 5;
@@ -233,29 +278,6 @@ app.get('/goal/:offset', function (req, res) {
             success: true,
             totalgoals: result.goals.length,
             goals: slicedarray
-        });
-    });
-
-});
-
-app.get('/goal/delete/:id', function (req, res) {
-
-        User.update( {id: res.user.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.id)}}}, function (err, result) {
-        // Check to see whether an error occurred
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
-        }
-
-        // Check to see whether a user was found
-        if (!result) {
-            logResponse(404, 'User not found');
-            return res.status(401).send({error: "User not found"});
-        }
-
-        logResponse(201, 'Goal removed');
-        return res.status(201).send({
-            success: true
         });
     });
 
