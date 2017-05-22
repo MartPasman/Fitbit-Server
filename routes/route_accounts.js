@@ -297,52 +297,17 @@ app.get('/oauth_callback', function (req, res) {
         //find the requested user and add the fitbit
         User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
             if (err) {
-                return res.status(404).send({"error": "user could not be found!"});
+                return res.status(404).send({error: "user could not be found!"});
             }
-            return res.status(201).send({"succes": "Fitbit connected!"});
+            return res.status(201).send({success: "Fitbit connected!"});
         });
 
 
     });
 });
 
-app.get('/refresh/:id', function (req, res) {
-    var id = req.params.id;
 
-    User.findOne({id: id}, function (err, myUser) {
-        if (err || !myUser) {
-            return res.status(404).send({"message": "user could not be found."});
-        }
-        var options = {
-            url: 'https://api.fitbit.com/oauth2/token',
-            headers: {
-                Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
-                'Content-Type': ' application/x-www-form-urlencoded'
-            },
-            body: "grant_type=refresh_token&refresh_token=" + myUser.fitbit.refreshToken
 
-        };
-        //send the request
-        request.post(options, function (error, response, body) {
-            if (error) {
-                res.status(500).send();
-            }
-            var parsedRes = JSON.parse(body);
-
-            var json = {
-                userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
-            };
-
-            //find the requested user and add the renewed fitbit
-            User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
-                if (err) {
-                    return res.status(404).send({"error": "user could not be found!"});
-                }
-                return res.status(201).send({"succes": "Fitbit updated!"});
-            });
-        });
-    });
-});
 function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
@@ -362,6 +327,14 @@ function logResponse(code, message, depth) {
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 }
 
+/**
+ * returns all users with type: 1.
+ */
+app.get('/allusers', function (req,res) {
+    User.find({type: 1}, function (err, users) {
+        return res.send(users);
+    })
+});
 /**
  * Check if a given email is a valid email
  * @param email
