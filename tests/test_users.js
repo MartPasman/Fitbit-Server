@@ -20,7 +20,7 @@ describe('Add goal', function () {
     context('POST accounts/login/  Correct', function () {
         it('Should response 201 with access token', function (done) {
             server.post('/accounts/login')
-                .send({id: '123', password: 'chill'})
+                .send({id: '123', password: 'chillchill'})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -127,7 +127,7 @@ describe("Delete goal", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chill'})
+                .send({id: '123', password: 'chillchill'})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -208,7 +208,7 @@ describe("Delete goal", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chill'})
+                .send({id: '123', password: 'chillchill'})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -260,7 +260,7 @@ describe('Get stats of a user', function () {
      */
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: userid, password: 'chill'})
+            .send({id: userid, password: 'chillchill'})
             .end(function (err, result) {
                 token = result.body.success;
                 done();
