@@ -107,7 +107,36 @@ app.post('/:id/goals/', function (req, res) {
         end: req.body.end
     };
 
-    User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
+    User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}},function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
+        }
+
+        return res.status(201).send({
+            success: true
+        });
+    });
+});
+
+app.put('/:id/goals/:gid', function (req, res) {
+
+    if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
+        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === ''  || req.body.goal === undefined || !Date.parse(req.body.start) ||
+         !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
+        logResponse(400, 'Invalid request values.');
+        return res.status(400).send({error: 'Invalid request values.'});
+    }
+
+    User.findOneAndUpdate({id: req.params.id, 'goals._id': mongoose.Types.ObjectId(req.params.gid)},
+        {$set: {'goals.$.start': req.body.start, 'goals.$.end': req.body.end, 'goals.$.goal': req.body.goal}},function (err, result) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
@@ -157,46 +186,66 @@ app.delete('/:id/goals/:gid', function (req, res) {
 
 });
 
-app.get('/:id/goals/', function (req, res) {
+app.get('/:id/goals/:gid?', function (req, res) {
+    if(req.params.gid !== undefined){
+        User.findOne({id: res.user.id},{goals: {$elemMatch: {_id: mongoose.Types.ObjectId(req.params.gid)} }}, function (err, result) {
+            // Check to see whether an error occurred
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
 
-    if (req.query.offset == undefined || req.query.offset == '' || req.query.limit == undefined || req.query.limit == '' ) {
-        logResponse(400, 'No offset or limit supplied');
-        return res.status(400).send({error: "No offset or limit supplied"});
-    }
+            // Check to see whether a user was found
+            if (!result) {
+                logResponse(404, 'User or goal wasnot found');
+                return res.status(404).send({error: "User or goal was not found"});
+            }
 
-    User.findOne({id: res.user.id}, function (err, result) {
-        // Check to see whether an error occurred
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
-        }
-
-        // Check to see whether a user was found
-        if (!result) {
-            logResponse(404, 'User not found');
-            return res.status(404).send({error: "User not found"});
-        }
-
-        if (req.query.offset > result.goals.length) {
-            logResponse(404, 'Offset exceeded goals');
-            return res.status(404).send({error: "Offset exceeded goals"});
-        }
-
-        console.log(req.query.offset + req.query.limit);
-        var addition = req.query.limit;
-        if (result.goals.length - req.params.offset < req.query.limit) {
-            addition = result.goals.length - req.params.offset;
-        }
-
-        var slicedarray = result.goals.slice(req.query.offset, req.query.offset + addition);
-        logResponse(201, 'Goals send');
-        console.log(slicedarray);
-        return res.status(201).send({
-            success: true,
-            totalgoals: result.goals.length,
-            goals: slicedarray
+            logResponse(201, 'Goal found and send');
+            return res.status(201).send({
+                success: true,
+                goals: result.goals[0]
+            });
         });
-    });
+    }else {
+
+        if (req.query.offset == undefined || req.query.offset == '' || req.query.limit == undefined || req.query.limit == '') {
+            logResponse(400, 'No offset or limit supplied');
+            return res.status(400).send({error: "No offset or limit supplied"});
+        }
+
+        User.findOne({id: res.user.id}, {}, {sort: {'goals.start': 1}}, function (err, result) {
+            // Check to see whether an error occurred
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            // Check to see whether a user was found
+            if (!result) {
+                logResponse(404, 'User not found');
+                return res.status(404).send({error: "User not found"});
+            }
+
+            if (req.query.offset > result.goals.length) {
+                logResponse(404, 'Offset exceeded goals');
+                return res.status(404).send({error: "Offset exceeded goals"});
+            }
+
+            var addition = req.query.limit;
+            if (result.goals.length - req.params.offset < req.query.limit) {
+                addition = result.goals.length - req.params.offset;
+            }
+
+            var slicedarray = result.goals.slice(req.query.offset, req.query.offset + addition);
+            logResponse(201, 'Goals send');
+            return res.status(201).send({
+                success: true,
+                totalgoals: result.goals.length,
+                goals: slicedarray
+            });
+        });
+    }
 });
 
 function logResponse(code, message, depth) {
