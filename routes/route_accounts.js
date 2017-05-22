@@ -243,14 +243,28 @@ app.post("/", function (req, res) {
                             return res.status(500).send({error: err.message});
                         }
 
-                        var account = new User({
-                            id: id,
-                            password: hashed,
-                            email: email,
-                            active: true,
-                            type: req.body.type,
-                            handicap: req.body.handicap
-                        });
+                        var account;
+                        if (req.body.type === 2 || req.body.type === 3){
+
+                             account = new User({
+                                id: id,
+                                password: hashed,
+                                email: email,
+                                active: true,
+                                type: req.body.type,
+                                handicap: undefined
+                            });
+                        }
+                        else {
+                             account = new User({
+                                id: id,
+                                password: hashed,
+                                email: email,
+                                active: true,
+                                type: req.body.type,
+                                handicap: req.body.handicap
+                            });
+                        }
 
 
                             account.save(function (err, result) {
