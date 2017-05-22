@@ -14,6 +14,7 @@ var server = supertest.agent('http://localhost:3000');
  */
 describe('Add goal', function () {
     var token;
+    var id;
     /**
      * Getting a access token for testing
      */
@@ -25,6 +26,7 @@ describe('Add goal', function () {
                 .end(function (err, res) {
                     done(err);
                     token = res.body.success;
+                    id = res.body.userid;
                 });
         });
     });
@@ -32,9 +34,9 @@ describe('Add goal', function () {
     /**
      * Correct
      */
-    context('POST /users/goals/add  Correct', function () {
+    context('POST /users/'+id+'/goals/  Correct', function () {
         it('Should response 201', function (done) {
-            server.post('/users/goals/add ')
+            server.post('/users/'+id+'/goals/')
                 .send({
                     end: '2017-05-21 00:00:00.000',
                     start: '2017-05-20 00:00:00.000',
@@ -50,9 +52,9 @@ describe('Add goal', function () {
     /**
      * Missing field in json
      */
-    context("POST /users/goals/add  failed missing field", function () {
+    context("POST /users/"+id+"/goals/  failed missing field", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goals/add ')
+            server.post('/users/'+id+'/goals/ ')
                 .send({ end: '2017-05-21 00:00:00.000',
                     start: '2017-05-21 00:00:00.000'
                     }).set("Authorization", token)
@@ -68,7 +70,7 @@ describe('Add goal', function () {
      */
     context("POST /users/goals/add  failed goal is not a number", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goals/add ')
+            server.post('/users/'+id+'/goals/ ')
                 .send({ end: '2017-05-21 00:00:00.000',
                     start: '2017-05-21 00:00:00.000',
                     goal: 'fdsaf'
@@ -83,9 +85,9 @@ describe('Add goal', function () {
     /**
      * Empty fields
      */
-    context("POST /users/goals/add failed empty fields", function () {
+    context("POST /users/123/goals/ failed empty fields", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goals/add ')
+            server.post('/users/'+id+'/goals/ ')
                 .send({ end: '',
                     start: '',
                     goal: ''
@@ -100,9 +102,9 @@ describe('Add goal', function () {
     /**
      * Wrong date
      */
-    context("POST /users/goals/add  failed wrong date", function () {
+    context("POST /users/goals/ failed wrong date", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goals/add ')
+            server.post('/users/'+id+'/goals/ ')
                 .send({ end: 'fsadf',
                     start: '213421',
                     goal: 4500
@@ -121,6 +123,8 @@ describe('Add goal', function () {
  */
 describe("Delete goal", function () {
     var token;
+    var id;
+
     /**
      * Getting a access token for testing
      */
@@ -132,76 +136,69 @@ describe("Delete goal", function () {
                 .end(function (err, res) {
                     done(err);
                     token = res.body.success;
+                    id = res.body.userid;
                 });
         });
     });
+
+    /**
+     * Adding at least 1 goal for testing
+     */
+    context("POST /users/:id/goals/  Correct", function () {
+        it("Should response 201", function (done) {
+            server.post('/users/'+id+'/goals/ ')
+                .send({ end: '2017-05-21 00:00:00.000',
+                    start: '2017-05-20 00:00:00.000',
+                    goal:1000}).set("Authorization", token)
+                .expect(201)
+                .end(function(err, res){
+                    done(err);
+                });
+        });
+    });
+
+var gid
+    /**
+     * Getting a id for test purpose
+     */
+    context("GET /users/:id/goals?offset=0  Correct", function () {
+        it("Should response 201", function (done) {
+            server.get('/users/'+id+'/goals?offset=0&limit=5 ')
+                .send().set("Authorization", token)
+                .expect(201)
+                .end(function(err, resp){
+                    done(err);
+                    gid = resp.body.goals[0]._id;
+                    console.log(gid);
+                });
+        });
+    });
+
+    /**
+     * Deleting a goal with the id
+     */
+    context("DELETE /users/:id/goals/:gid  Correct", function () {
+        it("Should response 201", function (done) {
+            server.delete('/users/'+id+'/goals/'+ gid)
+                .send().set("Authorization", token)
+                .expect(201)
+                .end(function(err, res){
+                    done(err);
+                });
+        });
+    });
+
+
 });
 
-/**
- * Adding at least 1 goal for testing
- */
-context("POST /users/goals/add  Correct", function () {
-    it("Should response 201", function (done) {
-        server.post('/users/goals/add ')
-            .send({ end: '2017-05-21 00:00:00.000',
-                start: '2017-05-20 00:00:00.000',
-                goal:1000}).set("Authorization", token)
-            .expect(201)
-            .end(function(err, res){
-                done(err);
-            });
-    });
-});
-
-var id;
-/**
- * Getting a id for test purpose
- */
-context("GET /users/goals?offset=0  Correct", function () {
-    it("Should response 201", function (done) {
-        server.get('/users/goals?offset=0 ')
-            .send().set("Authorization", token)
-            .expect(201)
-            .end(function(err, resp){
-                done(err);
-                id = resp.body.goals[0]._id;
-            });
-    });
-});
-
-/**
- * Deleting a goal with the id
- */
-context("DELETE /users/goals/delete/:id  Correct", function () {
-    it("Should response 201", function (done) {
-        server.delete('/users/goals/delete/'+ id)
-            .send().set("Authorization", token)
-            .expect(201)
-            .end(function(err, res){
-                done(err);
-            });
-    });
-});
-
-/**
- * Testing if nothing gets deleted if no id supplied
- */
-context("DELETE /users/goals/delete/:id  Failed no id", function () {
-    it("Should response 400", function (done) {
-        server.delete('/users/goals/delete/')
-            .send().set("Authorization", token)
-            .expect(400)
-            .end(function(err, res){
-                done(err);
-            });
-    });
-});
 
 /**
  * Test for testing the accounts/login/ path
  */
-describe("Delete goal", function () {
+describe("Load goal with offset", function () {
     var token;
+    var id;
+
     /**
      * Getting a access token for testing
      */
@@ -213,6 +210,7 @@ describe("Delete goal", function () {
                 .end(function (err, res) {
                     done(err);
                     token = res.body.success;
+                    id = res.body.userid;
                 });
         });
     });
@@ -221,9 +219,9 @@ describe("Delete goal", function () {
     /**
      * Adding at least 1 goal for testing
      */
-    context("POST /users/goals/add  Correct", function () {
+    context("POST /users/:id/goals/  Correct", function () {
         it("Should response 201", function (done) {
-            server.post('/users/goals/add ')
+            server.post('/users/'+id+'/goals/ ')
                 .send({
                     end: '2017-05-21 00:00:00.000',
                     start: '2017-05-20 00:00:00.000',
@@ -239,9 +237,9 @@ describe("Delete goal", function () {
     /**
      * Getting a goals with 0 as offset
      */
-    context("GET /users/goals?offset=0  Correct", function () {
+    context("GET /users/:id/goals?offset=0&limit=5  Correct", function () {
         it("Should response 201", function (done) {
-            server.get('/users/goals?offset=0 ')
+            server.get('/users/'+id+'/goals?offset=0&limit=5 ')
                 .send().set("Authorization", token)
                 .expect(201)
                 .end(function (err, resp) {
