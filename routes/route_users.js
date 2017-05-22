@@ -14,6 +14,8 @@ var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var app = express.Router();
 var jwt = require('jsonwebtoken');
 
+var fitbitCall = require('../fitbit.js').fitbitCall;
+
 /**
  * Authorization
  */
@@ -31,77 +33,20 @@ app.use('/', function (req, res, next) {
 });
 
 /**
- * Prepares an API call to the Fitbit API by checking authorization,
- * user existence, fitbit object extistence.
- * @param req original request object
- * @param res response object
- * @param callback what to do when we prepared the API call
- */
-function prepareAPICall(req, res, callback) {
-    // check if a valid id was provided
-    if (req.params.id === undefined || isNaN(req.params.id)) {
-        logResponse(400, 'No valid user id provided: ' + req.params.id);
-        return res.status(400).send({error: 'No valid user id provided.'});
-    }
-
-    const userid = req.params.id;
-
-    // check if the user that requests the data is the user whose data is requested
-    if (res.user.type !== 3 && parseInt(res.user.id) !== parseInt(userid)) {
-        logResponse(403, 'User does not have permission to make this request.');
-        return res.status(403).send({error: 'User does not have permission to make this request.'});
-    }
-
-    // get the authorization token from the database
-    User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
-        if (err) {
-            logResponse(500, 'MongoDB error: ' + err.message);
-            return res.status(500).send({error: 'MongoDB error: ' + err.message});
-        }
-
-        // no user found with the given id
-        if (!user) {
-            logResponse(404, 'User account could not be found.');
-            return res.status(404).send({error: 'User account could not be found.'});
-        }
-
-        // no fitbit connected to this account
-        if (user.fitbit === undefined || user.fitbit.accessToken === undefined || user.fitbit.userid === undefined) {
-            logResponse(412, 'User account not connected to a Fitbit.');
-            return res.status(412).send({error: 'User account not connected to a Fitbit.'});
-        }
-
-        callback(user.fitbit.accessToken, user.fitbit.userid);
-    });
-}
-
-/**
  * Get the total amount of steps of a certain user
  */
 app.get('/:id/stats/total', function (req, res) {
 
-    prepareAPICall(req, res, function (accessToken, userid) {
-        request.get('https://api.fitbit.com/1/user/' + userid + '/activities.json',
+    fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/activities.json', function (body) {
+        const stats = JSON.parse(body);
+        logResponse(200, 'Stats collected successfully.');
+        return res.status(200).send(
             {
-                headers: {
-                    Authorization: 'Bearer ' + accessToken
+                success: {
+                    steps: stats.lifetime.total.steps
                 }
-            }, function (error, response, body) {
-                if (error !== undefined && response.statusCode !== 200) {
-                    logResponse(response.statusCode, 'Fitbit API error.');
-                    return res.status(response.statusCode).send({error: 'Fitbit API error.'});
-                }
-
-                const stats = JSON.parse(body);
-                logResponse(200, 'Stats collected successfully.');
-                return res.status(200).send(
-                    {
-                        success: {
-                            steps: stats.lifetime.total.steps
-                        }
-                    }
-                );
-            });
+            }
+        );
     });
 });
 
@@ -110,62 +55,37 @@ app.get('/:id/stats/total', function (req, res) {
  */
 app.get('/:id/stats/weeks/last', function (req, res) {
 
-    // prepare the API call
-    prepareAPICall(req, res, function (accessToken, userid) {
+    fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/activities/steps/date/today/7d.json', function (body) {
 
-        // get the steps from last week
-        request.get('https://api.fitbit.com/1/user/' + userid + '/activities/steps/date/today/7d.json',
-            {
-                headers: {
-                    Authorization: 'Bearer ' + accessToken
+        const steps = JSON.parse(body);
+
+        // get the right time period
+        var today = new Date();
+        var lastWeek = new Date();
+        lastWeek.setDate(today.getDate() - 7);
+
+        fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/sleep/date/' + getYYYYMMDD(lastWeek, '-') + '/' + getYYYYMMDD(today, '-') + '.json', function (body2) {
+            // use only the data we want
+            const sleep = JSON.parse(body2).sleep;
+            var sleepData = [];
+            for (var i = 0; i < sleep.length; i++) {
+                sleepData[i] = {
+                    date: sleep.dateOfSleep,
+                    duration: sleep.duration,
+                    timeInBed: sleep.timeInBed
+                };
+            }
+
+            logResponse(200, 'Stats collected successfully.');
+            return res.status(200).send(
+                {
+                    success: {
+                        steps: steps["activities-steps"],
+                        sleep: sleepData
+                    }
                 }
-            }, function (error, response, body) {
-                if (error !== undefined && response.statusCode !== 200) {
-                    logResponse(response.statusCode, 'Fitbit API error.');
-                    return res.status(response.statusCode).send({error: 'Fitbit API error.'});
-                }
-
-                const steps = JSON.parse(body);
-
-                // get the right time period
-                var today = new Date();
-                var lastWeek = new Date();
-                lastWeek.setDate(today.getDate() - 7);
-
-                // get the sleep from last week
-                request.get('https://api.fitbit.com/1/user/' + userid + '/sleep/date/' + getYYYYMMDD(lastWeek) + '/' + getYYYYMMDD(today) + '.json',
-                    {
-                        headers: {
-                            Authorization: 'Bearer ' + accessToken
-                        }
-                    }, function (error, response, body) {
-                        if (error !== undefined && response.statusCode !== 200) {
-                            logResponse(response.statusCode, 'Fitbit API error.');
-                            return res.status(response.statusCode).send({error: 'Fitbit API error.'});
-                        }
-
-                        // use only the data we want
-                        const sleep = JSON.parse(body).sleep;
-                        var sleepData = [];
-                        for (var i = 0; i < sleep.length; i++) {
-                            sleepData[i] = {
-                                date: sleep.dateOfSleep,
-                                duration: sleep.duration,
-                                timeInBed: sleep.timeInBed
-                            };
-                        }
-
-                        logResponse(200, 'Stats collected successfully.');
-                        return res.status(200).send(
-                            {
-                                success: {
-                                    steps: steps["activities-steps"],
-                                    sleep: sleepData
-                                }
-                            }
-                        );
-                    });
-            });
+            );
+        });
     });
 });
 
@@ -174,7 +94,7 @@ app.get('/:id/stats/weeks/last', function (req, res) {
  */
 app.post('/:id/goals', function (req, res) {
 
-    if (req.body.start == undefined || req.body.end == undefined || req.body.goal == undefined) {
+    if (req.body.start === undefined || req.body.end === undefined || req.body.goal === undefined) {
         logResponse(401, 'Wrong information supplied');
         return res.status(401).send({error: "Wrong information supplied"});
     }
@@ -211,7 +131,7 @@ app.post('/:id/goals', function (req, res) {
 
 app.post('/goal/add', function (req, res) {
 
-    if (req.body.start == undefined || req.body.end == undefined || req.body.goal == undefined) {
+    if (req.body.start === undefined || req.body.end === undefined || req.body.goal === undefined) {
         logResponse(400, 'Wrong information supplied');
         return res.status(400).send({error: "Wrong information supplied"});
     }
@@ -247,11 +167,9 @@ app.post('/goal/add', function (req, res) {
 });
 
 
-
 app.delete('/goal/delete/:id?', function (req, res) {
 
-
-    if (req.params.id == undefined) {
+    if (req.params.id === undefined) {
         logResponse(400, 'No id supplied');
         return res.status(400).send({error: "No id supplied"});
     }
@@ -280,7 +198,7 @@ app.delete('/goal/delete/:id?', function (req, res) {
 
 app.get('/goal/:offset?', function (req, res) {
 
-    if (req.params.offset == undefined || req.params.offset == '' ) {
+    if (req.params.offset === undefined || req.params.offset === '') {
         logResponse(400, 'No offset supplied');
         return res.status(400).send({error: "No offset supplied"});
     }
@@ -316,10 +234,9 @@ app.get('/goal/:offset?', function (req, res) {
             goals: slicedarray
         });
     });
-
 });
 
-var logResponse = function (code, message, depth) {
+function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
     if (code === undefined) return;
@@ -336,16 +253,16 @@ var logResponse = function (code, message, depth) {
     if (code >= 500) color = COLOR_500;
 
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-};
+}
 
-function getYYYYMMDD(date) {
+function getYYYYMMDD(date, splitBy) {
     var mm = date.getMonth() + 1;
     var dd = date.getDate();
 
     return [date.getFullYear(),
         (mm > 9 ? '' : '0') + mm,
         (dd > 9 ? '' : '0') + dd
-    ].join('-');
+    ].join(splitBy);
 }
 
 module.exports = app;

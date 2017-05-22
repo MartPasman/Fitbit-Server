@@ -36,9 +36,11 @@ app.use(function (req, res, next) {
         return res.status(200).send();
     }
 
-    // log request
-    console.log('\u001B[36m[' + (new Date().toLocaleString()) + ']\u001B[0m \u001B[35m' + req.method + '\u001B[0m ' + req.url + ' called from ' + req.connection.remoteAddress);
-
+    // to prevent spam
+    if (req.url !== '/api') {
+        // log request
+        console.log('\u001B[36m[' + (new Date().toLocaleString()) + ']\u001B[0m \u001B[35m' + req.method + '\u001B[0m ' + req.url + ' called from ' + req.connection.remoteAddress);
+    }
     return next();
 });
 
@@ -63,7 +65,7 @@ app.listen(3000, function () {
     console.log('Listening on port 3000!');
 });
 
-var logResponse = function (code, message, depth) {
+var logResponse = function(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
     if (code === undefined) return;

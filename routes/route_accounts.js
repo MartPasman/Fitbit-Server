@@ -16,14 +16,13 @@ var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
 var client = new fitbitClient(consumer_key, client_secret);
 var request = require('request');
 
-
 var app = express.Router();
 
 var jwt = require('jsonwebtoken');
 
 app.get('/testnewuser', function (req, res) {
 
-    var password = "chill";
+    var password = "chillchill";
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
@@ -65,8 +64,6 @@ app.get('/testdeleteuser/:id', function (req, res) {
         }
         res.status(201).send({"message": "deleted user."});
     }).remove().exec()
-
-
 });
 
 app.post('/login', function (req, res) {
@@ -76,7 +73,6 @@ app.post('/login', function (req, res) {
         return res.status(400).send({error: 'id or password is not supplied'});
     }
 
-
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
@@ -84,13 +80,10 @@ app.post('/login', function (req, res) {
         logResponse(400, 'id is not numeric');
         return res.status(400).send({error: 'id is not numerics'});
     } else {
-
         User.findOne({id: req.body.id}, function (err, user) {
-
 
             // Check to see whether an error occurred
             if (err) {
-
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message});
             }
@@ -145,28 +138,28 @@ app.post('/login', function (req, res) {
  * all requests below this function will automatically go through this one first!
  * If your page doesn't need to be requested by admin, put it above this function
  */
-app.use('/', function (req, res, next) {
-
-    console.log('\tAuthentication required...');
-    console.log(req.app.get('private-key'));
-    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        if (err) {
-            logResponse(401, err.message);
-            return res.status(401).send({error: "User is not logged in."});
-        }
-
-        // Save user for future purposes
-        res.user = decoded._doc;
-        if (res.user.type !== 3) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: "Not authorized to make this request"});
-        }
-
-        console.log('\tpassed');
-
-        next();
-    });
-});
+// app.use('/', function (req, res, next) {
+//
+//     console.log('\tAuthentication required...');
+//     console.log(req.app.get('private-key'));
+//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+//         if (err) {
+//             logResponse(401, err.message);
+//             return res.status(401).send({error: "User is not logged in."});
+//         }
+//
+//         // Save user for future purposes
+//         res.user = decoded._doc;
+//         if (res.user.type !== 3) {
+//             logResponse(403, "Not authorized to make this request");
+//             return res.status(403).send({error: "Not authorized to make this request"});
+//         }
+//
+//         console.log('\tpassed');
+//
+//         next();
+//     });
+// });
 
 var currUser;
 app.get('/:id/connect', function (req, res) {
@@ -179,7 +172,6 @@ app.get('/:id/connect', function (req, res) {
             res.status(404).send({"message": "user not found!"});
         }
         currUser = myUser;
-
     });
 
     // get the authorisation URL to get the acces code from fitbit.com
@@ -341,7 +333,6 @@ app.get('/refresh/:id', function (req, res) {
                 userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
             };
 
-
             //find the requested user and add the renewed fitbit
             User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
                 if (err) {
@@ -350,7 +341,6 @@ app.get('/refresh/:id', function (req, res) {
                 return res.status(201).send({"succes": "Fitbit updated!"});
             });
         });
-
     });
 });
 function logResponse(code, message, depth) {
@@ -406,6 +396,6 @@ function generateId(callback) {
             generateId(callback);
         }
     });
-};
+}
 
 module.exports = app;
