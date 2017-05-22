@@ -39,7 +39,7 @@ app.get('/:id/stats/total', function (req, res) {
 
     fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/activities.json', function (body) {
         const stats = JSON.parse(body);
-        logResponse(200, 'Stats collected successfully.');
+        logResponse(200, 'Total stats collected successfully.');
         return res.status(200).send(
             {
                 success: {
@@ -76,7 +76,7 @@ app.get('/:id/stats/weeks/last', function (req, res) {
                 };
             }
 
-            logResponse(200, 'Stats collected successfully.');
+            logResponse(200, 'Last weeks stats collected successfully.');
             return res.status(200).send(
                 {
                     success: {
@@ -90,91 +90,51 @@ app.get('/:id/stats/weeks/last', function (req, res) {
 });
 
 /**
- *
+ * Add a goal
  */
 app.post('/:id/goals', function (req, res) {
 
-    if (req.body.start === undefined || req.body.end === undefined || req.body.goal === undefined) {
-        logResponse(401, 'Wrong information supplied');
-        return res.status(401).send({error: "Wrong information supplied"});
+    if (req.params.id === undefined || isNaN(req.params.id) || req.params.idreq.body.start === undefined ||
+        req.body.end === undefined || req.body.goal === undefined ||!req.body.start instanceof Date ||
+        !req.body.end instanceof Date || isNaN(req.body.goal)) {
+        logResponse(400, 'Invalid request values.');
+        return res.status(400).send({error: 'Invalid request values.'});
     }
-    if (!req.body.start instanceof Date || !req.body.end instanceof Date || isNaN(req.body.goal)) {
-        logResponse(401, 'Wrong information supplied');
-        return res.status(401).send({error: "Wrong information supplied"});
-    } else {
-        var json = {
-            goal: req.body.goal,
-            start: req.body.start,
-            end: req.body.end
-        };
 
-        User.findOneAndUpdate({id: decoded._doc.id}, {$push: {goals: json}}, function (err, result) {
-            // Check to see whether an error occurred
-            if (err) {
-                logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
-            }
+    var json = {
+        goal: req.body.goal,
+        start: req.body.start,
+        end: req.body.end
+    };
 
-            // Check to see whether a user was found
-            if (!result) {
-                logResponse(401, 'User not found');
-                return res.status(401).send({error: "User not found"});
-            }
+    User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
 
-            return res.status(201).send({
-                success: true
-            });
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
+        }
+
+        return res.status(201).send({
+            success: true
         });
-    }
+    });
 });
 
+app.delete('/:id/goals/:gid/delete', function (req, res) {
 
-app.post('/goal/add', function (req, res) {
-
-    if (req.body.start === undefined || req.body.end === undefined || req.body.goal === undefined) {
-        logResponse(400, 'Wrong information supplied');
-        return res.status(400).send({error: "Wrong information supplied"});
-    }
-    if (!Date.parse(req.body.start) || !Date.parse(req.body.end) || isNaN(req.body.goal)) {
-        logResponse(400, 'Wrong information supplied');
-        return res.status(400).send({error: "Wrong information supplied"});
-    } else {
-        var json = {
-            goal: req.body.goal,
-            start: req.body.start,
-            end: req.body.end
-        };
-
-        User.findOneAndUpdate({id: res.user.id}, {$push: {goals: json}}, function (err, result) {
-            // Check to see whether an error occurred
-            if (err) {
-                logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
-            }
-
-            // Check to see whether a user was found
-            if (!result) {
-                logResponse(404, 'User not found');
-                return res.status(404).send({error: "User not found"});
-            }
-
-            logResponse(201, 'Goal created');
-            return res.status(201).send({
-                success: true
-            });
-        });
-    }
-});
-
-
-app.delete('/goal/delete/:id?', function (req, res) {
-
-    if (req.params.id === undefined) {
+    if (req.params.id === undefined || isNaN(req.params.id) ||
+        req.params.gid === undefined || isNaN(req.params.gid)) {
         logResponse(400, 'No id supplied');
         return res.status(400).send({error: "No id supplied"});
     }
 
-    User.update({id: res.user.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.id)}}}, function (err, result) {
+    User.update({id: req.params.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.gid)}}}, function (err, result) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
@@ -196,14 +156,22 @@ app.delete('/goal/delete/:id?', function (req, res) {
 
 });
 
-app.get('/goal/:offset?', function (req, res) {
+app.get('/:id/goals', function (req, res) {
 
-    if (req.params.offset === undefined || req.params.offset === '') {
+    if (req.params.offset === undefined || isNaN(req.params.offset)) {
         logResponse(400, 'No offset supplied');
         return res.status(400).send({error: "No offset supplied"});
     }
 
-    User.findOne({id: res.user.id}, function (err, result) {
+    var options = {};
+    if (req.query.offset !== undefined && !isNaN(req.query.offset)) {
+        options.skip = req.query.offset;
+    }
+    if (req.query.limit !== undefined && !isNaN(req.query.limit)) {
+        options.limit = req.query.limit;
+    }
+
+    User.findOne({id: res.user.id}, {}, options, function (err, result) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
@@ -216,17 +184,47 @@ app.get('/goal/:offset?', function (req, res) {
             return res.status(404).send({error: "User not found"});
         }
 
-        if (req.params.offset > result.goals.length) {
-            logResponse(404, 'Offset exceeded goals');
-            return res.status(404).send({error: "Offset exceeded goals"});
+        logResponse(201, 'Goals send');
+        return res.status(201).send({
+            success: true,
+            totalgoals: result.goals.length,
+            goals: slicedarray
+        });
+    });
+});
+
+app.get('/:id/goals/:gid?', function (req, res) {
+
+    console.log(req.params.id);
+    console.log(req.params.gid);
+    return res.status(200).send();
+
+    if (req.params.offset === undefined || isNaN(req.params.offset)) {
+        logResponse(400, 'No offset supplied');
+        return res.status(400).send({error: "No offset supplied"});
+    }
+
+    var options = {};
+    if (req.query.offset !== undefined && !isNaN(req.query.offset)) {
+        options.skip = req.query.offset;
+    }
+    if (req.query.limit !== undefined && !isNaN(req.query.limit)) {
+        options.limit = req.query.limit;
+    }
+
+    User.findOne({id: res.user.id}, {}, options, function (err, result) {
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
         }
 
-        var addition = 5;
-        if (result.goals.length - req.params.offset < 5) {
-            addition = result.goals.length - req.params.offset;
+        // Check to see whether a user was found
+        if (!result) {
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
         }
 
-        var slicedarray = result.goals.slice(req.params.offset, req.params.offset + addition);
         logResponse(201, 'Goals send');
         return res.status(201).send({
             success: true,

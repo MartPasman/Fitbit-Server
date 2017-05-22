@@ -32,9 +32,9 @@ describe('Add goal', function () {
     /**
      * Correct
      */
-    context('POST /users/goal/add  Correct', function () {
+    context('POST /users/goals/add  Correct', function () {
         it('Should response 201', function (done) {
-            server.post('/users/goal/add ')
+            server.post('/users/goals/add ')
                 .send({
                     end: '2017-05-21 00:00:00.000',
                     start: '2017-05-20 00:00:00.000',
@@ -50,9 +50,9 @@ describe('Add goal', function () {
     /**
      * Missing field in json
      */
-    context("POST /users/goal/add  failed missing field", function () {
+    context("POST /users/goals/add  failed missing field", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goal/add ')
+            server.post('/users/goals/add ')
                 .send({ end: '2017-05-21 00:00:00.000',
                     start: '2017-05-21 00:00:00.000'
                     }).set("Authorization", token)
@@ -66,9 +66,9 @@ describe('Add goal', function () {
     /**
      * Not a number as goal
      */
-    context("POST /users/goal/add  failed goal is not a number", function () {
+    context("POST /users/goals/add  failed goal is not a number", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goal/add ')
+            server.post('/users/goals/add ')
                 .send({ end: '2017-05-21 00:00:00.000',
                     start: '2017-05-21 00:00:00.000',
                     goal: 'fdsaf'
@@ -83,9 +83,9 @@ describe('Add goal', function () {
     /**
      * Empty fields
      */
-    context("POST /users/goal/add failed empty fields", function () {
+    context("POST /users/goals/add failed empty fields", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goal/add ')
+            server.post('/users/goals/add ')
                 .send({ end: '',
                     start: '',
                     goal: ''
@@ -100,9 +100,9 @@ describe('Add goal', function () {
     /**
      * Wrong date
      */
-    context("POST /users/goal/add  failed wrong date", function () {
+    context("POST /users/goals/add  failed wrong date", function () {
         it("Should response 400", function (done) {
-            server.post('/users/goal/add ')
+            server.post('/users/goals/add ')
                 .send({ end: 'fsadf',
                     start: '213421',
                     goal: 4500
@@ -140,9 +140,9 @@ describe("Delete goal", function () {
 /**
  * Adding at least 1 goal for testing
  */
-context("POST /users/goal/add  Correct", function () {
+context("POST /users/goals/add  Correct", function () {
     it("Should response 201", function (done) {
-        server.post('/users/goal/add ')
+        server.post('/users/goals/add ')
             .send({ end: '2017-05-21 00:00:00.000',
                 start: '2017-05-20 00:00:00.000',
                 goal:1000}).set("Authorization", token)
@@ -157,9 +157,9 @@ var id;
 /**
  * Getting a id for test purpose
  */
-context("GET /users/goal/0  Correct", function () {
+context("GET /users/goals?offset=0  Correct", function () {
     it("Should response 201", function (done) {
-        server.get('/users/goal/0 ')
+        server.get('/users/goals?offset=0 ')
             .send().set("Authorization", token)
             .expect(201)
             .end(function(err, resp){
@@ -172,9 +172,9 @@ context("GET /users/goal/0  Correct", function () {
 /**
  * Deleting a goal with the id
  */
-context("DELETE /users/goal/delete/:id  Correct", function () {
+context("DELETE /users/goals/delete/:id  Correct", function () {
     it("Should response 201", function (done) {
-        server.delete('/users/goal/delete/'+ id)
+        server.delete('/users/goals/delete/'+ id)
             .send().set("Authorization", token)
             .expect(201)
             .end(function(err, res){
@@ -186,9 +186,9 @@ context("DELETE /users/goal/delete/:id  Correct", function () {
 /**
  * Testing if nothing gets deleted if no id supplied
  */
-context("DELETE /users/goal/delete/:id  Failed no id", function () {
+context("DELETE /users/goals/delete/:id  Failed no id", function () {
     it("Should response 400", function (done) {
-        server.delete('/users/goal/delete/')
+        server.delete('/users/goals/delete/')
             .send().set("Authorization", token)
             .expect(400)
             .end(function(err, res){
@@ -221,9 +221,9 @@ describe("Delete goal", function () {
     /**
      * Adding at least 1 goal for testing
      */
-    context("POST /users/goal/add  Correct", function () {
+    context("POST /users/goals/add  Correct", function () {
         it("Should response 201", function (done) {
-            server.post('/users/goal/add ')
+            server.post('/users/goals/add ')
                 .send({
                     end: '2017-05-21 00:00:00.000',
                     start: '2017-05-20 00:00:00.000',
@@ -239,25 +239,11 @@ describe("Delete goal", function () {
     /**
      * Getting a goals with 0 as offset
      */
-    context("GET /users/goal/0  Correct", function () {
+    context("GET /users/goals?offset=0  Correct", function () {
         it("Should response 201", function (done) {
-            server.get('/users/goal/0 ')
+            server.get('/users/goals?offset=0 ')
                 .send().set("Authorization", token)
                 .expect(201)
-                .end(function (err, resp) {
-                    done(err);
-                });
-        });
-    });
-
-    /**
-     * Getting no goals when no offset supplied
-     */
-    context("GET /users/goal  failed no offset", function () {
-        it("Should response 400", function (done) {
-            server.get('/users/goal ')
-                .send().set("Authorization", token)
-                .expect(400)
                 .end(function (err, resp) {
                     done(err);
                 });

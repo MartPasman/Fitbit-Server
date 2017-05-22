@@ -244,7 +244,6 @@ app.post("/", function (req, res) {
                             handicap: req.body.handicap
                         });
 
-
                             account.save(function (err, result) {
                                 if (err) {
                                     return res.status(500).send({error: err.message});
