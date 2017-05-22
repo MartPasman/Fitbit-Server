@@ -15,7 +15,7 @@ var fitbitCall = require('../fitbit.js').fitbitCall;
 
 
 
-app.get('/stats/total', function(req,res){
+app.get('/total', function(req,res){
     Competition.find({}, function(err,result){
         if(err){
             return res.status(500).send();
