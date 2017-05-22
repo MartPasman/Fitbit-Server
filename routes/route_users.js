@@ -152,8 +152,6 @@ app.delete('/:id/goals/:gid/delete', function (req, res) {
             success: true
         });
     });
-
-
 });
 
 app.get('/:id/goals', function (req, res) {
