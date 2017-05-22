@@ -146,18 +146,22 @@ app.get('/connect/:id', function (req, res) {
 
     // Find the user that is requested
     User.findOne({id: id}, function (err, myUser) {
-        if (err) {
-            res.status(404).send({"message": "user not found!"});
+        if (err || !myUser) {
+            return res.status(404).send({"message": "user could not be found."});
         }
         currUser = myUser;
 
+        if (!myUser.fitbit) {
+            // get the authorisation URL to get the acces code from fitbit.com
+            var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
+            //redirect to this URL to let the user login
+            return res.redirect(201, authURL);
+        } else {
+            return res.status(409).send({"message": "conflict! user already connected."});
+        }
     });
 
-    // get the authorisation URL to get the acces code from fitbit.com
-    var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
-    //redirect to this URL to let the user login
-    res.redirect(authURL);
-
+    //  res.status(statuscode);
 });
 
 /**
@@ -202,54 +206,54 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Not every field is (correctly) filled in."});
         }
 
-        //check if all fields are entered
-        if (req.body.password && req.body.email &&
-            req.body.handicap && req.body.type) {
+    //check if all fields are entered
+    if (req.body.password && req.body.email &&
+        req.body.handicap && req.body.type) {
 
-            if (req.body.password.length < 8) {
-                return res.status(400).send({error: "Password must be at least 8 characters long."});
+        if (req.body.password.length < 8) {
+            return res.status(400).send({error: "Password must be at least 8 characters long."});
+        }
+
+        var email = req.body.email.toLowerCase();
+
+        if (!validateEmail(email)) {
+            return res.status(400).send({error: "Email address is not valid."});
+        }
+
+        if (isNaN(req.body.type) || req.body.type < 1 || req.body.type > 3) {
+            return res.status(400).send({error: "Type is not valid."});
+        }
+
+        if (isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
+            return res.status(400).send({error: "Handicap is not valid."});
+        }
+
+        //find email if found do not make account
+        User.find({email: email}, function (err, user) {
+            console.log(user);
+            if (user.length > 0) {
+                return res.status(400).send({error: "Email address already exists."});
             }
 
-            var email = req.body.email.toLowerCase();
+            generateId(function (id) {
+                bcrypt.genSalt(10, function (err, salt) {
+                    if (err) {
+                        return res.status(500).send({error: err.message});
+                    }
 
-            if (!validateEmail(email)) {
-                return res.status(400).send({error: "Email address is not valid."});
-            }
-
-            if (isNaN(req.body.type) || req.body.type < 1 || req.body.type > 3) {
-                return res.status(400).send({error: "Type is not valid."});
-            }
-
-            if (isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
-                return res.status(400).send({error: "Handicap is not valid."});
-            }
-
-            //find email if found do not make account
-            User.find({email: email}, function (err, user) {
-                console.log(user);
-                if (user.length > 0) {
-                    return res.status(400).send({error: "Email address already exists."});
-                }
-
-                generateId(function (id) {
-                    bcrypt.genSalt(10, function (err, salt) {
+                    bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                         if (err) {
                             return res.status(500).send({error: err.message});
                         }
 
-                        bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
-                            if (err) {
-                                return res.status(500).send({error: err.message});
-                            }
-
-                            var account = new User({
-                                id: id,
-                                password: hashed,
-                                email: email,
-                                active: true,
-                                type: req.body.type,
-                                handicap: req.body.handicap
-                            });
+                        var account = new User({
+                            id: id,
+                            password: hashed,
+                            email: email,
+                            active: true,
+                            type: req.body.type,
+                            handicap: req.body.handicap
+                        });
 
 
                             account.save(function (err, result) {
@@ -270,7 +274,7 @@ app.post("/", function (req, res) {
 
 
 /**
- * user logs in on fitbit.com, fitbit comes back to this ULR containing the acces code
+ * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
  */
 app.get('/oauth_callback', function (req, res) {
     if (currUser === undefined) {
@@ -294,6 +298,7 @@ app.get('/oauth_callback', function (req, res) {
             res.status(500).send();
         }
 
+
         var parsedRes = JSON.parse(body);
 
         var json = {
@@ -303,13 +308,54 @@ app.get('/oauth_callback', function (req, res) {
         //find the requested user and add the fitbit
         User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
             if (err) {
-                res.status(404).send({"message": "user not found!"});
+                return res.status(404).send({"error": "user could not be found!"});
             }
-            res.status(201).send({"message": "user connected!"});
+            return res.status(201).send({"succes": "Fitbit connected!"});
         });
+
+
     });
 });
 
+app.get('/refresh/:id', function (req, res) {
+    var id = req.params.id;
+
+    User.findOne({id: id}, function (err, myUser) {
+        if (err || !myUser) {
+            return res.status(404).send({"message": "user could not be found."});
+        }
+        var options = {
+            url: 'https://api.fitbit.com/oauth2/token',
+            headers: {
+                Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
+                'Content-Type': ' application/x-www-form-urlencoded'
+            },
+            body: "grant_type=refresh_token&refresh_token=" + myUser.fitbit.refreshToken
+
+        };
+        //send the request
+        request.post(options, function (error, response, body) {
+            if (error) {
+                res.status(500).send();
+            }
+            var parsedRes = JSON.parse(body);
+
+            var json = {
+                userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
+            };
+
+
+            //find the requested user and add the renewed fitbit
+            User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
+                if (err) {
+                    return res.status(404).send({"error": "user could not be found!"});
+                }
+                return res.status(201).send({"succes": "Fitbit updated!"});
+            });
+        });
+
+    });
+});
 function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
@@ -363,6 +409,6 @@ function generateId(callback) {
             generateId(callback);
         }
     });
-}
+};
 
 module.exports = app;

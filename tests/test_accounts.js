@@ -9,7 +9,7 @@ var should = require('should');
 var User = require('../model/model_user');
 var server = supertest.agent("http://localhost:3000");
 
-describe("Fitbit koppelen unittest", function () {
+describe("Fitbit connecting unittest", function () {
     before(function (done) {
         server.get('/accounts/testnewuser')
             .expect(201)
@@ -19,22 +19,48 @@ describe("Fitbit koppelen unittest", function () {
     });
 
 
-    it("should connect a fitbit to a user and return 201", function (done) {
+
+    it("should connect a fitbit to a user and return 201", function(done){
         server.get('/accounts/connect/123')
             .expect(302)
-            .end(function (err) {
+            .end(function(err){
                 done(err);
-            });
+            })
+    });
+
+    /**
+     * can't be tested
+     */
+    // context("GET accounts/connect/ User has fitbit already", function(){
+    //     it("should try to connect a fitbit to a user and return 409", function (done) {
+    //         server.get('/accounts/connect/123')
+    //             .expect(409)
+    //             .end(function (err) {
+    //                 done(err);
+    //             })
+    //     });
+    // });
+
+    context("GET accounts/connect/  wrong user", function () {
+
+        it("should connect a fitbit to a user and return 404", function (done) {
+            server.get('/accounts/connect/12345')
+                .expect(404)
+                .end(function (err) {
+                    done(err);
+                })
+        });
     });
 
 
     after(function (done) {
         server.get('/accounts/testdeleteuser/123')
             .expect(201)
-            .end(function (err) {
+            .end(function (err, res) {
                 done(err);
             });
     });
+
 
 });
 describe("Fitbit koppelen unittest", function (done) {
@@ -45,6 +71,13 @@ describe("Fitbit koppelen unittest", function (done) {
  * Test for testing the accounts/login/ path
  */
 describe("Login", function () {
+    before(function (done) {
+        server.get('/accounts/testnewuser')
+            .expect(201)
+            .end(function (err, res) {
+                done(err);
+            });
+    });
     /**
      * Testing a correct login expect 201 with access token
      */

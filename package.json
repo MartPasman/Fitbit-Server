@@ -21,7 +21,8 @@
     "jsonwebtoken": "^7.4.1",
     "mongoose": "^4.9.9",
     "request": "^2.81.0",
-    "shortid": "^2.2.8"
+    "shortid": "^2.2.8",
+    "should": "^11.2.1"
   },
   "devDependencies": {
     "mocha": "^3.4.1",
