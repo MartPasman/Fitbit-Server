@@ -203,28 +203,6 @@ describe("Sign up", function () {
         });
     });
 
-    // /**
-    //  * Testing a sign up expect 403 forbidden
-    //  */
-    // context("POST accounts/  Correct", function () {
-    //     it("Should response 403 forbidden", function (done) {
-    //         server.post('/accounts/')
-    //             .send({
-    //                 password: "testtest",
-    //                 email: "aap@live.nl",
-    //                 handicap: 2,
-    //                 type: 3
-    //             }).set("Authorization", 123)
-    //             .expect(403)
-    //             .expect(function (res) {
-    //                 if (!res.body.id) {
-    //                     throw new Error("Id not given back");
-    //                 }
-    //             })
-    //             .end(done);
-    //     });
-    // });
-
     /**
      * Testing a sign up expect 401 not logged in
      */
