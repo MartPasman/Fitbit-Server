@@ -193,47 +193,6 @@ app.get('/:id/goals', function (req, res) {
     });
 });
 
-app.get('/:id/goals/:gid?', function (req, res) {
-
-    console.log(req.params.id);
-    console.log(req.params.gid);
-    return res.status(200).send();
-
-    if (req.params.offset === undefined || isNaN(req.params.offset)) {
-        logResponse(400, 'No offset supplied');
-        return res.status(400).send({error: "No offset supplied"});
-    }
-
-    var options = {};
-    if (req.query.offset !== undefined && !isNaN(req.query.offset)) {
-        options.skip = req.query.offset;
-    }
-    if (req.query.limit !== undefined && !isNaN(req.query.limit)) {
-        options.limit = req.query.limit;
-    }
-
-    User.findOne({id: res.user.id}, {}, options, function (err, result) {
-        // Check to see whether an error occurred
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
-        }
-
-        // Check to see whether a user was found
-        if (!result) {
-            logResponse(404, 'User not found');
-            return res.status(404).send({error: "User not found"});
-        }
-
-        logResponse(201, 'Goals send');
-        return res.status(201).send({
-            success: true,
-            totalgoals: result.goals.length,
-            goals: slicedarray
-        });
-    });
-});
-
 function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
