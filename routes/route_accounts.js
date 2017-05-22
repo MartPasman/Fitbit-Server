@@ -139,30 +139,6 @@ app.post('/login', function (req, res) {
         });
     }
 });
-var currUser;
-app.get('/connect/:id', function (req, res) {
-    // ID of the requested user
-    var id = req.params.id;
-
-    // Find the user that is requested
-    User.findOne({id: id}, function (err, myUser) {
-        if (err || !myUser) {
-            return res.status(404).send({"message": "user could not be found."});
-        }
-        currUser = myUser;
-
-        if (!myUser.fitbit) {
-            // get the authorisation URL to get the acces code from fitbit.com
-            var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
-            //redirect to this URL to let the user login
-            return res.redirect(201, authURL);
-        } else {
-            return res.status(409).send({"message": "conflict! user already connected."});
-        }
-    });
-
-    //  res.status(statuscode);
-});
 
 /**
  * Checks if user is logged in and if user is administrator
@@ -190,8 +166,29 @@ app.use('/', function (req, res, next) {
 
         next();
     });
+});
+
+var currUser;
+app.get('/:id/connect', function (req, res) {
+    // ID of the requested user
+    var id = req.params.id;
+
+    // Find the user that is requested
+    User.findOne({id: id}, function (err, myUser) {
+        if (err) {
+            res.status(404).send({"message": "user not found!"});
+        }
+        currUser = myUser;
+
+    });
+
+    // get the authorisation URL to get the acces code from fitbit.com
+    var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
+    //redirect to this URL to let the user login
+    res.redirect(authURL);
 
 });
+
 /**
  * Make new account
  */
