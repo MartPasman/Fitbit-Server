@@ -49,12 +49,8 @@ app.get('/testnewuseradmin', function (req, res) {
                 }
                 res.status(201).send(result);
             });
-
         });
-
-
     });
-
 });
 
 app.get('/testnewuser', function (req, res) {
@@ -212,7 +208,8 @@ app.get('/:id/connect', function (req, res) {
     });
 
     // get the authorisation URL to get the acces code from fitbit.com
-    var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect);
+    var authURL = client.getAuthorizeUrl('activity profile settings sleep weight', redirect, undefined/*, TODO random id to link the user*/);
+    console.log(authURL);
     //redirect to this URL to let the user login
     res.redirect(authURL);
 
@@ -281,19 +278,19 @@ app.post("/", function (req, res) {
                             handicap: req.body.handicap
                         });
 
-                            account.save(function (err, result) {
-                                if (err) {
-                                    return res.status(500).send({error: err.message});
-                                }
-                                return res.status(201).send({id: id});
-                            });
+                        account.save(function (err, result) {
+                            if (err) {
+                                return res.status(500).send({error: err.message});
+                            }
+                            return res.status(201).send({id: id});
                         });
                     });
                 });
             });
-        } else {
-            return res.status(400).send({error: "Not every field is (correctly) filled in."});
-        }
+        });
+    } else {
+        return res.status(400).send({error: "Not every field is (correctly) filled in."});
+    }
     // }
 });
 
@@ -459,8 +456,8 @@ function logResponse(code, message, depth) {
 app.get('/allusers', function (req, res) {
     var data = [];
     User.find({type: 1}, function (err, users) {
-        if(err){
-          return res.status(500).send();
+        if (err) {
+            return res.status(500).send();
         }
         console.log(users.length);
 
