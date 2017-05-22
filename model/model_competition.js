@@ -1,16 +1,11 @@
-/**
- * Created by sveno on 15-5-2017.
- */
-/**
- * Created by sveno on 15-5-2017.
- */
+
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var resultSchema = new Schema({
     userid: {type: String, required:true},
     score: {type: Number, required:true},
-    goalAchieved: {type: bool, required:true},
+    goalAchieved: {type: Boolean, required:true},
 });
 
 module.exports = mongoose.model('result', resultSchema);
