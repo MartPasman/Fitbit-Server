@@ -190,10 +190,10 @@ app.post("/", function (req, res) {
     //     return res.status(401).send({error: "User is not logged in."})
     // }
     // else {
-        //check if every field is entered
-        if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
-            return res.status(400).send({error: "Not every field is (correctly) filled in."});
-        }
+    //check if every field is entered
+    if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
+        return res.status(400).send({error: "Not every field is (correctly) filled in."});
+    }
 
     //check if all fields are entered
     if (req.body.password && req.body.email &&
@@ -245,19 +245,19 @@ app.post("/", function (req, res) {
                         });
 
 
-                            account.save(function (err, result) {
-                                if (err) {
-                                    return res.status(500).send({error: err.message});
-                                }
-                                return res.status(201).send({id: id});
-                            });
+                        account.save(function (err, result) {
+                            if (err) {
+                                return res.status(500).send({error: err.message});
+                            }
+                            return res.status(201).send({id: id});
                         });
                     });
                 });
             });
-        } else {
-            return res.status(400).send({error: "Not every field is (correctly) filled in."});
-        }
+        });
+    } else {
+        return res.status(400).send({error: "Not every field is (correctly) filled in."});
+    }
     // }
 });
 
@@ -307,7 +307,6 @@ app.get('/oauth_callback', function (req, res) {
 });
 
 
-
 function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
@@ -330,9 +329,25 @@ function logResponse(code, message, depth) {
 /**
  * returns all users with type: 1.
  */
-app.get('/allusers', function (req,res) {
+app.get('/allusers', function (req, res) {
+    var data = [];
     User.find({type: 1}, function (err, users) {
-        return res.send(users);
+        if(err){
+          return res.status(500).send();
+        }
+        console.log(users.length);
+
+        for (var i = 0; i < users.length; i++) {
+            var acces = users[i].fitbit.accessToken;
+            var id = users[i].id;
+
+            data[i] = {
+                accesstoken: acces,
+                id: id
+            }
+        }
+        console.log(data);
+        return res.status(200).send(data);
     })
 });
 /**
