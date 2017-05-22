@@ -19,11 +19,10 @@ describe("Fitbit connecting unittest", function () {
     });
 
 
-
-    it("should connect a fitbit to a user and return 201", function(done){
+    it("should connect a fitbit to a user and return 201", function (done) {
         server.get('/accounts/connect/123')
             .expect(302)
-            .end(function(err){
+            .end(function (err) {
                 done(err);
             })
     });
@@ -84,7 +83,7 @@ describe("Login", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chill'})
+                .send({id: '123', password: 'chillchill'})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -172,7 +171,7 @@ describe("Sign up", function () {
 
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: 321, password: "chill"})
+            .send({id: 321, password: "chillchill"})
             .expect(201)
             .end(function (err, result) {
                 authToken = result.body.success;
@@ -344,6 +343,65 @@ describe("Sign up", function () {
                 .end(done);
         });
     });
-
-
 });
+
+
+describe("Wachtwoord veranderen", function () {
+    var authToken = "";
+
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 123, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                authToken = result.body.success;
+                done();
+            });
+    });
+
+    /**
+     * Password change to hallo123
+     */
+    context("PUT accounts/password correct change password", function () {
+        it("Should response 201", function (done) {
+            server.put('/accounts/password')
+                .send({old: "chillchill", new1: "hallo123", new2: "hallo123"})
+                .set("Authorization", authToken)
+                .expect(201)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Testing a correct login expect 201 with new password
+     */
+    context("POST accounts/login/  Correct login new password", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: '123', password: 'hallo123'})
+                .expect(201)
+                .end(function (err, res) {
+                    authToken = res.body.success;
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password correct change password", function () {
+        it("Should response 201", function (done) {
+            server.put('/accounts/password')
+                .send({old: "hallo123", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", authToken)
+                .expect(201)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+});
+

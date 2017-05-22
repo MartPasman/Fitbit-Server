@@ -20,7 +20,7 @@ var app = express.Router();
 
 var jwt = require('jsonwebtoken');
 
-app.get('/testnewuser', function (req, res) {
+app.get('/testnewuseradmin', function (req, res) {
 
     var password = "chillchill";
     bcrypt.genSalt(10, function (err, salt) {
@@ -41,6 +41,43 @@ app.get('/testnewuser', function (req, res) {
                 email: 'ham@hotie.com',
                 active: true,
                 type: 3
+            });
+
+            account.save(function (err, result) {
+                if (err) {
+                    return res.status(500).send({error: err.message});
+                }
+                res.status(201).send(result);
+            });
+
+        });
+
+
+    });
+
+});
+
+app.get('/testnewuser', function (req, res) {
+
+    var password = "chillchill";
+    bcrypt.genSalt(10, function (err, salt) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        bcrypt.hash(password, salt, undefined, function (err, hashed) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            var account = new User({
+                id: 123,
+                password: hashed,
+                email: 'ham@hotie.com',
+                active: true,
+                type: 1
             });
 
             account.save(function (err, result) {
@@ -138,28 +175,28 @@ app.post('/login', function (req, res) {
  * all requests below this function will automatically go through this one first!
  * If your page doesn't need to be requested by admin, put it above this function
  */
-// app.use('/', function (req, res, next) {
-//
-//     console.log('\tAuthentication required...');
-//     console.log(req.app.get('private-key'));
-//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-//         if (err) {
-//             logResponse(401, err.message);
-//             return res.status(401).send({error: "User is not logged in."});
-//         }
-//
-//         // Save user for future purposes
-//         res.user = decoded._doc;
-//         if (res.user.type !== 3) {
-//             logResponse(403, "Not authorized to make this request");
-//             return res.status(403).send({error: "Not authorized to make this request"});
-//         }
-//
-//         console.log('\tpassed');
-//
-//         next();
-//     });
-// });
+ app.use('/', function (req, res, next) {
+
+     console.log('\tAuthentication required...');
+     console.log(req.app.get('private-key'));
+     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+         if (err) {
+             logResponse(401, err.message);
+             return res.status(401).send({error: "User is not logged in."});
+         }
+
+         // Save user for future purposes
+         res.user = decoded._doc;
+         if (res.user.type !== 3) {
+             logResponse(403, "Not authorized to make this request");
+             return res.status(403).send({error: "Not authorized to make this request"});
+         }
+
+         console.log('\tpassed');
+
+         next();
+     });
+ });
 
 var currUser;
 app.get('/:id/connect', function (req, res) {
@@ -260,6 +297,98 @@ app.post("/", function (req, res) {
     // }
 });
 
+/**
+ * Request for updating password
+ */
+app.put("/password", function (req, res) {
+    if (req.body.old == undefined || req.body.new1 == undefined || req.body.new2 == undefined || req.body.new1 != req.body.new2) {
+        logResponse(400, 'Wrong information supplied');
+        return res.status(400).send({error: "Wrong information supplied"});
+    }
+
+    User.findOne({id: res.user.id}, function (err, user) {
+
+
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!user) {
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
+        }
+
+        try {
+            // Check to see whether the given password matches the password of the user
+            bcrypt.compare(req.body.old, user.password, function (err, success) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message});
+                }
+
+                if (!success) {
+                    logResponse(400, 'Invalid credentials');
+                    return res.status(400).send({error: "Invalid credentials"});
+                }
+
+                //Chek if the user is active
+                if (!user.active) {
+                    logResponse(403, 'User inactive');
+                    return res.status(403).send({error: "User inactive"});
+                }
+                // remove sensitive data
+                user.password = undefined;
+
+                //Generate salt for password
+                bcrypt.genSalt(10, function (err, salt) {
+                    if (err) {
+                        logResponse(500, err.message);
+                        return res.status(500).send({error: err.message});
+                    }
+
+                    //Hash password
+                    bcrypt.hash(req.body.new1, salt, undefined, function (err, hashed) {
+                        if (err) {
+                            logResponse(500, err.message);
+                            return res.status(500).send({error: err.message});
+                        }
+
+                        //Update password in database
+                        User.update({id: res.user.id}, {$set: {password: hashed}}, function (err, result) {
+                            // Check to see whether an error occurred
+                            if (err) {
+                                logResponse(500, err.message);
+                                return res.status(500).send({error: err.message});
+                            }
+
+                            // Check to see whether a user was found
+                            if (!result) {
+                                logResponse(404, 'User not found');
+                                return res.status(404).send({error: "User not found"});
+                            }
+
+                            logResponse(201, 'Password updated');
+                            return res.status(201).send({
+                                success: true
+                            });
+                        });
+
+                    });
+
+
+                });
+
+            });
+        } catch (err) {
+            // if the bcrypt fails
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+    });
+});
 
 /**
  * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
