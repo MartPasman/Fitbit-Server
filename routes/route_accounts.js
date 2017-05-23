@@ -179,8 +179,6 @@ app.post('/login', function (req, res) {
  */
 app.use('/', function (req, res, next) {
 
-    console.log('\tAuthentication required...');
-    console.log(req.app.get('private-key'));
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -189,15 +187,14 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        if (res.user.type !== 3) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: "Not authorized to make this request"});
-        }
+        // if (res.user.type !== 3) {
+        //     logResponse(403, "Not authorized to make this request");
+        //     return res.status(403).send({error: "Not authorized to make this request"});
+        //  }
 
-        console.log('\tpassed');
+         next();
+     });
 
-        next();
-    });
 });
 
 /**
