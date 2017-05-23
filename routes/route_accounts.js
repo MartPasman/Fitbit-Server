@@ -179,8 +179,6 @@ app.post('/login', function (req, res) {
  */
 app.use('/', function (req, res, next) {
 
-    console.log('\tAuthentication required...');
-    console.log(req.app.get('private-key'));
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -193,8 +191,6 @@ app.use('/', function (req, res, next) {
         //     logResponse(403, "Not authorized to make this request");
         //     return res.status(403).send({error: "Not authorized to make this request"});
         //  }
-
-         console.log('\tpassed');
 
          next();
      });
