@@ -8,12 +8,9 @@ var mongoose = require('mongoose');
 var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
-var fitbitClient = require('fitbit-node');
-var consumer_key = '228HTD';
-var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var app = express.Router();
 var jwt = require('jsonwebtoken');
-
+var Competition = require('../model/model_competition');
 var fitbitCall = require('../fitbit.js').fitbitCall;
 
 /**
@@ -89,8 +86,10 @@ app.get('/:id/stats/weeks/last', function (req, res) {
     });
 });
 
-/**
- * Add a goal
+
+
+/*
+ *
  */
 app.post('/:id/goals/', function (req, res) {
 

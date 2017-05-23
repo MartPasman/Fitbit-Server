@@ -472,11 +472,10 @@ app.get('/allusers', function (req, res) {
         console.log(users.length);
 
         for (var i = 0; i < users.length; i++) {
-            var acces = users[i].fitbit.accessToken;
             var id = users[i].id;
 
             data[i] = {
-                accesstoken: acces,
+                accesstoken: users[i].fitbit.accessToken,
                 id: id
             }
         }
