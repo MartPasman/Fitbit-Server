@@ -92,11 +92,11 @@ app.get('/:id/stats/weeks/last', function (req, res) {
 /**
  * Add a goal
  */
-app.post('/:id/goals/', function (req, res) {
+app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
-        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === ''  || req.body.goal === undefined || !Date.parse(req.body.start) ||
-         !Date.parse(req.body.end) || isNaN(req.body.goal)) {
+        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
+        req.body.goal === undefined || !Date.parse(req.body.start) || !Date.parse(req.body.end) || isNaN(req.body.goal)) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
@@ -130,7 +130,7 @@ app.delete('/:id/goals/:gid', function (req, res) {
 
 
     if (req.params.id === undefined || isNaN(req.params.id) ||
-        req.params.gid === undefined || req.params.gid == '') {
+        req.params.gid === undefined || isNaN(req.params.gid)) {
         logResponse(400, 'No id supplied');
         return res.status(400).send({error: "No id supplied"});
     }
@@ -155,9 +155,9 @@ app.delete('/:id/goals/:gid', function (req, res) {
     });
 });
 
-app.get('/:id/goals/', function (req, res) {
+app.get('/:id/goals', function (req, res) {
 
-    if (req.query.offset == undefined || req.query.offset == '' || req.query.limit == undefined || req.query.limit == '' ) {
+    if (req.query.offset === undefined || isNaN(req.query.offset) || req.query.limit === undefined || isNaN(req.query.limit)) {
         logResponse(400, 'No offset or limit supplied');
         return res.status(400).send({error: "No offset or limit supplied"});
     }
@@ -176,20 +176,18 @@ app.get('/:id/goals/', function (req, res) {
         }
 
         if (req.query.offset > result.goals.length) {
-            logResponse(404, 'Offset exceeded goals');
-            return res.status(404).send({error: "Offset exceeded goals"});
+            logResponse(400, 'Offset exceeded goals');
+            return res.status(400).send({error: "Offset exceeded goals"});
         }
 
-        console.log(req.query.offset + req.query.limit);
         var addition = req.query.limit;
         if (result.goals.length - req.params.offset < req.query.limit) {
             addition = result.goals.length - req.params.offset;
         }
 
         var slicedarray = result.goals.slice(req.query.offset, req.query.offset + addition);
-        logResponse(201, 'Goals send');
-        console.log(slicedarray);
-        return res.status(201).send({
+        logResponse(200, 'Goals send');
+        return res.status(200).send({
             success: true,
             totalgoals: result.goals.length,
             goals: slicedarray
@@ -229,6 +227,7 @@ function getYYYYMMDD(date, splitBy) {
 function isValidDate(s) {
     var bits = s.split('/');
     var d = new Date(bits[2], bits[1] - 1, bits[0]);
-    return d && (d.getMonth() + 1) == bits[1];
+    return d && (d.getMonth() + 1) === bits[1];
 }
+
 module.exports = app;

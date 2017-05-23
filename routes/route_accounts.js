@@ -10,11 +10,12 @@ var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
 var fitbitClient = require('fitbit-node');
 var jwt = require('jsonwebtoken');
+var base64 = require('base64_utility');
 
-var consumer_key = '228HTD';
+var client_id = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
-var client = new fitbitClient(consumer_key, client_secret);
+var client = new fitbitClient(client_id, client_secret);
 
 var User = require('../model/model_user');
 
@@ -392,18 +393,20 @@ app.get('/:id/connect', function (req, res) {
  */
 app.get('/oauth_callback', function (req, res) {
 
+    const auth = base64.encode(client_id + ':' + client_secret);
+
     //send the request
     request.post({
         url: 'https://api.fitbit.com/oauth2/token',
         headers: {
-            Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
+            Authorization: ' Basic ' + auth,
             'Content-Type': ' application/x-www-form-urlencoded'
         },
-        body: "client_id=228HTD&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
+        body: "expires_in=" + 60 + "&client_id=" + client_id + "&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
     }, function (error, response, body) {
         if (error) {
             logResponse(500, error);
-            res.status(500).send({error: error});
+            return res.status(500).send({error: error});
         }
 
         var parsedRes = JSON.parse(body);
@@ -413,6 +416,8 @@ app.get('/oauth_callback', function (req, res) {
             accessToken: parsedRes.access_token,
             refreshToken: parsedRes.refresh_token
         };
+
+        console.log(json);
 
         const userid = getOAuthMapUserid(req.query.state);
         if (userid === undefined) {
@@ -499,7 +504,7 @@ function mapOAuthRequest(userid) {
 function getOAuthMapUserid(state) {
     for (var i = 0; i < OAuthMap.length; i++) {
         const obj = OAuthMap[i];
-        if (obj.state === state) {
+        if (obj !== undefined && obj.state === state) {
             const userid = obj.userid;
             OAuthMap[i] = undefined;
             return userid;
