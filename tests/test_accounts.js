@@ -155,6 +155,109 @@ describe("Login", function () {
 
 });
 
+describe("Wachtwoord veranderen", function () {
+    var token = "";
+
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 123, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                token = result.body.success;
+                done();
+            });
+    });
+
+    /**
+     * Password change to hallo123
+     */
+    context("PUT accounts/password correct change password", function () {
+        it("Should response 201", function (done) {
+            server.put('/accounts/password')
+                .send({old: "chillchill", new1: "hallo123", new2: "hallo123"})
+                .set("Authorization", token)
+                .expect(201)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Testing a correct login expect 201 with new password
+     */
+    context("POST accounts/login/  Correct login new password", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: '123', password: 'hallo123'})
+                .expect(201)
+                .end(function (err, res) {
+                    token = res.body.success;
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password correct change back password", function () {
+        it("Should response 201", function (done) {
+            server.put('/accounts/password')
+                .send({old: "hallo123", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", token)
+                .expect(201)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password failed change password no old", function () {
+        it("Should response 400", function (done) {
+            server.put('/accounts/password')
+                .send({old: "", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", token)
+                .expect(400)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password failed change password wrong old", function () {
+        it("Should response 400", function (done) {
+            server.put('/accounts/password')
+                .send({old: "wrong", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", token)
+                .expect(400)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password failed new not the same", function () {
+        it("Should response 400", function (done) {
+            server.put('/accounts/password')
+                .send({old: "wrong", new1: "chillchill1", new2: "chillchill2"})
+                .set("Authorization", token)
+                .expect(400)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+});
 
 /**
  * Tests for testing the accounts/users path
@@ -342,62 +445,5 @@ describe("Sign up", function () {
 });
 
 
-// describe("Wachtwoord veranderen", function () {
-//     var token = "";
-//
-//     before(function (done) {
-//         server.post('/accounts/login')
-//             .send({id: 123, password: "chillchill"})
-//             .expect(201)
-//             .end(function (err, result) {
-//                 token = result.body.success;
-//                 done();
-//             });
-//     });
-//
-//     /**
-//      * Password change to hallo123
-//      */
-//     context("PUT accounts/password correct change password", function () {
-//         it("Should response 201", function (done) {
-//             server.put('/accounts/password')
-//                 .send({old: "chillchill", new1: "hallo123", new2: "hallo123"})
-//                 .set("Authorization", token)
-//                 .expect(201)
-//                 .end(function (err, result) {
-//                     done();
-//                 });
-//         });
-//     });
-//
-//     /**
-//      * Testing a correct login expect 201 with new password
-//      */
-//     context("POST accounts/login/  Correct login new password", function () {
-//         it("Should response 201 with access token", function (done) {
-//             server.post('/accounts/login/')
-//                 .send({id: '123', password: 'hallo123'})
-//                 .expect(201)
-//                 .end(function (err, res) {
-//                     token = res.body.success;
-//                     done(err);
-//                 });
-//         });
-//     });
-//
-//     /**
-//      * Change password back to old for testing purpose
-//      */
-//     context("PUT accounts/password correct change password", function () {
-//         it("Should response 201", function (done) {
-//             server.put('/accounts/password')
-//                 .send({old: "hallo123", new1: "chillchill", new2: "chillchill"})
-//                 .set("Authorization", token)
-//                 .expect(201)
-//                 .end(function (err, result) {
-//                     done();
-//                 });
-//         });
-//     });
-// });
+
 

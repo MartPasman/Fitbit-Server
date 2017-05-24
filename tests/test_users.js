@@ -10,7 +10,7 @@ var should = require('should');
 var server = supertest.agent('http://localhost:3000');
 
 /**
- * Test for testing the accounts/login/ path
+ * Test for adding a goal
  */
 describe('Add goal', function () {
     var token;
@@ -119,7 +119,7 @@ describe('Add goal', function () {
 });
 
 /**
- * Test for testing the accounts/login/ path
+ * Test for deleting a goal
  */
 describe("Delete goal", function () {
     var token;
@@ -157,15 +157,15 @@ describe("Delete goal", function () {
         });
     });
 
-var gid
+var gid;
     /**
      * Getting a id for test purpose
      */
     context("GET /users/:id/goals?offset=0  Correct", function () {
-        it("Should response 201", function (done) {
+        it("Should response 200", function (done) {
             server.get('/users/'+id+'/goals?offset=0&limit=5 ')
                 .send().set("Authorization", token)
-                .expect(201)
+                .expect(200)
                 .end(function(err, resp){
                     done(err);
                     gid = resp.body.goals[0]._id;
@@ -191,9 +191,8 @@ var gid
 
 });
 
-
 /**
- * Test for testing the accounts/login/ path
+ * Test for loading a goal
  */
 describe("Load goal with offset", function () {
     var token;
@@ -238,16 +237,18 @@ describe("Load goal with offset", function () {
      * Getting a goals with 0 as offset
      */
     context("GET /users/:id/goals?offset=0&limit=5  Correct", function () {
-        it("Should response 201", function (done) {
+        it("Should response 200", function (done) {
             server.get('/users/'+id+'/goals?offset=0&limit=5 ')
                 .send().set("Authorization", token)
-                .expect(201)
+                .expect(200)
                 .end(function (err, resp) {
                     done(err);
                 });
         });
     });
 });
+
+
 
 describe('Get stats of a user', function () {
     var token;
