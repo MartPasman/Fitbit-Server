@@ -37,13 +37,13 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "naam",
-                lastname: "lastname",
-                id: 4236,
+                firstname: "Romy",
+                lastname: "Beugeling",
+                id: 4237,
                 password: hashed,
                 email: 'tostiham@lala.com',
                 active: true,
-                type: 3
+                type: 2
             });
 
             account.save(function (err, result) {
