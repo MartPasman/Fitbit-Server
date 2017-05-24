@@ -21,6 +21,7 @@ var User = require('../model/model_user');
 
 var app = express.Router();
 
+
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
 
@@ -38,6 +39,8 @@ app.get('/testnewuseradmin', function (req, res) {
             }
 
             var account = new User({
+                firstname: "aa",
+                lastname: "bb",
                 id: 321,
                 password: hashed,
                 email: 'ham@hotie.com',
@@ -178,42 +181,45 @@ app.post('/login', function (req, res) {
  * all requests below this function will automatically go through this one first!
  * If your page doesn't need to be requested by admin, put it above this function
  */
-// app.use('/', function (req, res, next) {
-//
-//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-//         if (err) {
-//             logResponse(401, err.message);
-//             return res.status(401).send({error: "User is not logged in."});
-//         }
-//
-//         // Save user for future purposes
-//         res.user = decoded._doc;
-//         if (res.user.type !== 3) {
-//             logResponse(403, "Not authorized to make this request");
-//             return res.status(403).send({error: "Not authorized to make this request"});
-//          }
-//
-//          next();
-//      });
-// });
+app.use('/', function (req, res, next) {
+
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: "User is not logged in."});
+        }
+
+        // Save user for future purposes
+        res.user = decoded._doc;
+        // if (res.user.type !== 3) {
+        //     logResponse(403, "Not authorized to make this request");
+        //     return res.status(403).send({error: "Not authorized to make this request"});
+        //  }
+
+         next();
+     });
+
+});
 
 /**
  * Make new account
  */
 app.post("/", function (req, res) {
 
-    // if (res.user.isEmpty()) {
-    //     return res.status(401).send({error: "User is not logged in."})
-    // }
-    // else {
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
+
     //check if every field is entered
-    if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
+    if (!req.body.password || !req.body.email || !req.body.type) {
         return res.status(400).send({error: "Not every field is (correctly) filled in."});
     }
 
     //check if all fields are entered
-    if (req.body.password && req.body.email &&
-        req.body.handicap && req.body.type) {
+    if (req.body.firstname && req.body.lastname && req.body.password && req.body.email &&
+        req.body.type) {
 
         if (req.body.password.length < 8) {
             return res.status(400).send({error: "Password must be at least 8 characters long."});
@@ -231,6 +237,10 @@ app.post("/", function (req, res) {
 
         if (isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
             return res.status(400).send({error: "Handicap is not valid."});
+        }
+
+        if (req.body.type === 1 && req.body.handicap === undefined) {
+            return res.status(400).send({error: "Handicap not provided"});
         }
 
         //find email if found do not make account
@@ -251,14 +261,33 @@ app.post("/", function (req, res) {
                             return res.status(500).send({error: err.message});
                         }
 
-                        var account = new User({
-                            id: id,
-                            password: hashed,
-                            email: email,
-                            active: true,
-                            type: req.body.type,
-                            handicap: req.body.handicap
-                        });
+                        var account;
+                        if (req.body.type === 2 || req.body.type === 3) {
+
+                            account = new User({
+                                firstname: req.body.firstname,
+                                lastname: req.body.lastname,
+                                id: id,
+                                password: hashed,
+                                email: email,
+                                active: true,
+                                type: req.body.type,
+                                handicap: undefined
+                            });
+                        }
+                        else {
+                            account = new User({
+                                firstname: req.body.firstname,
+                                lastname: req.body.lastname,
+                                id: id,
+                                password: hashed,
+                                email: email,
+                                active: true,
+                                type: req.body.type,
+                                handicap: req.body.handicap
+                            });
+                        }
+
 
                         account.save(function (err, result) {
                             if (err) {
@@ -273,7 +302,6 @@ app.post("/", function (req, res) {
     } else {
         return res.status(400).send({error: "Not every field is (correctly) filled in."});
     }
-    // }
 });
 
 /**
@@ -389,6 +417,17 @@ app.get('/:id/connect', function (req, res) {
  */
 app.get('/oauth_callback', function (req, res) {
 
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
+    if (currUser === undefined) {
+        logResponse(500, 'currUser: ' + currUser);
+        return res.status(500).send({error: 'currUser: ' + currUser});
+    }
+    const user = currUser;
+
     const auth = base64.encode(client_id + ':' + client_secret);
 
     //send the request
@@ -438,6 +477,32 @@ app.get('/oauth_callback', function (req, res) {
         });
     });
 });
+
+/**
+ * Get all users without passwords
+ */
+app.get('/', function (req, res) {
+
+    if (res.user.type !== 3) {
+        logResponse(403, "User not authorized to make this request");
+        return res.status(403).send({error: "User not authorized to make this request"});
+    }
+
+    User.find({type: 1}, {password: 0, _id: 0, __v: 0}, function (err, users) {
+
+        if (err) {
+            logResponse(500, "Something went wrong");
+            return res.status(500).send({error: "Something went wrong"})
+        }
+        if (users.length === 0) {
+            logResponse(404, "No users found");
+            return res.status(404).send({error: "No users found"});
+        }
+        logResponse(200, users);
+        return res.status(200).send({success: users});
+    })
+});
+
 
 function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';

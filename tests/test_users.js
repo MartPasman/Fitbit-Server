@@ -10,7 +10,7 @@ var should = require('should');
 var server = supertest.agent('http://localhost:3000');
 
 /**
- * Test for testing the accounts/login/ path
+ * Test for adding a goal
  */
 describe('Add goal', function () {
     var token;
@@ -119,7 +119,7 @@ describe('Add goal', function () {
 });
 
 /**
- * Test for testing the accounts/login/ path
+ * Test for deleting a goal
  */
 describe("Delete goal", function () {
     var token;
@@ -157,15 +157,15 @@ describe("Delete goal", function () {
         });
     });
 
-var gid
+var gid;
     /**
      * Getting a id for test purpose
      */
     context("GET /users/:id/goals?offset=0  Correct", function () {
-        it("Should response 201", function (done) {
+        it("Should response 200", function (done) {
             server.get('/users/'+id+'/goals?offset=0&limit=5 ')
                 .send().set("Authorization", token)
-                .expect(201)
+                .expect(200)
                 .end(function(err, resp){
                     done(err);
                     gid = resp.body.goals[0]._id;
@@ -191,9 +191,8 @@ var gid
 
 });
 
-
 /**
- * Test for testing the accounts/login/ path
+ * Test for loading a goal
  */
 describe("Load goal with offset", function () {
     var token;
@@ -238,16 +237,18 @@ describe("Load goal with offset", function () {
      * Getting a goals with 0 as offset
      */
     context("GET /users/:id/goals?offset=0&limit=5  Correct", function () {
-        it("Should response 201", function (done) {
+        it("Should response 200", function (done) {
             server.get('/users/'+id+'/goals?offset=0&limit=5 ')
                 .send().set("Authorization", token)
-                .expect(201)
+                .expect(200)
                 .end(function (err, resp) {
                     done(err);
                 });
         });
     });
 });
+
+
 
 describe('Get stats of a user', function () {
     var token;
@@ -313,3 +314,162 @@ describe('Get stats of a user', function () {
         });
     });
 });
+
+/**
+ * Test for testing the PUT users/:id/handicap
+ */
+describe("Handicap", function () {
+    var authToken = "";
+    var authTokenWrong = "";
+
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 4236, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                authToken = result.body.success;
+            });
+
+        server.post('/accounts/login')
+            .send({id: 4235, password: "chill"})
+            .expect(201)
+            .end(function (err, result) {
+                authTokenWrong = result.body.success;
+                done();
+            });
+    });
+
+
+    /**
+     * Testing a correct get users expect 200 with success message
+     */
+    context("PUT users/:id/handicap  Correct", function () {
+        it("Should response 200 with success", function (done) {
+            server.put('/users/' + 4235 + '/handicap')
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 2
+                })
+                .expect(200)
+                .expect(function (res) {
+                    if (!res.body.success) {
+                        throw new Error("User account not updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 400 id not given
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400 id not given", function (done) {
+            server.put('/users/' + 'al' + '/handicap')
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 2
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 400 handicap not given
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400 handicap not given", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .set("Authorization", authToken)
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 400 invalid handicap
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400  invalid handicap", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 5
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a sign up expect 401 not logged in
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 401 not logged in", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .expect(401)
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a correct get users expect 403 not authorized
+     */
+    context("PUT users/:id/handicap  failed", function () {
+        it("Should response 403 not authorized", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .set("Authorization", authTokenWrong)
+                .send({
+                    handicap: 2
+                })
+                .expect(403)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("Users account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 404 user not found
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400  invalid handicap", function (done) {
+            server.put('/users/' + 1 + "/handicap")
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 3
+                })
+                .expect(404)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+});
+
+
+
+

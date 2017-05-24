@@ -21,7 +21,7 @@ app.use('/', function (req, res, next) {
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
-            return res.status(401).send({error: 'Failed to authenticate token.'});
+            return res.status(401).send({error: 'User is not logged in'});
         }
 
         res.user = decoded._doc;
@@ -203,8 +203,8 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 return res.status(404).send({error: "User or goal was not found"});
             }
 
-            logResponse(201, 'Goal found and send');
-            return res.status(201).send({
+            logResponse(200, 'Goal found and send');
+            return res.status(200).send({
                 success: true,
                 goals: result.goals[0]
             });
@@ -257,7 +257,49 @@ app.get('/:id/goals/:gid?', function (req, res) {
     }
 });
 
-function logResponse(code, message, depth) {
+app.put('/:id/handicap', function (req, res) {
+
+    if (res.user.type !== 3) {
+        logResponse(403, "User is not authorized to make this request" );
+        return res.status(403).send({error: "User is not authorized to make this request"});
+    }
+
+    if (req.params.id === undefined || isNaN(req.params.id)) {
+        logResponse(400, "Id not provided or id is not a number.");
+        return res.status(400).send({error: "Id not provided or id is not a number."});
+    }
+    else {
+
+        if(req.body.handicap === undefined){
+            logResponse(400,"Handicap is not given." );
+            return res.status(400).send({error: "Handicap is not given."});
+        }
+
+        if (req.body.handicap < 1 || req.body.handicap > 3) {
+            logResponse(400, "Handicap is not valid.");
+            return res.status(400).send({error: "Handicap is not valid."});
+        }
+
+        User.findOneAndUpdate({
+            id: req.params.id,
+            type: 1
+        }, {$set: {handicap: req.body.handicap}}, function (err, result) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+            if (!result) {
+                logResponse(404, "User could not be found.");
+                return res.status(404).send({error: "User could not be found."});
+            }
+            logResponse(200, "User successfully updated.");
+            return res.status(200).send({success: "User successfully updated."});
+        })
+    }
+});
+
+
+var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
     if (code === undefined) return;
@@ -274,7 +316,7 @@ function logResponse(code, message, depth) {
     if (code >= 500) color = COLOR_500;
 
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-}
+};
 
 function getYYYYMMDD(date, splitBy) {
     var mm = date.getMonth() + 1;

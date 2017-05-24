@@ -155,13 +155,115 @@ describe("Login", function () {
 
 });
 
+describe("Wachtwoord veranderen", function () {
+    var token = "";
+
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 123, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                token = result.body.success;
+                done();
+            });
+    });
+
+    /**
+     * Password change to hallo123
+     */
+    context("PUT accounts/password correct change password", function () {
+        it("Should response 201", function (done) {
+            server.put('/accounts/password')
+                .send({old: "chillchill", new1: "hallo123", new2: "hallo123"})
+                .set("Authorization", token)
+                .expect(201)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Testing a correct login expect 201 with new password
+     */
+    context("POST accounts/login/  Correct login new password", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: '123', password: 'hallo123'})
+                .expect(201)
+                .end(function (err, res) {
+                    token = res.body.success;
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password correct change back password", function () {
+        it("Should response 201", function (done) {
+            server.put('/accounts/password')
+                .send({old: "hallo123", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", token)
+                .expect(201)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password failed change password no old", function () {
+        it("Should response 400", function (done) {
+            server.put('/accounts/password')
+                .send({old: "", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", token)
+                .expect(400)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password failed change password wrong old", function () {
+        it("Should response 400", function (done) {
+            server.put('/accounts/password')
+                .send({old: "wrong", new1: "chillchill", new2: "chillchill"})
+                .set("Authorization", token)
+                .expect(400)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+
+    /**
+     * Change password back to old for testing purpose
+     */
+    context("PUT accounts/password failed new not the same", function () {
+        it("Should response 400", function (done) {
+            server.put('/accounts/password')
+                .send({old: "wrong", new1: "chillchill1", new2: "chillchill2"})
+                .set("Authorization", token)
+                .expect(400)
+                .end(function (err, result) {
+                    done();
+                });
+        });
+    });
+});
 
 /**
- * Tests for testing the accounts/users path
+ * Tests for testing the accounts/path
  */
 describe("Sign up", function () {
     var authToken = "";
-    var id;
 
     before(function (done) {
         server.post('/accounts/login')
@@ -191,7 +293,6 @@ describe("Sign up", function () {
                     if (!res.body.id) {
                         throw new Error("Id not given back");
                     }
-                    id = res.body.id;
                 })
                 .end(done);
         });
@@ -338,66 +439,82 @@ describe("Sign up", function () {
                 .end(done);
         });
     });
+});
+
+
+/**
+ * Tests for testing the accounts/ path
+ */
+describe("Get users", function () {
+    var authToken = "";
+    var authTokenWrong = "";
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 4236, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                authToken = result.body.success;
+            });
+
+        server.post('/accounts/login')
+            .send({id: 4235, password: "chill"})
+            .expect(201)
+            .end(function (err, result) {
+                authTokenWrong = result.body.success;
+                done();
+            });
+
+
+
+    });
+
+    /**
+     * Testing a correct get users expect 200 with users returned
+     */
+    context("GET accounts/  Correct", function () {
+        it("Should response 200 with users", function (done) {
+            server.get('/accounts/')
+                .set("Authorization", authToken)
+                .expect(200)
+                .expect(function (res) {
+                    if (!res.body.success) {
+                        throw new Error("Users not given back");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a sign up expect 401 not logged in
+     */
+    context("GET accounts/  Failed", function () {
+        it("Should response 401 not logged in", function (done) {
+            server.get('/accounts/')
+                .expect(401)
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a correct get users expect 403  not authorized
+     */
+    context("GET accounts/  failed", function () {
+        it("Should response 403 not authorized", function (done) {
+            server.get('/accounts/')
+                .set("Authorization", authTokenWrong)
+                .expect(403)
+                .expect(function (res) {
+                    if (res.body.success) {
+                        throw new Error("Users not given back");
+                    }
+                })
+                .end(done);
+        });
+    });
 
 });
 
 
-// describe("Wachtwoord veranderen", function () {
-//     var token = "";
-//
-//     before(function (done) {
-//         server.post('/accounts/login')
-//             .send({id: 123, password: "chillchill"})
-//             .expect(201)
-//             .end(function (err, result) {
-//                 token = result.body.success;
-//                 done();
-//             });
-//     });
-//
-//     /**
-//      * Password change to hallo123
-//      */
-//     context("PUT accounts/password correct change password", function () {
-//         it("Should response 201", function (done) {
-//             server.put('/accounts/password')
-//                 .send({old: "chillchill", new1: "hallo123", new2: "hallo123"})
-//                 .set("Authorization", token)
-//                 .expect(201)
-//                 .end(function (err, result) {
-//                     done();
-//                 });
-//         });
-//     });
-//
-//     /**
-//      * Testing a correct login expect 201 with new password
-//      */
-//     context("POST accounts/login/  Correct login new password", function () {
-//         it("Should response 201 with access token", function (done) {
-//             server.post('/accounts/login/')
-//                 .send({id: '123', password: 'hallo123'})
-//                 .expect(201)
-//                 .end(function (err, res) {
-//                     token = res.body.success;
-//                     done(err);
-//                 });
-//         });
-//     });
-//
-//     /**
-//      * Change password back to old for testing purpose
-//      */
-//     context("PUT accounts/password correct change password", function () {
-//         it("Should response 201", function (done) {
-//             server.put('/accounts/password')
-//                 .send({old: "hallo123", new1: "chillchill", new2: "chillchill"})
-//                 .set("Authorization", token)
-//                 .expect(201)
-//                 .end(function (err, result) {
-//                     done();
-//                 });
-//         });
-//     });
-// });
+
 
