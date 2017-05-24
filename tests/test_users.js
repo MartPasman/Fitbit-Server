@@ -53,11 +53,12 @@ describe('Add goal', function () {
     context("POST /users/goal/add  failed missing field", function () {
         it("Should response 400", function (done) {
             server.post('/users/goal/add ')
-                .send({ end: '2017-05-21 00:00:00.000',
+                .send({
+                    end: '2017-05-21 00:00:00.000',
                     start: '2017-05-21 00:00:00.000'
-                    }).set("Authorization", token)
+                }).set("Authorization", token)
                 .expect(400)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -69,12 +70,13 @@ describe('Add goal', function () {
     context("POST /users/goal/add  failed goal is not a number", function () {
         it("Should response 400", function (done) {
             server.post('/users/goal/add ')
-                .send({ end: '2017-05-21 00:00:00.000',
+                .send({
+                    end: '2017-05-21 00:00:00.000',
                     start: '2017-05-21 00:00:00.000',
                     goal: 'fdsaf'
                 }).set("Authorization", token)
                 .expect(400)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -86,12 +88,13 @@ describe('Add goal', function () {
     context("POST /users/goal/add failed empty fields", function () {
         it("Should response 400", function (done) {
             server.post('/users/goal/add ')
-                .send({ end: '',
+                .send({
+                    end: '',
                     start: '',
                     goal: ''
                 }).set("Authorization", token)
                 .expect(400)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -103,12 +106,13 @@ describe('Add goal', function () {
     context("POST /users/goal/add  failed wrong date", function () {
         it("Should response 400", function (done) {
             server.post('/users/goal/add ')
-                .send({ end: 'fsadf',
+                .send({
+                    end: 'fsadf',
                     start: '213421',
                     goal: 4500
                 }).set("Authorization", token)
                 .expect(400)
-                .end(function(err, res){
+                .end(function (err, res) {
                     done(err);
                 });
         });
@@ -143,11 +147,13 @@ describe("Delete goal", function () {
 context("POST /users/goal/add  Correct", function () {
     it("Should response 201", function (done) {
         server.post('/users/goal/add ')
-            .send({ end: '2017-05-21 00:00:00.000',
+            .send({
+                end: '2017-05-21 00:00:00.000',
                 start: '2017-05-20 00:00:00.000',
-                goal:1000}).set("Authorization", token)
+                goal: 1000
+            }).set("Authorization", token)
             .expect(201)
-            .end(function(err, res){
+            .end(function (err, res) {
                 done(err);
             });
     });
@@ -162,7 +168,7 @@ context("GET /users/goal/0  Correct", function () {
         server.get('/users/goal/0 ')
             .send().set("Authorization", token)
             .expect(201)
-            .end(function(err, resp){
+            .end(function (err, resp) {
                 done(err);
                 id = resp.body.goals[0]._id;
             });
@@ -174,10 +180,10 @@ context("GET /users/goal/0  Correct", function () {
  */
 context("DELETE /users/goal/delete/:id  Correct", function () {
     it("Should response 201", function (done) {
-        server.delete('/users/goal/delete/'+ id)
+        server.delete('/users/goal/delete/' + id)
             .send().set("Authorization", token)
             .expect(201)
-            .end(function(err, res){
+            .end(function (err, res) {
                 done(err);
             });
     });
@@ -191,7 +197,7 @@ context("DELETE /users/goal/delete/:id  Failed no id", function () {
         server.delete('/users/goal/delete/')
             .send().set("Authorization", token)
             .expect(400)
-            .end(function(err, res){
+            .end(function (err, res) {
                 done(err);
             });
     });
@@ -329,3 +335,162 @@ describe('Get stats of a user', function () {
         });
     });
 });
+
+/**
+ * Test for testing the PUT users/:id/handicap
+ */
+describe("Handicap", function () {
+    var authToken = "";
+    var authTokenWrong = "";
+
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 4236, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                authToken = result.body.success;
+            });
+
+        server.post('/accounts/login')
+            .send({id: 4235, password: "chill"})
+            .expect(201)
+            .end(function (err, result) {
+                authTokenWrong = result.body.success;
+                done();
+            });
+    });
+
+
+    /**
+     * Testing a correct get users expect 200 with success message
+     */
+    context("PUT users/:id/handicap  Correct", function () {
+        it("Should response 200 with success", function (done) {
+            server.put('/users/' + 4235 + '/handicap')
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 2
+                })
+                .expect(200)
+                .expect(function (res) {
+                    if (!res.body.success) {
+                        throw new Error("User account not updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 400 id not given
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400 id not given", function (done) {
+            server.put('/users/' + 'al' + '/handicap')
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 2
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 400 handicap not given
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400 handicap not given", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .set("Authorization", authToken)
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 400 invalid handicap
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400  invalid handicap", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 5
+                })
+                .expect(400)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a sign up expect 401 not logged in
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 401 not logged in", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .expect(401)
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a correct get users expect 403 not authorized
+     */
+    context("PUT users/:id/handicap  failed", function () {
+        it("Should response 403 not authorized", function (done) {
+            server.put('/users/' + 4235 + "/handicap")
+                .set("Authorization", authTokenWrong)
+                .send({
+                    handicap: 2
+                })
+                .expect(403)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("Users account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a failed get users expect 404 user not found
+     */
+    context("PUT users/:id/handicap  Failed", function () {
+        it("Should response 400  invalid handicap", function (done) {
+            server.put('/users/' + 1 + "/handicap")
+                .set("Authorization", authToken)
+                .send({
+                    handicap: 3
+                })
+                .expect(404)
+                .expect(function (res) {
+                    if (!res.body.error) {
+                        throw new Error("User account updated");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+});
+
+
+
+

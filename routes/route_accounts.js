@@ -23,7 +23,7 @@ var jwt = require('jsonwebtoken');
 
 app.get('/testnewuser', function (req, res) {
 
-    var password = "chill";
+    var password = "chillchill";
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
@@ -37,9 +37,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                id: 321,
+                firstname: "naam",
+                lastname: "lastname",
+                id: 4236,
                 password: hashed,
-                email: 'ham@hotie.com',
+                email: 'tostiham@lala.com',
                 active: true,
                 type: 3
             });
@@ -157,10 +159,6 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        if (res.user.type !== 3) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: "Not authorized to make this request"});
-        }
 
         console.log('\tpassed');
 
@@ -170,6 +168,12 @@ app.use('/', function (req, res, next) {
 
 var currUser;
 app.get('/:id/connect', function (req, res) {
+
+    if (res.user.type !== 3) {
+         logResponse(403, "Not authorized to make this request");
+         return res.status(403).send({error: "Not authorized to make this request"});
+     }
+
     // ID of the requested user
     var id = req.params.id;
 
@@ -194,18 +198,23 @@ app.get('/:id/connect', function (req, res) {
  */
 app.post("/", function (req, res) {
 
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
     // if (res.user.isEmpty()) {
     //     return res.status(401).send({error: "User is not logged in."})
     // }
     // else {
         //check if every field is entered
-        if (!req.body.password || !req.body.email || !req.body.handicap || !req.body.type) {
+        if (!req.body.password || !req.body.email || !req.body.type) {
             return res.status(400).send({error: "Not every field is (correctly) filled in."});
         }
 
     //check if all fields are entered
-    if (req.body.password && req.body.email &&
-        req.body.handicap && req.body.type) {
+    if (req.body.firstname && req.body.lastname && req.body.password && req.body.email &&
+        req.body.type) {
 
         if (req.body.password.length < 8) {
             return res.status(400).send({error: "Password must be at least 8 characters long."});
@@ -223,6 +232,10 @@ app.post("/", function (req, res) {
 
         if (isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
             return res.status(400).send({error: "Handicap is not valid."});
+        }
+
+        if (req.body.type === 1 && req.body.handicap === undefined){
+            return res.status(400).send({error: "Handicap not provided"});
         }
 
         //find email if found do not make account
@@ -247,6 +260,8 @@ app.post("/", function (req, res) {
                         if (req.body.type === 2 || req.body.type === 3){
 
                              account = new User({
+                                 firstname: req.body.firstname,
+                                 lastname: req.body.lastname,
                                 id: id,
                                 password: hashed,
                                 email: email,
@@ -257,6 +272,8 @@ app.post("/", function (req, res) {
                         }
                         else {
                              account = new User({
+                                 firstname: req.body.firstname,
+                                 lastname: req.body.lastname,
                                 id: id,
                                 password: hashed,
                                 email: email,
@@ -288,6 +305,12 @@ app.post("/", function (req, res) {
  * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
  */
 app.get('/oauth_callback', function (req, res) {
+
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
     if (currUser === undefined) {
         logResponse(500, 'currUser: ' + currUser);
         return res.status(500).send({error: 'currUser: ' + currUser});
@@ -361,12 +384,37 @@ app.get('/refresh/:id', function (req, res) {
                 if (err) {
                     return res.status(404).send({"error": "user could not be found!"});
                 }
-                return res.status(201).send({"succes": "Fitbit updated!"});
+                return res.status(201).send({"success": "Fitbit updated!"});
             });
         });
 
     });
 });
+
+app.get('/', function (req, res) {
+
+    if (res.user.type !== 3 ){
+        logResponse(403, "User not authorized to make this request");
+        return res.status(403).send({error: "User not authorized to make this request"});
+    }
+
+    User.find({type: 1}, {password: 0, _id : 0, __v: 0}, function (err, users) {
+
+        if (err){
+            logResponse(500, "Something went wrong");
+            return res.status(500).send({error: "Something went wrong"})
+        }
+        if (users.length === 0){
+            logResponse(404, "No users found");
+            return res.status(404).send({error: "No users found"});
+        }
+        logResponse(200, users);
+        return res.status(200).send({success: users});
+    })
+});
+
+
+
 function logResponse(code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';

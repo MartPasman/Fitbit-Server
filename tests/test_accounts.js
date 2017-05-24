@@ -19,11 +19,10 @@ describe("Fitbit connecting unittest", function () {
     });
 
 
-
-    it("should connect a fitbit to a user and return 201", function(done){
+    it("should connect a fitbit to a user and return 201", function (done) {
         server.get('/accounts/connect/123')
             .expect(302)
-            .end(function(err){
+            .end(function (err) {
                 done(err);
             })
     });
@@ -165,7 +164,7 @@ describe("Login", function () {
 
 
 /**
- * Tests for testing the accounts/users path
+ * Tests for testing the accounts/path
  */
 describe("Sign up", function () {
     var authToken = "";
@@ -344,6 +343,78 @@ describe("Sign up", function () {
                 .end(done);
         });
     });
+});
 
+
+/**
+ * Tests for testing the accounts/ path
+ */
+describe("Get users", function () {
+    var authToken = "";
+    var authTokenWrong = "";
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: 4236, password: "chillchill"})
+            .expect(201)
+            .end(function (err, result) {
+                authToken = result.body.success;
+            });
+
+        server.post('/accounts/login')
+            .send({id: 4235, password: "chill"})
+            .expect(201)
+            .end(function (err, result) {
+                authTokenWrong = result.body.success;
+                done();
+            });
+
+
+
+    });
+
+    /**
+     * Testing a correct get users expect 200 with users returned
+     */
+    context("GET accounts/  Correct", function () {
+        it("Should response 200 with users", function (done) {
+            server.get('/accounts/')
+                .set("Authorization", authToken)
+                .expect(200)
+                .expect(function (res) {
+                    if (!res.body.success) {
+                        throw new Error("Users not given back");
+                    }
+                })
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a sign up expect 401 not logged in
+     */
+    context("GET accounts/  Failed", function () {
+        it("Should response 401 not logged in", function (done) {
+            server.get('/accounts/')
+                .expect(401)
+                .end(done);
+        });
+    });
+
+    /**
+     * Testing a correct get users expect 403  not authorized
+     */
+    context("GET accounts/  failed", function () {
+        it("Should response 403 not authorized", function (done) {
+            server.get('/accounts/')
+                .set("Authorization", authTokenWrong)
+                .expect(403)
+                .expect(function (res) {
+                    if (res.body.success) {
+                        throw new Error("Users not given back");
+                    }
+                })
+                .end(done);
+        });
+    });
 
 });
