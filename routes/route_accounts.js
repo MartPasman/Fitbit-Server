@@ -21,7 +21,6 @@ var User = require('../model/model_user');
 
 var app = express.Router();
 
-var jwt = require('jsonwebtoken');
 
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
