@@ -64,12 +64,13 @@ app.get('/:id/stats/weeks/last', function (req, res) {
         fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/sleep/date/' + getYYYYMMDD(lastWeek, '-') + '/' + getYYYYMMDD(today, '-') + '.json', function (body2) {
             // use only the data we want
             const sleep = JSON.parse(body2).sleep;
+
             var sleepData = [];
             for (var i = 0; i < sleep.length; i++) {
                 sleepData[i] = {
-                    date: sleep.dateOfSleep,
-                    duration: sleep.duration,
-                    timeInBed: sleep.timeInBed
+                    date: sleep[i].dateOfSleep,
+                    duration: sleep[i].duration / 1000 / 60 / 60,
+                    timeInBed: sleep[i].timeInBed
                 };
             }
 
