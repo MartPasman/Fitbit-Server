@@ -104,7 +104,7 @@ app.post('/:id/goals', function (req, res) {
         end: req.body.end
     };
 
-    User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}},function (err, result) {
+    User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
@@ -126,30 +126,36 @@ app.post('/:id/goals', function (req, res) {
 app.put('/:id/goals/:gid', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
-        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === ''  || req.body.goal === undefined || !Date.parse(req.body.start) ||
-         !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
+        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || !Date.parse(req.body.start) ||
+        !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
 
     User.findOneAndUpdate({id: req.params.id, 'goals._id': mongoose.Types.ObjectId(req.params.gid)},
-        {$set: {'goals.$.start': req.body.start, 'goals.$.end': req.body.end, 'goals.$.goal': req.body.goal}},function (err, result) {
-        // Check to see whether an error occurred
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
-        }
+        {
+            $set: {
+                'goals.$.start': req.body.start,
+                'goals.$.end': req.body.end,
+                'goals.$.goal': req.body.goal
+            }
+        }, function (err, result) {
+            // Check to see whether an error occurred
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
 
-        // Check to see whether a user was found
-        if (!result) {
-            logResponse(404, 'User not found');
-            return res.status(404).send({error: "User not found"});
-        }
+            // Check to see whether a user was found
+            if (!result) {
+                logResponse(404, 'User not found');
+                return res.status(404).send({error: "User not found"});
+            }
 
-        return res.status(201).send({
-            success: true
+            return res.status(201).send({
+                success: true
+            });
         });
-    });
 });
 
 app.delete('/:id/goals/:gid', function (req, res) {
@@ -182,8 +188,8 @@ app.delete('/:id/goals/:gid', function (req, res) {
 });
 
 app.get('/:id/goals/:gid?', function (req, res) {
-    if(req.params.gid !== undefined){
-        User.findOne({id: res.user.id},{goals: {$elemMatch: {_id: mongoose.Types.ObjectId(req.params.gid)} }}, function (err, result) {
+    if (req.params.gid !== undefined) {
+        User.findOne({id: res.user.id}, {goals: {$elemMatch: {_id: mongoose.Types.ObjectId(req.params.gid)}}}, function (err, result) {
             // Check to see whether an error occurred
             if (err) {
                 logResponse(500, err.message);
@@ -202,7 +208,7 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 goals: result.goals[0]
             });
         });
-    }else {
+    } else {
 
         if (req.query.offset === undefined || isNaN(req.query.offset) || req.query.limit === undefined || isNaN(req.query.limit)) {
             logResponse(400, 'No offset or limit supplied');
@@ -227,7 +233,9 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 return res.status(400).send({error: "Offset exceeded goals"});
             }
 
-            result.goals.sort(function(m1, m2) { return m1.start - m2.start; });
+            result.goals.sort(function (m1, m2) {
+                return m1.start - m2.start;
+            });
 
 
             var addition = req.query.limit;
@@ -238,8 +246,8 @@ app.get('/:id/goals/:gid?', function (req, res) {
             addition = +req.query.offset + +addition;
 
             var slicedarray = result.goals.slice(req.query.offset, addition);
-            logResponse(201, 'Goals send');
-            return res.status(201).send({
+            logResponse(200, 'Goals send');
+            return res.status(200).send({
                 success: true,
                 totalgoals: result.goals.length,
                 goals: slicedarray
