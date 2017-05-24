@@ -53,8 +53,8 @@ var accountsRoutes = require('./routes/route_accounts');
 app.use('/accounts', accountsRoutes);
 
 //set competition routes
-// var competitionRoutes = require('./routes/route_competitions');
-// app.use('/competitions', competitionRoutes);
+var competitionRoutes = require('./routes/route_competitions');
+app.use('/competitions', competitionRoutes);
 
 app.get('/api', function (req, res) {
     res.status(200).send({'Hello,': ' World!'});
