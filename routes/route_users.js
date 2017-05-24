@@ -213,7 +213,7 @@ app.get('/:id/goals/:gid?', function (req, res) {
             return res.status(400).send({error: "No offset or limit supplied"});
         }
 
-        User.findOne({id: res.user.id}, {}, {sort: {'goals.start': 1}}, function (err, result) {
+        User.findOne({id: res.user.id}, function (err, result) {
             // Check to see whether an error occurred
             if (err) {
                 logResponse(500, err.message);
@@ -231,12 +231,17 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 return res.status(404).send({error: "Offset exceeded goals"});
             }
 
+            result.goals.sort(function(m1, m2) { return m1.start - m2.start; });
+
+
             var addition = req.query.limit;
             if (result.goals.length - req.params.offset < req.query.limit) {
                 addition = result.goals.length - req.params.offset;
             }
 
-            var slicedarray = result.goals.slice(req.query.offset, req.query.offset + addition);
+            addition = +req.query.offset + +addition;
+
+            var slicedarray = result.goals.slice(req.query.offset, addition);
             logResponse(201, 'Goals send');
             return res.status(201).send({
                 success: true,
