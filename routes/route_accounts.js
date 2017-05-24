@@ -4,23 +4,62 @@
  */
 
 var express = require("express");
-// var router = express.Router();
+var request = require('request');
 var mongoose = require('mongoose');
-var User = require('../model/model_user');
 var shortid = require('shortid');
 var bcrypt = require('bcrypt-nodejs');
 var fitbitClient = require('fitbit-node');
-var consumer_key = '228HTD';
+var jwt = require('jsonwebtoken');
+var base64 = require('base64_utility');
+
+var client_id = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
-var client = new fitbitClient(consumer_key, client_secret);
-var request = require('request');
+var client = new fitbitClient(client_id, client_secret);
 
+var User = require('../model/model_user');
 
 var app = express.Router();
 
 var jwt = require('jsonwebtoken');
 
+// TODO: delete later
+app.get('/testnewuseradmin', function (req, res) {
+
+    var password = "chillchill";
+    bcrypt.genSalt(10, function (err, salt) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        bcrypt.hash(password, salt, undefined, function (err, hashed) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            var account = new User({
+                firstname: "aa",
+                lastname: "bb",
+                id: 321,
+                password: hashed,
+                email: 'ham@hotie.com',
+                active: true,
+                type: 3
+            });
+
+            account.save(function (err, result) {
+                if (err) {
+                    return res.status(500).send({error: err.message});
+                }
+                res.status(201).send(result);
+            });
+        });
+    });
+});
+
+// TODO: delete later
 app.get('/testnewuser', function (req, res) {
 
     var password = "chillchill";
@@ -37,13 +76,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Romy",
-                lastname: "Beugeling",
-                id: 4237,
+                id: 123,
                 password: hashed,
-                email: 'tostiham@lala.com',
+                email: 'ham@hotie.com',
                 active: true,
-                type: 2
+                type: 1
             });
 
             account.save(function (err, result) {
@@ -60,39 +97,37 @@ app.get('/testnewuser', function (req, res) {
 
 });
 
+// TODO: delete later
 app.get('/testdeleteuser/:id', function (req, res) {
     User.find({id: req.params.id}, function (err, resss) {
         if (err) {
-            res.status(404).send();
+            res.status(500).send({error: err.message});
         }
         res.status(201).send({"message": "deleted user."});
     }).remove().exec()
-
-
 });
 
+/**
+ * Login
+ */
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
-        logResponse(400, 'id or password is not supplied');
-        return res.status(400).send({error: 'id or password is not supplied'});
+        logResponse(400, 'Invalid credentials');
+        return res.status(400).send({error: 'Invalid credentials'});
     }
-
 
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     if (isNaN(req.body.id)) {
-        logResponse(400, 'id is not numeric');
-        return res.status(400).send({error: 'id is not numerics'});
+        logResponse(400, 'Invalid credentials');
+        return res.status(400).send({error: 'Invalid credentials'});
     } else {
-
         User.findOne({id: req.body.id}, function (err, user) {
-
 
             // Check to see whether an error occurred
             if (err) {
-
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message});
             }
@@ -149,8 +184,6 @@ app.post('/login', function (req, res) {
  */
 app.use('/', function (req, res, next) {
 
-    console.log('\tAuthentication required...');
-    console.log(req.app.get('private-key'));
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -296,6 +329,113 @@ app.post("/", function (req, res) {
     }
 });
 
+/**
+ * Request for updating password
+ */
+app.put("/password", function (req, res) {
+    if (req.body.old === undefined || req.body.new1 === undefined || req.body.new2 === undefined || req.body.new1 !== req.body.new2) {
+        logResponse(400, 'Wrong information supplied');
+        return res.status(400).send({error: "Wrong information supplied"});
+    }
+
+    User.findOne({id: res.user.id}, function (err, user) {
+
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!user) {
+            logResponse(404, 'User not found');
+            return res.status(404).send({error: "User not found"});
+        }
+
+        try {
+            // Check to see whether the given password matches the password of the user
+            bcrypt.compare(req.body.old, user.password, function (err, success) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message});
+                }
+
+                if (!success) {
+                    logResponse(400, 'Invalid credentials');
+                    return res.status(400).send({error: "Invalid credentials"});
+                }
+
+                //Chek if the user is active
+                if (!user.active) {
+                    logResponse(403, 'User inactive');
+                    return res.status(403).send({error: "User inactive"});
+                }
+                // remove sensitive data
+                user.password = undefined;
+
+                //Generate salt for password
+                bcrypt.genSalt(10, function (err, salt) {
+                    if (err) {
+                        logResponse(500, err.message);
+                        return res.status(500).send({error: err.message});
+                    }
+
+                    //Hash password
+                    bcrypt.hash(req.body.new1, salt, undefined, function (err, hashed) {
+                        if (err) {
+                            logResponse(500, err.message);
+                            return res.status(500).send({error: err.message});
+                        }
+
+                        //Update password in database
+                        User.update({id: res.user.id}, {$set: {password: hashed}}, function (err, result) {
+                            // Check to see whether an error occurred
+                            if (err) {
+                                logResponse(500, err.message);
+                                return res.status(500).send({error: err.message});
+                            }
+
+                            // Check to see whether a user was found
+                            if (!result) {
+                                logResponse(404, 'User not found');
+                                return res.status(404).send({error: "User not found"});
+                            }
+
+                            logResponse(201, 'Password updated');
+                            return res.status(201).send({
+                                success: true
+                            });
+                        });
+
+                    });
+                });
+            });
+        } catch (err) {
+            // if the bcrypt fails
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+    });
+});
+
+/**
+ *
+ */
+app.get('/:id/connect', function (req, res) {
+
+    if (req.params.id === undefined || isNaN(req.params.id)) {
+        logResponse(400, "Invalid id.");
+        return res.status(400).send({error: "Invalid id."});
+    }
+
+    const state = mapOAuthRequest(req.params.id);
+
+    // get the authorisation URL to get the acces code from fitbit.com
+    const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
+
+    //redirect to this URL to let the user login
+    res.redirect(authURL);
+});
 
 /**
  * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
@@ -313,80 +453,59 @@ app.get('/oauth_callback', function (req, res) {
     }
     const user = currUser;
 
-    // build the request for the accesstoken
-    var options = {
+    const auth = base64.encode(client_id + ':' + client_secret);
+
+    //send the request
+    request.post({
         url: 'https://api.fitbit.com/oauth2/token',
         headers: {
-            Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
+            Authorization: ' Basic ' + auth,
             'Content-Type': ' application/x-www-form-urlencoded'
         },
-        body: "client_id=228HTD&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
-    };
-    //send the request
-    request.post(options, function (error, response, body) {
+        body: "expires_in=" + 60 + "&client_id=" + client_id + "&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
+    }, function (error, response, body) {
         if (error) {
-            res.status(500).send();
+            logResponse(500, error);
+            return res.status(500).send({error: error});
         }
-
 
         var parsedRes = JSON.parse(body);
 
         var json = {
-            userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
+            userid: parsedRes.user_id,
+            accessToken: parsedRes.access_token,
+            refreshToken: parsedRes.refresh_token
         };
+
+        console.log(json);
+
+        const userid = getOAuthMapUserid(req.query.state);
+        if (userid === undefined) {
+            logResponse(500, 'OAuth state was lost.');
+            return res.status(500).send({error: 'OAuth state was lost.'});
+        }
 
         //find the requested user and add the fitbit
-        User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
+        User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
             if (err) {
-                return res.status(404).send({"error": "user could not be found!"});
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
             }
-            return res.status(201).send({"succes": "Fitbit connected!"});
+
+            if (result === undefined) {
+                logResponse(404, 'User could not be found.');
+                return res.status(404).send({error: 'User could not be found.'});
+            }
+
+            logResponse(201, 'Fitbit connected.');
+            return res.status(201).send({success: 'Fitbit connected!'});
         });
-
-
     });
 });
 
-app.get('/refresh/:id', function (req, res) {
-    var id = req.params.id;
-
-    User.findOne({id: id}, function (err, myUser) {
-        if (err || !myUser) {
-            return res.status(404).send({"message": "user could not be found."});
-        }
-        var options = {
-            url: 'https://api.fitbit.com/oauth2/token',
-            headers: {
-                Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
-                'Content-Type': ' application/x-www-form-urlencoded'
-            },
-            body: "grant_type=refresh_token&refresh_token=" + myUser.fitbit.refreshToken
-
-        };
-        //send the request
-        request.post(options, function (error, response, body) {
-            if (error) {
-                res.status(500).send();
-            }
-            var parsedRes = JSON.parse(body);
-
-            var json = {
-                userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
-            };
-
-
-            //find the requested user and add the renewed fitbit
-            User.findOneAndUpdate({id: user.id}, {$set: {fitbit: json}}, function (err, result) {
-                if (err) {
-                    return res.status(404).send({"error": "user could not be found!"});
-                }
-                return res.status(201).send({"success": "Fitbit updated!"});
-            });
-        });
-
-    });
-});
-
+/**
+ * Get all users without passwords
+ */
 app.get('/', function (req, res) {
 
     if (res.user.type !== 3) {
@@ -429,6 +548,56 @@ function logResponse(code, message, depth) {
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 }
 
+// TODO: change to /users/all?
+// TODO: maybe move to route_users.js?
+/**
+ * returns all users with type: 1.
+ */
+app.get('/allusers', function (req, res) {
+    var data = [];
+    User.find({type: 1}, function (err, users) {
+        if (err) {
+            return res.status(500).send();
+        }
+        console.log(users.length);
+
+        for (var i = 0; i < users.length; i++) {
+            var id = users[i].id;
+
+            data[i] = {
+                accesstoken: users[i].fitbit.accessToken,
+                id: id
+            }
+        }
+        console.log(data);
+        return res.status(200).send(data);
+    })
+});
+
+const OAuthMap = [];
+function mapOAuthRequest(userid) {
+    const state = shortid.generate();
+
+    OAuthMap.push({
+        userid: userid,
+        state: state
+    });
+
+    return state;
+}
+
+function getOAuthMapUserid(state) {
+    for (var i = 0; i < OAuthMap.length; i++) {
+        const obj = OAuthMap[i];
+        if (obj !== undefined && obj.state === state) {
+            const userid = obj.userid;
+            OAuthMap[i] = undefined;
+            return userid;
+        }
+    }
+    return undefined;
+}
+
 /**
  * Check if a given email is a valid email
  * @param email
@@ -440,20 +609,10 @@ function validateEmail(email) {
 }
 
 /**
- * Function to determine if something is numeric
- * @param n is a string
- * @returns {boolean}
- */
-function isNumeric(n) {
-    return !isNaN(parseFloat(n)) && isFinite(n);
-}
-
-/**
  * Function to generate unique id and check if it already exists
  * @param callback
  */
 function generateId(callback) {
-
     var id = Math.ceil((Math.random() * 20000 ) + 10000);
 
     User.find({id: id}, function (err, user) {
@@ -463,6 +622,6 @@ function generateId(callback) {
             generateId(callback);
         }
     });
-};
+}
 
 module.exports = app;
