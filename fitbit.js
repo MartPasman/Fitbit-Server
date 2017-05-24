@@ -3,8 +3,12 @@
  * Fitbit API framework
  */
 var User = require('./model/model_user');
-var request = require("request");
+var request = require('request');
 var mongoose = require('mongoose');
+var base64 = require('base64_utility');
+
+var client_id = '228HTD';
+var client_secret = '41764caf3b48fa811ce514ef38c62791';
 // var logResponse = require('./app.js').logResponse;
 
 /**
@@ -73,23 +77,28 @@ function fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback) {
         }, function (error, response, body) {
             if (error !== undefined && response.statusCode !== 200) {
                 if (response.statusCode === 401) {
+                    // token expires
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + userid + '.');
                     refreshToken(userid, function (success) {
                         if (success) {
                             fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback);
                         } else {
                             // if refreshing the token went wrong
+                            logResponse(500, 'Token could not be refreshed.');
                             return res.status(500).send({error: 'Token could not be refreshed.'});
                         }
                     });
                 } else {
                     if (response.statusCode === 429) {
+                        // call limit reached
                         logResponse(response.statusCode, 'Fitbit API request limit reached for user: ' + userid + '.');
+                        return res.status(response.statusCode).send({error: 'Fitbit API request limit reached for user: ' + userid + '.'});
                     } else {
+                        // all other errors
                         console.error(response.body);
                         logResponse(response.statusCode, 'Fitbit API error.');
+                        return res.status(response.statusCode).send({error: 'Fitbit API error.'});
                     }
-                    return res.status(response.statusCode).send({error: 'Fitbit API error.'});
                 }
             } else {
                 callback(body);
@@ -105,41 +114,50 @@ function fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback) {
 function refreshToken(userid, callback) {
     console.log('Going to refresh token of user: ' + userid + '.');
 
-    User.findOne({id: userid}, function (err, user) {
+    User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
         if (err) {
             console.error('0: ' + err.message);
             callback(false);
             return;
         }
 
-        var options = {
-            url: 'https://api.fitbit.com/oauth2/token',
-            headers: {
-                Authorization: ' Basic MjI4SFREOjQxNzY0Y2FmM2I0OGZhODExY2U1MTRlZjM4YzYyNzkx',
-                'Content-Type': ' application/x-www-form-urlencoded'
-            },
-            body: "grant_type=refresh_token&refresh_token=" + user.fitbit.refreshToken
-        };
+        const auth = base64.encode(client_id + ':' + client_secret);
+
+        console.log(user.fitbit.refreshToken);
 
         //send the request
-        request.post(options, function (error, response, body) {
+        request.post({
+            url: 'https://api.fitbit.com/oauth2/token',
+            headers: {
+                Authorization: 'Basic ' + auth,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'grant_type=refresh_token&expires_in=' + 28800 + '&refresh_token=' + user.fitbit.refreshToken
+        }, function (error, response, body) {
             if (error) {
-                console.error('1: ' + err.message);
+                console.error('1: ' + error);
                 callback(false);
                 return;
             }
 
             var parsedRes = JSON.parse(body);
+            console.log('Fitbit result body: ');
+            console.log(body);
 
             var json = {
                 userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
             };
-            console.log(json);
+
+            if (json.userid === undefined || json.accessToken === undefined || json.refreshToken === undefined) {
+                console.error('2: results undefined.');
+                callback(false);
+                return;
+            }
 
             //find the requested user and add the renewed fitbit
             User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
                 if (err) {
-                    console.error('2: ' + err.message);
+                    console.error('3: ' + err.message);
                     callback(false);
                     return;
                 }
