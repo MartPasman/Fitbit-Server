@@ -170,9 +170,9 @@ var currUser;
 app.get('/:id/connect', function (req, res) {
 
     if (res.user.type !== 3) {
-         logResponse(403, "Not authorized to make this request");
-         return res.status(403).send({error: "Not authorized to make this request"});
-     }
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
 
     // ID of the requested user
     var id = req.params.id;
@@ -203,14 +203,11 @@ app.post("/", function (req, res) {
         return res.status(403).send({error: "Not authorized to make this request"});
     }
 
-    // if (res.user.isEmpty()) {
-    //     return res.status(401).send({error: "User is not logged in."})
-    // }
-    // else {
-        //check if every field is entered
-        if (!req.body.password || !req.body.email || !req.body.type) {
-            return res.status(400).send({error: "Not every field is (correctly) filled in."});
-        }
+
+    //check if every field is entered
+    if (!req.body.password || !req.body.email || !req.body.type) {
+        return res.status(400).send({error: "Not every field is (correctly) filled in."});
+    }
 
     //check if all fields are entered
     if (req.body.firstname && req.body.lastname && req.body.password && req.body.email &&
@@ -234,7 +231,7 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Handicap is not valid."});
         }
 
-        if (req.body.type === 1 && req.body.handicap === undefined){
+        if (req.body.type === 1 && req.body.handicap === undefined) {
             return res.status(400).send({error: "Handicap not provided"});
         }
 
@@ -257,11 +254,11 @@ app.post("/", function (req, res) {
                         }
 
                         var account;
-                        if (req.body.type === 2 || req.body.type === 3){
+                        if (req.body.type === 2 || req.body.type === 3) {
 
-                             account = new User({
-                                 firstname: req.body.firstname,
-                                 lastname: req.body.lastname,
+                            account = new User({
+                                firstname: req.body.firstname,
+                                lastname: req.body.lastname,
                                 id: id,
                                 password: hashed,
                                 email: email,
@@ -271,9 +268,9 @@ app.post("/", function (req, res) {
                             });
                         }
                         else {
-                             account = new User({
-                                 firstname: req.body.firstname,
-                                 lastname: req.body.lastname,
+                            account = new User({
+                                firstname: req.body.firstname,
+                                lastname: req.body.lastname,
                                 id: id,
                                 password: hashed,
                                 email: email,
@@ -284,20 +281,19 @@ app.post("/", function (req, res) {
                         }
 
 
-                            account.save(function (err, result) {
-                                if (err) {
-                                    return res.status(500).send({error: err.message});
-                                }
-                                return res.status(201).send({id: id});
-                            });
+                        account.save(function (err, result) {
+                            if (err) {
+                                return res.status(500).send({error: err.message});
+                            }
+                            return res.status(201).send({id: id});
                         });
                     });
                 });
             });
-        } else {
-            return res.status(400).send({error: "Not every field is (correctly) filled in."});
-        }
-    // }
+        });
+    } else {
+        return res.status(400).send({error: "Not every field is (correctly) filled in."});
+    }
 });
 
 
@@ -393,18 +389,18 @@ app.get('/refresh/:id', function (req, res) {
 
 app.get('/', function (req, res) {
 
-    if (res.user.type !== 3 ){
+    if (res.user.type !== 3) {
         logResponse(403, "User not authorized to make this request");
         return res.status(403).send({error: "User not authorized to make this request"});
     }
 
-    User.find({type: 1}, {password: 0, _id : 0, __v: 0}, function (err, users) {
+    User.find({type: 1}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 
-        if (err){
+        if (err) {
             logResponse(500, "Something went wrong");
             return res.status(500).send({error: "Something went wrong"})
         }
-        if (users.length === 0){
+        if (users.length === 0) {
             logResponse(404, "No users found");
             return res.status(404).send({error: "No users found"});
         }
@@ -412,7 +408,6 @@ app.get('/', function (req, res) {
         return res.status(200).send({success: users});
     })
 });
-
 
 
 function logResponse(code, message, depth) {
