@@ -202,8 +202,8 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 return res.status(404).send({error: "User or goal was not found"});
             }
 
-            logResponse(201, 'Goal found and send');
-            return res.status(201).send({
+            logResponse(200, 'Goal found and send');
+            return res.status(200).send({
                 success: true,
                 goals: result.goals[0]
             });
