@@ -129,13 +129,13 @@ function refreshToken(userid, callback) {
         request.post({
             url: 'https://api.fitbit.com/oauth2/token',
             headers: {
-                Authorization: ' Basic ' + auth,
-                'Content-Type': ' application/x-www-form-urlencoded'
+                Authorization: 'Basic ' + auth,
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: "grant_type=refresh_token&expires_in=" + 28800 + "&refresh_token=" + user.fitbit.refreshToken
+            body: 'grant_type=refresh_token&expires_in=' + 28800 + '&refresh_token=' + user.fitbit.refreshToken
         }, function (error, response, body) {
             if (error) {
-                console.error('1: ' + err.message);
+                console.error('1: ' + error);
                 callback(false);
                 return;
             }
