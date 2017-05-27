@@ -248,6 +248,130 @@ describe("Load goal with offset", function () {
     });
 });
 
+describe("Changing goal", function () {
+    var token;
+    var id;
+
+    /**
+     * Getting a access token for testing
+     */
+    context("POST accounts/login/  Correct", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: '123', password: 'chillchill'})
+                .expect(201)
+                .end(function (err, res) {
+                    done(err);
+                    token = res.body.success;
+                    id = res.body.userid;
+                });
+        });
+    });
+
+
+    /**
+     * Adding at least 1 goal for testing
+     */
+    context("POST /users/:id/goals/  Correct", function () {
+        it("Should response 201", function (done) {
+            server.post('/users/'+id+'/goals/ ')
+                .send({ end: '2017-05-21 00:00:00.000',
+                    start: '2017-05-20 00:00:00.000',
+                    goal:1000}).set("Authorization", token)
+                .expect(201)
+                .end(function(err, res){
+                    done(err);
+                });
+        });
+    });
+
+    var gid;
+
+    /**
+     * Getting a id for test purpose
+     */
+    context("GET /users/:id/goals?offset=0  Correct", function () {
+        it("Should response 200", function (done) {
+            server.get('/users/'+id+'/goals?offset=0&limit=5 ')
+                .send().set("Authorization", token)
+                .expect(200)
+                .end(function(err, resp){
+                    done(err);
+                    gid = resp.body.goals[0]._id;
+                    console.log(gid);
+                });
+        });
+    });
+
+    /**
+     * Getting a id for test purpose
+     */
+    context("PUT /users/:id/goals/:gid Correct", function () {
+        it("Should response 201", function (done) {
+            server.put('/users/'+id+'/goals/'+gid)
+                .send({ end: '2017-05-23 00:00:00.000',
+                    start: '2017-05-22 00:00:00.000',
+                    goal:1100}).set("Authorization", token)
+                .expect(201)
+                .end(function(err, resp){
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Getting a id for test purpose
+     */
+    context("PUT /users/:id/goals/:gid failed wrong end date", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/'+id+'/goals/'+gid)
+                .send({ end: '',
+                    start: '2017-05-22 00:00:00.000',
+                    goal:1100}).set("Authorization", token)
+                .expect(400)
+                .end(function(err, resp){
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Getting a id for test purpose
+     */
+    context("PUT /users/:id/goals/:gid failed wrong start date", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/'+id+'/goals/'+gid)
+                .send({ end: '2017-05-22 00:00:00.000',
+                    start: '',
+                    goal:1100}).set("Authorization", token)
+                .expect(400)
+                .end(function(err, resp){
+                    done(err);
+                });
+        });
+    });
+
+
+    /**
+     * Getting a id for test purpose
+     */
+    context("PUT /users/:id/goals/:gid failed no goal", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/'+id+'/goals/'+gid)
+                .send({ end: '2017-05-22 00:00:00.000',
+                    start: '2017-05-22 00:00:00.000',
+                    goal:''}).set("Authorization", token)
+                .expect(400)
+                .end(function(err, resp){
+                    done(err);
+                });
+        });
+    });
+
+
+
+});
+
 
 
 describe('Get stats of a user', function () {
