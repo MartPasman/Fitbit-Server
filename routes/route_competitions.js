@@ -82,7 +82,7 @@ app.get('/:offset?', function (req, res) {
                         if (err) {
                             return res.status(500).send({error: "..."});
                         }
-                        i = 1;
+                        i = 0;
                     });
                 });
             }
