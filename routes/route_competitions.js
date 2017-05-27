@@ -163,9 +163,16 @@ app.post('/', function (req, res) {
 app.put('/:id/score', function(req,res){
     var userid = req.body.userid;
     var score = req.body.score;
+
+    if(userid === undefined || score == undefined){
+        return res.status(400).send("Invalid parameters!");
+    }
      Competition.findOneAndUpdate({id: req.params.id,"results.userid": userid},{$set: {"results.$.score": score}}, function (err,result) {
         if(err){
             return res.status(500).send({error: 'Internal server error!'});
+        }
+        if (result === null){
+            res.status(400).send("Competition/User not found!");
         }
 
         return res.status(201).send({succes: 'updated!'});
