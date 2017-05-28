@@ -181,25 +181,25 @@ app.post('/login', function (req, res) {
  * all requests below this function will automatically go through this one first!
  * If your page doesn't need to be requested by admin, put it above this function
  */
-app.use('/', function (req, res, next) {
-
-    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        if (err) {
-            logResponse(401, err.message);
-            return res.status(401).send({error: "User is not logged in."});
-        }
-
-        // Save user for future purposes
-        res.user = decoded._doc;
-        // if (res.user.type !== 3) {
-        //     logResponse(403, "Not authorized to make this request");
-        //     return res.status(403).send({error: "Not authorized to make this request"});
-        //  }
-
-         next();
-     });
-
-});
+// app.use('/', function (req, res, next) {
+//
+//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+//         if (err) {
+//             logResponse(401, err.message);
+//             return res.status(401).send({error: "User is not logged in."});
+//         }
+//
+//         // Save user for future purposes
+//         res.user = decoded._doc;
+//         if (res.user.type !== 3) {
+//             logResponse(403, "Not authorized to make this request");
+//             return res.status(403).send({error: "Not authorized to make this request"});
+//          }
+//
+//          next();
+//      });
+//
+// });
 
 /**
  * Make new account
@@ -417,16 +417,10 @@ app.get('/:id/connect', function (req, res) {
  */
 app.get('/oauth_callback', function (req, res) {
 
-    if (res.user.type !== 3) {
-        logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
-    }
-
-    if (currUser === undefined) {
-        logResponse(500, 'currUser: ' + currUser);
-        return res.status(500).send({error: 'currUser: ' + currUser});
-    }
-    const user = currUser;
+    // if (res.user.type !== 3) {
+    //     logResponse(403, "Not authorized to make this request");
+    //     return res.status(403).send({error: "Not authorized to make this request"});
+    // }
 
     const auth = base64.encode(client_id + ':' + client_secret);
 
@@ -522,32 +516,6 @@ function logResponse(code, message, depth) {
 
     console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 }
-
-// TODO: change to /users/all?
-// TODO: maybe move to route_users.js?
-/**
- * returns all users with type: 1.
- */
-app.get('/allusers', function (req, res) {
-    var data = [];
-    User.find({type: 1}, function (err, users) {
-        if (err) {
-            return res.status(500).send();
-        }
-        console.log(users.length);
-
-        for (var i = 0; i < users.length; i++) {
-            var id = users[i].id;
-
-            data[i] = {
-                accesstoken: users[i].fitbit.accessToken,
-                id: id
-            }
-        }
-        console.log(data);
-        return res.status(200).send(data);
-    })
-});
 
 const OAuthMap = [];
 function mapOAuthRequest(userid) {

@@ -298,7 +298,6 @@ app.put('/:id/handicap', function (req, res) {
     }
 });
 
-
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
@@ -326,12 +325,6 @@ function getYYYYMMDD(date, splitBy) {
         (mm > 9 ? '' : '0') + mm,
         (dd > 9 ? '' : '0') + dd
     ].join(splitBy);
-}
-
-function isValidDate(s) {
-    var bits = s.split('/');
-    var d = new Date(bits[2], bits[1] - 1, bits[0]);
-    return d && (d.getMonth() + 1) === bits[1];
 }
 
 module.exports = app;
