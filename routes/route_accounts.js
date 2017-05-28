@@ -191,10 +191,10 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        // if (res.user.type !== 3) {
-        //     logResponse(403, "Not authorized to make this request");
-        //     return res.status(403).send({error: "Not authorized to make this request"});
-        //  }
+        if (res.user.type !== 3) {
+            logResponse(403, "Not authorized to make this request");
+            return res.status(403).send({error: "Not authorized to make this request"});
+         }
 
          next();
      });
