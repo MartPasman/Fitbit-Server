@@ -257,6 +257,27 @@ app.get('/:id/goals/:gid?', function (req, res) {
     }
 });
 
+
+/**
+ * Get all users without passwords
+ */
+app.get('/:id', function (req, res) {
+
+    User.find({type: 1, id:req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+
+        if (err) {
+            logResponse(500, "Something went wrong");
+            return res.status(500).send({error: "Something went wrong"})
+        }
+        if (user.length === 0) {
+            logResponse(404, "No users found");
+            return res.status(404).send({error: "No users found"});
+        }
+        logResponse(200, "user returned");
+        return res.status(200).send({success: user[0]});
+    })
+});
+
 app.put('/:id/handicap', function (req, res) {
 
     if (res.user.type !== 3) {
