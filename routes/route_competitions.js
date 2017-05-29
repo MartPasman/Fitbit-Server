@@ -76,7 +76,7 @@ app.get('/', function (req, res) {
                     var comp = new Competition({
                         id: id,
                         goal: 100000,
-                        defaultgoal: 100000,
+                        defaultGoal: 100000,
                         start: date,
                         end: end_date,
                         results: results
@@ -84,7 +84,8 @@ app.get('/', function (req, res) {
 
                     comp.save(function (err, resp) {
                         if (err) {
-                            return res.status(500).send({error: "..."});
+                            console.log(err);
+                            return res.status(500).send(err);
                         }
                         return res.status(200).send(resp);
 
