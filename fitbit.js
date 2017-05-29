@@ -2,13 +2,15 @@
  * Created on 22-05-17.
  * Fitbit API framework
  */
-var User = require('./model/model_user');
-var request = require('request');
-var mongoose = require('mongoose');
-var base64 = require('base64_utility');
+const User = require('./model/model_user');
+const request = require('request');
+const mongoose = require('mongoose');
+const base64 = require('base64_utility');
+const fitbitClient = require('fitbit-node');
 
-var client_id = '228HTD';
-var client_secret = '41764caf3b48fa811ce514ef38c62791';
+const client_id = '228HTD';
+const client_secret = '41764caf3b48fa811ce514ef38c62791';
+const client = new fitbitClient(client_id, client_secret);
 // var logResponse = require('./app.js').logResponse;
 
 /**
@@ -53,7 +55,7 @@ var prepareAPICall = function (req, res, url, callback) {
             return res.status(412).send({error: 'User account not connected to a Fitbit.'});
         }
 
-        fitbitAPICall(req, res, url, user.fitbit.accessToken, user.fitbit.userid, userid, callback);
+        fitbitAPICall(req, res, url, user.fitbit.accessToken, user.fitbit.refreshToken, user.fitbit.userid, userid, callback);
     });
 };
 
@@ -63,12 +65,13 @@ var prepareAPICall = function (req, res, url, callback) {
  * @param res
  * @param url
  * @param accessToken
+ * @param refreshToken
  * @param fitbitid
  * @param userid
  * @param callback
  * @constructor
  */
-function fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback) {
+function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback) {
     request.get(url.replace('[id]', fitbitid),
         {
             headers: {
@@ -79,9 +82,9 @@ function fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback) {
                 if (response.statusCode === 401) {
                     // token expires
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + userid + '.');
-                    refreshToken(userid, function (success) {
+                    refreshToken(userid, accessToken, refreshToken, function (success) {
                         if (success) {
-                            fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback);
+                            fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback);
                         } else {
                             // if refreshing the token went wrong
                             logResponse(500, 'Token could not be refreshed.');
@@ -109,10 +112,13 @@ function fitbitAPICall(req, res, url, accessToken, fitbitid, userid, callback) {
 /**
  * Refreshes the token and updates the record in the database of a certain user
  * @param userid id of the user to refresh its token
+ * @param accessToken
+ * @param refreshToken
  * @param callback function to call after refreshing
  */
-function refreshToken(userid, callback) {
+function refreshToken(userid, accessToken, refreshToken, callback) {
     console.log('Going to refresh token of user: ' + userid + '.');
+    const promise = client.refreshAccessToken(accessToken, refreshToken);
 
     User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
         if (err) {

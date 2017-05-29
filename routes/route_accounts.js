@@ -14,18 +14,17 @@ var base64 = require('base64_utility');
 
 var client_id = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
+var client = new fitbitClient(client_id, client_secret);
 
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 
 var redirect = REST + '/accounts/oauth_callback';
-var client = new fitbitClient(client_id, client_secret);
 
 var User = require('../model/model_user');
 
 var app = express.Router();
-
 
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
@@ -247,20 +246,20 @@ app.get('/oauth_callback', function (req, res) {
  * all requests below this function will automatically go through this one first!
  * If your page doesn't need to be requested by admin, put it above this function
  */
-app.use('/', function (req, res, next) {
-
-    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-        if (err) {
-            logResponse(401, err.message);
-            return res.status(401).send({error: "User is not logged in."});
-        }
-
-        // Save user for future purposes
-        res.user = decoded._doc;
-
-         next();
-     });
-});
+// app.use('/', function (req, res, next) {
+//
+//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+//         if (err) {
+//             logResponse(401, err.message);
+//             return res.status(401).send({error: "User is not logged in."});
+//         }
+//
+//         // Save user for future purposes
+//         res.user = decoded._doc;
+//
+//          next();
+//      });
+// });
 
 /**
  * Make new account
@@ -460,10 +459,10 @@ app.put("/password", function (req, res) {
  */
 app.get('/:id/connect', function (req, res) {
 
-    if (res.user.type !== 3) {
-        logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
-    }
+    // if (res.user.type !== 3) {
+    //     logResponse(403, "Not authorized to make this request");
+    //     return res.status(403).send({error: "Not authorized to make this request"});
+    // }
 
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, "Invalid id.");

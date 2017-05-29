@@ -60,7 +60,7 @@ app.get('/:id/stats/weeks/last', function (req, res) {
         // get the right time period
         var today = new Date();
         var lastWeek = new Date();
-        lastWeek.setDate(today.getDate() - 7);
+        lastWeek.setDate(today.getDate() - 6);
 
         fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/sleep/date/' + getYYYYMMDD(lastWeek, '-') + '/' + getYYYYMMDD(today, '-') + '.json', function (body2) {
             // use only the data we want
@@ -332,6 +332,8 @@ app.put('/:id/handicap', function (req, res) {
         })
     }
 });
+
+
 
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
