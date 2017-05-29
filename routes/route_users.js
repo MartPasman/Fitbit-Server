@@ -269,8 +269,9 @@ app.get('/:id', function (req, res) {
         return res.status(400).send({error: 'id is not defined'});
     }
 
+
     if (res.user.type !== 3) {
-        if (req.params.id !== res.user.id) {
+        if (+req.params.id !== +res.user.id) {
             logResponse(403, "Not authorized to make this request");
             return res.status(403).send({error: 'Not authorized to make this request'});
         }
