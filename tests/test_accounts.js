@@ -160,7 +160,7 @@ describe("Wachtwoord veranderen", function () {
 
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: 123, password: "chillchill"})
+            .send({id: 321, password: "chillhoor"})
             .expect(201)
             .end(function (err, result) {
                 token = result.body.success;
@@ -174,7 +174,7 @@ describe("Wachtwoord veranderen", function () {
     context("PUT accounts/password correct change password", function () {
         it("Should response 201", function (done) {
             server.put('/accounts/password')
-                .send({old: "chillchill", new1: "hallo123", new2: "hallo123"})
+                .send({old: "chillhoor", new1: "hallo123", new2: "hallo123"})
                 .set("Authorization", token)
                 .expect(201)
                 .end(function (err, result) {
@@ -189,7 +189,7 @@ describe("Wachtwoord veranderen", function () {
     context("POST accounts/login/  Correct login new password", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'hallo123'})
+                .send({id: '321', password: 'hallo123'})
                 .expect(201)
                 .end(function (err, res) {
                     token = res.body.success;

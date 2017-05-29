@@ -128,7 +128,7 @@ app.post('/:id/goals', function (req, res) {
 app.put('/:id/goals/:gid', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
-        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === '' ||  !Date.parse(req.body.start) ||
+        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === '' || !Date.parse(req.body.start) ||
         !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
@@ -264,9 +264,18 @@ app.get('/:id/goals/:gid?', function (req, res) {
  */
 app.get('/:id', function (req, res) {
 
-    //todo alleen kunnen ophalen als je deze persoon bent.
+    if (req.params.id === '' || req.params.id === undefined) {
+        logResponse(400, 'id is not defined');
+        return res.status(400).send({error: 'id is not defined'});
+    }
 
-    User.find({type: 1, id:req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+    if (req.params.id !== res.user.id || res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: 'Not authorized to make this request'});
+    }
+
+
+    User.find({type: 1, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
 
         if (err) {
             logResponse(500, err.message);
@@ -284,7 +293,7 @@ app.get('/:id', function (req, res) {
 app.put('/:id/handicap', function (req, res) {
 
     if (res.user.type !== 3) {
-        logResponse(403, "User is not authorized to make this request" );
+        logResponse(403, "User is not authorized to make this request");
         return res.status(403).send({error: "User is not authorized to make this request"});
     }
 
@@ -294,8 +303,8 @@ app.put('/:id/handicap', function (req, res) {
     }
     else {
 
-        if(req.body.handicap === undefined){
-            logResponse(400,"Handicap is not given." );
+        if (req.body.handicap === undefined) {
+            logResponse(400, "Handicap is not given.");
             return res.status(400).send({error: "Handicap is not given."});
         }
 

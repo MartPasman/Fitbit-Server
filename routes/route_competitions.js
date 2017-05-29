@@ -39,73 +39,150 @@ var fitbitCall = require('../fitbit.js').fitbitCall;
 //     });
 // });
 
-app.get('/:offset?', function (req, res) {
+app.get('/', function (req, res) {
+    var results = [];
+
     Competition.find({}, function (err, result) {
         if (err) {
             return res.status(500).send();
         }
 
+        if (result.length == 0) {
+            // create new competition
+            generatecompId(function (id) {
+                var date = new Date();
+                var end_date = new Date();
+                end_date = end_date.setDate(date.getDate() + 7);
 
-        result.sort(function (m1, m2) {
-            return m1.start - m2.start;
-        });
+                //create results
+                User.find({type: 1}, function (err, usrs) {
+                    if (err) {
+                        return res.status(500).send();
+                    }
 
+                    if (usrs.length == 0) {
+                        return res.status(404).send({error: "no users found"});
+                    }
 
+                    for (var i = 0; i < usrs.length; i++) {
+                        results[i] = {
+                            name: usrs[i].firstname + ' ' + usrs[i].lastname,
+                            userid: usrs[i].id,
+                            score: 0,
+                            goalAchieved: false
+                        }
+                    }
 
-        var date = new Date();
-
-        var i = 1;
-        var resultdate = new Date(result[result.length - i].start);
-
-        while (resultdate > date) {
-            i++;
-            if(result.length - i <= 0){
-                generatecompId(function (id) {
-                    var date = new Date();
-
-                    var oneDay = 24*60*60*1000;
-                    var diffDays = Math.round(Math.abs((result[result.length - 1].start - result[result.length - 1].end)/(oneDay)));
-
-                    var end_date = new Date();
-                    end_date.addDays(diffDays);
-                    //TODO 0 results
                     var comp = new Competition({
                         id: id,
-                        goal: result[result.length - 1].defaultgoal,
-                        defaultgoal: result[result.length - 1].defaultgoal,
+                        goal: 100000,
+                        defaultgoal: 100000,
                         start: date,
                         end: end_date,
-                        results: result[result.length-1].results
+                        results: results
                     });
 
                     comp.save(function (err, resp) {
                         if (err) {
                             return res.status(500).send({error: "..."});
                         }
-                        i = 0;
+                        return res.status(200).send(resp);
+
                     });
+
+
                 });
-            }
-            resultdate = new Date(result[result.length - i]);
-        }
-        if (req.params.offset == undefined || req.params.offset == 0) {
-            result[result.length - i].results.sort(function (m1, m2) {
-                return m2.score - m1.score;
             });
-            return res.status(200).send({total: result.length-1, current: result.length-i, competition: result[result.length - i]});
         } else {
-            if(result.length - i + +req.params.offset < 0 || result.length - i + +req.params.offset > result.length - 1){
-                return res.status(400).send({error: "index out of bounds"});
-            }
-            result[result.length - i + +req.params.offset].results.sort(function (m1, m2) {
-                return m2.score - m1.score;
+            result.sort(function (m1, m2) {
+                return m1.start - m2.start;
             });
-            return res.status(200).send({total: result.length-1, current: (result.length-i + +req.params.offset), competition: result[result.length - i + +req.params.offset]});
+
+            res.status(200).send(result[result.length - 1]);
         }
 
 
     });
 });
+
+/**
+ * THIS IS A VERSION WHERE YOU CAN GET HISTORY OF COMPS
+ */
+// app.get('/:offset?', function (req, res) {
+//     Competition.find({}, function (err, result) {
+//         if (err) {
+//             return res.status(500).send();
+//         }
+//
+//         if(result.length == 0){
+//             // create new competition
+//
+//         }
+//
+//         result.sort(function (m1, m2) {
+//             return m1.start - m2.start;
+//         });
+//
+//
+//
+//         var date = new Date();
+//
+//         var i = 0;
+//         var resultdate = new Date(result[result.length - 1].start);
+//
+//         while (resultdate > date) {
+//             i++;
+//             if(result.length - i <= 0){
+//                 generatecompId(function (id) {
+//                     var date = new Date();
+//
+//                     var oneDay = 24*60*60*1000;
+//                     var diffDays = Math.round(Math.abs((result[result.length - 1].start - result[result.length - 1].end)/(oneDay)));
+//
+//                     var end_date = new Date();
+//                     end_date.addDays(diffDays);
+//                     //TODO 0 results
+//                     var comp = new Competition({
+//                         id: id,
+//                         goal: result[result.length - 1].defaultgoal,
+//                         defaultgoal: result[result.length - 1].defaultgoal,
+//                         start: date,
+//                         end: end_date,
+//                         results: result[result.length-1].results
+//                     });
+//
+//                     comp.save(function (err, resp) {
+//                         if (err) {
+//                             return res.status(500).send({error: "..."});
+//                         }
+//                         i = 1;
+//                     });
+//                 });
+//             }
+//             resultdate = new Date(result[result.length - i]);
+//         }
+//         if (req.params.offset == undefined || req.params.offset == 0) {
+//
+//             result[result.length - i].results.sort(function (m1, m2) {
+//                 return m2.score - m1.score;
+//             });
+//             return res.status(200).send({total: result.length-1, current: result.length-i, competition: result[result.length - i]});
+//
+//         } else {
+//
+//             if(result.length - i + +req.params.offset < 0 || result.length - i + +req.params.offset > result.length - 1){
+//                 return res.status(400).send({error: "index out of bounds"});
+//             }
+//             result[result.length - i + +req.params.offset].results.sort(function (m1, m2) {
+//                 return m2.score - m1.score;
+//             });
+//             return res.status(200).send({total: result.length-1, current: (result.length-i + +req.params.offset), competition: result[result.length - i + +req.params.offset]});
+//
+//         }
+//
+//
+//     });
+// });
 
 /**
  * Create a competition.
@@ -160,25 +237,27 @@ app.post('/', function (req, res) {
 
 });
 
-app.put('/:id/score', function(req,res){
+app.put('/:id/score', function (req, res) {
     var userid = req.body.userid;
     var score = req.body.score;
 
-    if(userid === undefined || score == undefined){
+    if (userid === undefined || score == undefined) {
         return res.status(400).send("Invalid parameters!");
     }
-     Competition.findOneAndUpdate({id: req.params.id,"results.userid": userid},{$set: {"results.$.score": score}}, function (err,result) {
-        if(err){
+    Competition.findOneAndUpdate({
+        id: req.params.id,
+        "results.userid": userid
+    }, {$set: {"results.$.score": score}}, function (err, result) {
+        if (err) {
             return res.status(500).send({error: 'Internal server error!'});
         }
-        if (result === null){
+        else if (result === null) {
             res.status(400).send("Competition/User not found!");
-        }
+        } else
+            return res.status(201).send({succes: 'updated!'});
 
-        return res.status(201).send({succes: 'updated!'});
 
-
-    } )
+    })
 
 });
 function generatecompId(callback) {
@@ -193,11 +272,11 @@ function generatecompId(callback) {
     });
 }
 
-Date.prototype.addDays = function(days) {
+Date.prototype.addDays = function (days) {
     var dat = new Date(this.valueOf());
     dat.setDate(dat.getDate() + days);
     return dat;
-}
+};
 
 
 module.exports = app;
