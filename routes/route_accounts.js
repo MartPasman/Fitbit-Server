@@ -55,8 +55,10 @@ app.get('/testnewuseradmin', function (req, res) {
 
             account.save(function (err, result) {
                 if (err) {
+                    logResponse(500, err.message);
                     return res.status(500).send({error: err.message});
                 }
+                logResponse(201, 'Admin added.');
                 res.status(201).send(result);
             });
         });
@@ -66,7 +68,7 @@ app.get('/testnewuseradmin', function (req, res) {
 // TODO: delete later
 app.get('/testnewuser', function (req, res) {
 
-    var password = "chillchill";
+    var password = "gebruiker";
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
@@ -80,33 +82,36 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                id: 123,
+                firstname: "Generic",
+                lastname: "User",
+                id: 10002,
                 password: hashed,
-                email: 'ham@hotie.com',
+                email: 'geen@mail.nl',
                 active: true,
                 type: 1
             });
 
             account.save(function (err, result) {
                 if (err) {
+                    logResponse(500, err.message);
                     return res.status(500).send({error: err.message});
                 }
+                logResponse(201, 'User added.');
                 res.status(201).send(result);
             });
 
         });
-
-
     });
-
 });
 
 // TODO: delete later
 app.get('/testdeleteuser/:id', function (req, res) {
     User.find({id: req.params.id}, function (err, resss) {
         if (err) {
+            logResponse(500, err.message);
             res.status(500).send({error: err.message});
         }
+        logResponse(201, 'Deleted.');
         res.status(201).send({"message": "deleted user."});
     }).remove().exec()
 });
@@ -253,9 +258,8 @@ app.use('/', function (req, res, next) {
         // Save user for future purposes
         res.user = decoded._doc;
 
-        next();
-    });
-
+         next();
+     });
 });
 
 /**
