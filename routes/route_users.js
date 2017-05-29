@@ -269,7 +269,9 @@ app.get('/:id', function (req, res) {
     }
 
     if(id !== res.user.id){
-        return res.status(400).send({error: 'you can only request yourself'});
+        if(res.user.type !== 3) {
+            return res.status(400).send({error: 'you can only request yourself'});
+        }
     }
 
     User.find({type: 1, id:req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
