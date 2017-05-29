@@ -82,7 +82,7 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                 if (response.statusCode === 401) {
                     // token expires
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + userid + '.');
-                    refreshToken(userid, accessToken, refreshToken, function (success) {
+                    doRefreshToken(userid, accessToken, refreshToken, function (success) {
                         if (success) {
                             fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback);
                         } else {
@@ -116,7 +116,7 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
  * @param refreshToken
  * @param callback function to call after refreshing
  */
-function refreshToken(userid, accessToken, refreshToken, callback) {
+function doRefreshToken(userid, accessToken, refreshToken, callback) {
     console.log('Going to refresh token of user: ' + userid + '.');
     const promise = client.refreshAccessToken(accessToken, refreshToken);
 
