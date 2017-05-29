@@ -264,11 +264,11 @@ app.get('/:id/goals/:gid?', function (req, res) {
  */
 app.get('/:id', function (req, res) {
 
-    if(req.params.id == '' || req.params.id == undefined){
+    if(req.params.id === '' || req.params.id === undefined){
         return res.status(400).send({error: 'id is not defined'});
     }
 
-    if(id !== res.user.id){
+    if(req.params.id !== res.user.id){
         if(res.user.type !== 3) {
             return res.status(400).send({error: 'you can only request yourself'});
         }
