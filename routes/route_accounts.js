@@ -459,10 +459,10 @@ app.put("/password", function (req, res) {
  */
 app.get('/:id/connect', function (req, res) {
 
-    // if (res.user.type !== 3) {
-    //     logResponse(403, "Not authorized to make this request");
-    //     return res.status(403).send({error: "Not authorized to make this request"});
-    // }
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
 
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, "Invalid id.");
