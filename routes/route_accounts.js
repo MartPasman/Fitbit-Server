@@ -272,6 +272,7 @@ app.post("/", function (req, res) {
         return res.status(403).send({error: "Not authorized to make this request"});
     }
 
+    console.log(body);
 
     //check if every field is entered
     if (!req.body.password || !req.body.email || !req.body.type) {
@@ -283,31 +284,31 @@ app.post("/", function (req, res) {
         req.body.type) {
 
         if (req.body.password.length < 8) {
+            logResponse(400, 'Password too short.');
             return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
 
         var email = req.body.email.toLowerCase();
 
         if (!validateEmail(email)) {
+            logResponse(400, 'Email not valid.');
             return res.status(400).send({error: "Email address is not valid."});
         }
 
-        if (isNaN(req.body.type) || req.body.type < 1 || req.body.type > 3) {
+        if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 3) {
+            logResponse(400, 'Type is not valid');
             return res.status(400).send({error: "Type is not valid."});
         }
 
-        if (isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
+        if (req.body.type === 1 && req.body.handicap === undefined || isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
+            logResponse(400, 'Handicap is not valid.');
             return res.status(400).send({error: "Handicap is not valid."});
-        }
-
-        if (req.body.type === 1 && req.body.handicap === undefined) {
-            return res.status(400).send({error: "Handicap not provided"});
         }
 
         //find email if found do not make account
         User.find({email: email}, function (err, user) {
-            console.log(user);
             if (user.length > 0) {
+                logResponse(400, 'Email already exists');
                 return res.status(400).send({error: "Email address already exists."});
             }
 

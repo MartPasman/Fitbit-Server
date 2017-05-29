@@ -18,7 +18,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 mongoose.Promise = global.Promise;
 
 var options = {server: {socketOptions: {keepAlive: 1}}};
-//mongoose.connect('mongodb://myUserAdmin:abc123@localhost:27017/admin', options);
 mongoose.connect('mongodb://localhost:27017/database', options);
 mongoose.connection.on('error', function (err) {
     console.log('Could not connect to MongoDB server: ' + err);
@@ -63,7 +62,6 @@ app.get('/api', function (req, res) {
 //listen on port 3000
 app.listen(3000, function () {
     console.log('Listening on port 3000!');
-    console.log(new Date());
 });
 
 var logResponse = function(code, message, depth) {
