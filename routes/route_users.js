@@ -265,11 +265,13 @@ app.get('/:id/goals/:gid?', function (req, res) {
 app.get('/:id', function (req, res) {
 
     if (req.params.id === '' || req.params.id === undefined) {
+        logResponse(400, 'id is not defined');
         return res.status(400).send({error: 'id is not defined'});
     }
 
     if (req.params.id !== res.user.id || res.user.type !== 3) {
-        return res.status(400).send({error: 'you can only request yourself'});
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: 'Not authorized to make this request'});
     }
 
 
