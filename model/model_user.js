@@ -25,6 +25,7 @@ var userSchema = new Schema({
     firstname: {type: String, required: true, unique: false},
     lastname: {type: String, required: true, unique: false},
     id: {type: Number, required: true, unique: true},
+    birthday: {type: Date, required: true},
     password: {type: String, required: true},
     fitbit: {type: fitbitSchema, required: false},
     goals: {type: [goalSchema], required: false},
