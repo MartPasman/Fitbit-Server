@@ -64,7 +64,7 @@ app.listen(3000, function () {
     console.log('Listening on port 3000!');
 });
 
-var logResponse = function(code, message, depth) {
+var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
     if (code === undefined) return;
