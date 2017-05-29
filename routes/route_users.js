@@ -264,7 +264,13 @@ app.get('/:id/goals/:gid?', function (req, res) {
  */
 app.get('/:id', function (req, res) {
 
-    //todo alleen kunnen ophalen als je deze persoon bent.
+    if(req.params.id == '' || req.params.id == undefined){
+        return res.status(400).send({error: 'id is not defined'});
+    }
+
+    if(id !== res.user.id){
+        return res.status(400).send({error: 'you can only request yourself'});
+    }
 
     User.find({type: 1, id:req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
 
