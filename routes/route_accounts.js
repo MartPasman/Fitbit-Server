@@ -14,7 +14,12 @@ var base64 = require('base64_utility');
 
 var client_id = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
-var redirect = 'http://127.0.0.1:3000/accounts/oauth_callback';
+
+// const WEBAPP = 'http://127.0.0.1';
+const WEBAPP = 'http://178.21.116.109';
+const REST = WEBAPP + ':3000';
+
+var redirect = REST + '/accounts/oauth_callback';
 var client = new fitbitClient(client_id, client_secret);
 
 var User = require('../model/model_user');
@@ -176,6 +181,62 @@ app.post('/login', function (req, res) {
     }
 });
 
+
+/**
+ * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
+ */
+app.get('/oauth_callback', function (req, res) {
+
+    const auth = base64.encode(client_id + ':' + client_secret);
+
+    //send the request
+    request.post({
+        url: 'https://api.fitbit.com/oauth2/token',
+        headers: {
+            Authorization: ' Basic ' + auth,
+            'Content-Type': ' application/x-www-form-urlencoded'
+        },
+        body: "expires_in=" + 60 + "&client_id=" + client_id + "&grant_type=authorization_code&redirect_uri=" + encodeURIComponent(redirect) + "&code=" + req.query.code
+    }, function (error, response, body) {
+        if (error) {
+            logResponse(500, error);
+            return res.status(500).send({error: error});
+        }
+
+        var parsedRes = JSON.parse(body);
+
+        var json = {
+            userid: parsedRes.user_id,
+            accessToken: parsedRes.access_token,
+            refreshToken: parsedRes.refresh_token
+        };
+
+        console.log(json);
+
+        const userid = getOAuthMapUserid(req.query.state);
+        if (userid === undefined) {
+            logResponse(500, 'OAuth state was lost.');
+            return res.status(500).send({error: 'OAuth state was lost.'});
+        }
+
+        //find the requested user and add the fitbit
+        User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            if (result === undefined) {
+                logResponse(404, 'User could not be found.');
+                return res.status(404).send({error: 'User could not be found.'});
+            }
+
+            logResponse(201, 'Fitbit connected.');
+            res.redirect(WEBAPP + '/admin-dashboard.php');
+        });
+    });
+});
+
 /**
  * Checks if user is logged in and if user is administrator
  * all requests below this function will automatically go through this one first!
@@ -191,13 +252,9 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        if (res.user.type !== 3) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: "Not authorized to make this request"});
-         }
 
-         next();
-     });
+        next();
+    });
 
 });
 
@@ -398,6 +455,11 @@ app.put("/password", function (req, res) {
  */
 app.get('/:id/connect', function (req, res) {
 
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, "Invalid id.");
         return res.status(400).send({error: "Invalid id."});
@@ -408,69 +470,11 @@ app.get('/:id/connect', function (req, res) {
     // get the authorisation URL to get the acces code from fitbit.com
     const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
 
-    //redirect to this URL to let the user login
-    res.redirect(authURL);
+    //return to this URL to let the user login
+    logResponse(201, "authURL created");
+    return res.status(201).send({success: authURL});
 });
 
-/**
- * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
- */
-app.get('/oauth_callback', function (req, res) {
-
-    if (res.user.type !== 3) {
-        logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
-    }
-
-    const auth = base64.encode(client_id + ':' + client_secret);
-
-    //send the request
-    request.post({
-        url: 'https://api.fitbit.com/oauth2/token',
-        headers: {
-            Authorization: ' Basic ' + auth,
-            'Content-Type': ' application/x-www-form-urlencoded'
-        },
-        body: "expires_in=" + 60 + "&client_id=" + client_id + "&grant_type=authorization_code&redirect_uri=http%3A%2F%2F127.0.0.1%3A3000%2Faccounts%2Foauth_callback&code=" + req.query.code
-    }, function (error, response, body) {
-        if (error) {
-            logResponse(500, error);
-            return res.status(500).send({error: error});
-        }
-
-        var parsedRes = JSON.parse(body);
-
-        var json = {
-            userid: parsedRes.user_id,
-            accessToken: parsedRes.access_token,
-            refreshToken: parsedRes.refresh_token
-        };
-
-        console.log(json);
-
-        const userid = getOAuthMapUserid(req.query.state);
-        if (userid === undefined) {
-            logResponse(500, 'OAuth state was lost.');
-            return res.status(500).send({error: 'OAuth state was lost.'});
-        }
-
-        //find the requested user and add the fitbit
-        User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
-            if (err) {
-                logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
-            }
-
-            if (result === undefined) {
-                logResponse(404, 'User could not be found.');
-                return res.status(404).send({error: 'User could not be found.'});
-            }
-
-            logResponse(201, 'Fitbit connected.');
-            return res.status(201).send({success: 'Fitbit connected!'});
-        });
-    });
-});
 
 /**
  * Get all users without passwords

@@ -26,6 +26,7 @@ app.use('/', function (req, res, next) {
 
         res.user = decoded._doc;
         next();
+
     });
 });
 
@@ -259,19 +260,21 @@ app.get('/:id/goals/:gid?', function (req, res) {
 
 
 /**
- * Get all users without passwords
+ * Get user without password
  */
 app.get('/:id', function (req, res) {
+
+    //todo alleen kunnen ophalen als je deze persoon bent.
 
     User.find({type: 1, id:req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
 
         if (err) {
-            logResponse(500, "Something went wrong");
-            return res.status(500).send({error: "Something went wrong"})
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message})
         }
         if (user.length === 0) {
-            logResponse(404, "No users found");
-            return res.status(404).send({error: "No users found"});
+            logResponse(404, "User account could not be found");
+            return res.status(404).send({error: "User account could not be found"});
         }
         logResponse(200, "user returned");
         return res.status(200).send({success: user[0]});
