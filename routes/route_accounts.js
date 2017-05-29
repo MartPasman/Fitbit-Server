@@ -246,20 +246,20 @@ app.get('/oauth_callback', function (req, res) {
  * all requests below this function will automatically go through this one first!
  * If your page doesn't need to be requested by admin, put it above this function
  */
-// app.use('/', function (req, res, next) {
-//
-//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-//         if (err) {
-//             logResponse(401, err.message);
-//             return res.status(401).send({error: "User is not logged in."});
-//         }
-//
-//         // Save user for future purposes
-//         res.user = decoded._doc;
-//
-//          next();
-//      });
-// });
+app.use('/', function (req, res, next) {
+
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: "User is not logged in."});
+        }
+
+        // Save user for future purposes
+        res.user = decoded._doc;
+
+         next();
+     });
+});
 
 /**
  * Make new account
