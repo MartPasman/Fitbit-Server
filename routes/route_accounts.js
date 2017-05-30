@@ -187,37 +187,21 @@ app.post('/login', function (req, res) {
     }
 });
 
-
 /**
  * user logs in on fitbit.com, fitbit comes back to this ULR containing the access code
  */
 app.get('/oauth_callback', function (req, res) {
 
-    const auth = base64.encode(client_id + ':' + client_secret);
-
-    //send the request
-    request.post({
-        url: 'https://api.fitbit.com/oauth2/token',
-        headers: {
-            Authorization: ' Basic ' + auth,
-            'Content-Type': ' application/x-www-form-urlencoded'
-        },
-        body: "expires_in=" + 60 + "&client_id=" + client_id + "&grant_type=authorization_code&redirect_uri=" + encodeURIComponent(redirect) + "&code=" + req.query.code
-    }, function (error, response, body) {
-        if (error) {
-            logResponse(500, error);
-            return res.status(500).send({error: error});
-        }
-
-        var parsedRes = JSON.parse(body);
+    const promise = client.getAccessToken(req.query.code, redirect);
+    promise.then(function (success) {
+        // oath succeeded
+        console.log(success);
 
         var json = {
-            userid: parsedRes.user_id,
-            accessToken: parsedRes.access_token,
-            refreshToken: parsedRes.refresh_token
+            userid: success.user_id,
+            accessToken: success.access_token,
+            refreshToken: success.refresh_token
         };
-
-        console.log(json);
 
         const userid = getOAuthMapUserid(req.query.state);
         if (userid === undefined) {
@@ -240,6 +224,9 @@ app.get('/oauth_callback', function (req, res) {
             logResponse(201, 'Fitbit connected.');
             res.redirect(WEBAPP + '/admin-dashboard.php');
         });
+    }, function (error) {
+        logResponse(500, error);
+        return res.status(500).send({error: error.errors});
     });
 });
 
@@ -259,8 +246,8 @@ app.use('/', function (req, res, next) {
         // Save user for future purposes
         res.user = decoded._doc;
 
-         next();
-     });
+        next();
+    });
 });
 
 /**
@@ -324,33 +311,16 @@ app.post("/", function (req, res) {
                             return res.status(500).send({error: err.message});
                         }
 
-                        var account;
-                        if (req.body.type === 2 || req.body.type === 3) {
-
-                            account = new User({
-                                firstname: req.body.firstname,
-                                lastname: req.body.lastname,
-                                id: id,
-                                password: hashed,
-                                email: email,
-                                active: true,
-                                type: req.body.type,
-                                handicap: undefined
-                            });
-                        }
-                        else {
-                            account = new User({
-                                firstname: req.body.firstname,
-                                lastname: req.body.lastname,
-                                id: id,
-                                password: hashed,
-                                email: email,
-                                active: true,
-                                type: req.body.type,
-                                handicap: req.body.handicap
-                            });
-                        }
-
+                        var account = new User({
+                            firstname: req.body.firstname,
+                            lastname: req.body.lastname,
+                            id: id,
+                            password: hashed,
+                            email: email,
+                            active: true,
+                            type: req.body.type,
+                            handicap: (req.body.type === 2 || req.body.type === 3 ? undefined : req.body.handicap)
+                        });
 
                         account.save(function (err, result) {
                             if (err) {
@@ -371,6 +341,7 @@ app.post("/", function (req, res) {
  * Request for updating password
  */
 app.put("/password", function (req, res) {
+
     if (req.body.old === undefined || req.body.new1 === undefined || req.body.new2 === undefined || req.body.new1 !== req.body.new2) {
         logResponse(400, 'Wrong information supplied');
         return res.status(400).send({error: "Wrong information supplied"});

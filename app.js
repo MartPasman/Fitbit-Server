@@ -43,6 +43,10 @@ app.use(function (req, res, next) {
     return next();
 });
 
+// set fitbit routes
+var fitbitRoutes = require('./routes/route_fitbit');
+app.use('/fitbit', fitbitRoutes);
+
 //set user routes
 var userRoutes = require('./routes/route_users');
 app.use('/users', userRoutes);
@@ -63,24 +67,3 @@ app.get('/api', function (req, res) {
 app.listen(3000, function () {
     console.log('Listening on port 3000!');
 });
-
-var logResponse = function (code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-};
-
-module.exports.logResponse = logResponse;

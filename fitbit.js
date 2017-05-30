@@ -5,13 +5,11 @@
 const User = require('./model/model_user');
 const request = require('request');
 const mongoose = require('mongoose');
-const base64 = require('base64_utility');
 const fitbitClient = require('fitbit-node');
 
 const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
-// var logResponse = require('./app.js').logResponse;
 
 /**
  * Prepares an API call to the Fitbit API by checking authorization,
@@ -82,6 +80,7 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                 if (response.statusCode === 401) {
                     // token expires
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + userid + '.');
+                    // try to refresh tokens
                     doRefreshToken(userid, accessToken, refreshToken, function (success) {
                         if (success) {
                             fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback);
@@ -120,57 +119,31 @@ function doRefreshToken(userid, accessToken, refreshToken, callback) {
     console.log('Going to refresh token of user: ' + userid + '.');
     const promise = client.refreshAccessToken(accessToken, refreshToken);
 
-    User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
-        if (err) {
-            console.error('0: ' + err.message);
-            callback(false);
-            return;
-        }
+    promise.then(function (success) {
+        // if the request succeeds
 
-        const auth = base64.encode(client_id + ':' + client_secret);
+        var json = {
+            userid: success.user_id,
+            accessToken: success.access_token,
+            refreshToken: success.refresh_token
+        };
 
-        console.log(user.fitbit.refreshToken);
-
-        //send the request
-        request.post({
-            url: 'https://api.fitbit.com/oauth2/token',
-            headers: {
-                Authorization: 'Basic ' + auth,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'grant_type=refresh_token&expires_in=' + 28800 + '&refresh_token=' + user.fitbit.refreshToken
-        }, function (error, response, body) {
-            if (error) {
-                console.error('1: ' + error);
+        //find the requested user and add the renewed fitbit
+        User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err) {
+            if (err) {
+                console.error('MongoDB: ' + err.message);
                 callback(false);
                 return;
             }
 
-            var parsedRes = JSON.parse(body);
-            console.log('Fitbit result body: ');
-            console.log(body);
-
-            var json = {
-                userid: parsedRes.user_id, accessToken: parsedRes.access_token, refreshToken: parsedRes.refresh_token
-            };
-
-            if (json.userid === undefined || json.accessToken === undefined || json.refreshToken === undefined) {
-                console.error('2: results undefined.');
-                callback(false);
-                return;
-            }
-
-            //find the requested user and add the renewed fitbit
-            User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
-                if (err) {
-                    console.error('3: ' + err.message);
-                    callback(false);
-                    return;
-                }
-
-                callback(true);
-            });
+            // successfully saved new access and refresh token
+            callback(true);
         });
+    }, function (error) {
+        // refreshing fails
+        console.error('Refreshing token failed: ');
+        console.error(error.context.errors);
+        callback(false);
     });
 }
 
@@ -194,3 +167,4 @@ function logResponse(code, message, depth) {
 }
 
 module.exports.fitbitCall = prepareAPICall;
+module.exports.doRefreshToken = doRefreshToken;
