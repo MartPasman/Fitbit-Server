@@ -68,6 +68,7 @@ app.get('/testnewuseradmin', function (req, res) {
 app.get('/testnewuser', function (req, res) {
 
     var password = "gebruiker";
+    var date = new Date();
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
@@ -87,7 +88,8 @@ app.get('/testnewuser', function (req, res) {
                 password: hashed,
                 email: 'geen@mail.nl',
                 active: true,
-                type: 1
+                type: 1,
+                birthday: date
             });
 
             account.save(function (err, result) {
