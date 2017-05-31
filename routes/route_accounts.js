@@ -305,13 +305,13 @@ app.post("/", function (req, res) {
             generateId(function (id) {
                 bcrypt.genSalt(10, function (err, salt) {
                     if (err) {
-                        logResponse(500, err.message);
+                        logResponse(500, "Can not gen salt: " + err.message);
                         return res.status(500).send({error: err.message});
                     }
 
                     bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                         if (err) {
-                            logResponse(500, err.message);
+                            logResponse(500, "Can not hash account: " +  err.message);
                             return res.status(500).send({error: err.message});
                         }
 
@@ -347,7 +347,7 @@ app.post("/", function (req, res) {
 
                         account.save(function (err, result) {
                             if (err) {
-                                logResponse(500, err.message);
+                                logResponse(500, "Can not save account: " + err.message);
                                 return res.status(500).send({error: err.message});
                             }
                             logResponse(201, "id given");
