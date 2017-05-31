@@ -305,11 +305,13 @@ app.post("/", function (req, res) {
             generateId(function (id) {
                 bcrypt.genSalt(10, function (err, salt) {
                     if (err) {
+                        logResponse(500, err.message);
                         return res.status(500).send({error: err.message});
                     }
 
                     bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                         if (err) {
+                            logResponse(500, err.message);
                             return res.status(500).send({error: err.message});
                         }
 
@@ -345,8 +347,10 @@ app.post("/", function (req, res) {
 
                         account.save(function (err, result) {
                             if (err) {
+                                logResponse(500, err.message);
                                 return res.status(500).send({error: err.message});
                             }
+                            logResponse(201, "id given");
                             return res.status(201).send({id: id});
                         });
                     });
@@ -354,6 +358,7 @@ app.post("/", function (req, res) {
             });
         });
     } else {
+        logResponse(400, "Not every field is (correctly) filled in.");
         return res.status(400).send({error: "Not every field is (correctly) filled in."});
     }
 });
