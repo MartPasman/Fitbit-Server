@@ -278,9 +278,6 @@ app.post("/", function (req, res) {
         var month = req.body.birthday.substring(3, 5);
         var year = req.body.birthday.substring(6, 10);
 
-        var birthday = new Date(month + '/' + day + '/' + year);
-        logResponse(418, birthday);
-
         var email = req.body.email.toLowerCase();
 
         if (!validateEmail(email)) {
