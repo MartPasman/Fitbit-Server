@@ -257,8 +257,8 @@ app.use('/', function (req, res, next) {
         // Save user for future purposes
         res.user = decoded._doc;
 
-         next();
-     });
+        next();
+    });
 });
 
 /**
@@ -271,21 +271,26 @@ app.post("/", function (req, res) {
         return res.status(403).send({error: "Not authorized to make this request"});
     }
 
-    console.log(body);
-
     //check if every field is entered
-    if (!req.body.password || !req.body.email || !req.body.type) {
+    if (!req.body.password || !req.body.email || !req.body.type || !req.body.birthday) {
         return res.status(400).send({error: "Not every field is (correctly) filled in."});
     }
 
     //check if all fields are entered
-    if (req.body.firstname && req.body.lastname && req.body.password && req.body.email &&
+    if (req.body.firstname && req.body.lastname && req.body.password && req.body.email && req.body.birthday &&
         req.body.type) {
 
         if (req.body.password.length < 8) {
             logResponse(400, 'Password too short.');
             return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
+
+        var day = req.body.birthday.substring(0, 2);
+        var month = req.body.birthday.substring(3, 5);
+        var year = req.body.birthday.substring(6, 10);
+
+        var birthday = new Date(month + '/' + day + '/' + year);
+        logResponse(418, birthday);
 
         var email = req.body.email.toLowerCase();
 
@@ -329,6 +334,7 @@ app.post("/", function (req, res) {
                                 firstname: req.body.firstname,
                                 lastname: req.body.lastname,
                                 id: id,
+                                birthday: req.body.birthday,
                                 password: hashed,
                                 email: email,
                                 active: true,
@@ -341,6 +347,7 @@ app.post("/", function (req, res) {
                                 firstname: req.body.firstname,
                                 lastname: req.body.lastname,
                                 id: id,
+                                birthday: req.body.birthday,
                                 password: hashed,
                                 email: email,
                                 active: true,
