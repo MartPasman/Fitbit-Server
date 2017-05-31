@@ -2,29 +2,27 @@
  * Created by martpasman on 15-05-17.
  * aanmaken, verwijderen, inloggen, uitloggen
  */
+const express = require("express");
+const request = require('request');
+const mongoose = require('mongoose');
+const shortid = require('shortid');
+const bcrypt = require('bcrypt-nodejs');
+const fitbitClient = require('fitbit-node');
+const jwt = require('jsonwebtoken');
 
-var express = require("express");
-var request = require('request');
-var mongoose = require('mongoose');
-var shortid = require('shortid');
-var bcrypt = require('bcrypt-nodejs');
-var fitbitClient = require('fitbit-node');
-var jwt = require('jsonwebtoken');
-var base64 = require('base64_utility');
+const client_id = '228HTD';
+const client_secret = '41764caf3b48fa811ce514ef38c62791';
+const client = new fitbitClient(client_id, client_secret);
 
-var client_id = '228HTD';
-var client_secret = '41764caf3b48fa811ce514ef38c62791';
-var client = new fitbitClient(client_id, client_secret);
-
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 
-var redirect = REST + '/accounts/oauth_callback';
+const redirect = REST + '/accounts/oauth_callback';
 
-var User = require('../model/model_user');
+const User = require('../model/model_user');
 
-var app = express.Router();
+const app = express.Router();
 
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
@@ -228,6 +226,17 @@ app.get('/oauth_callback', function (req, res) {
         logResponse(500, error);
         return res.status(500).send({error: error.errors});
     });
+});
+
+/**
+ *
+ */
+app.get('/accounts/subscription_callback', function (req, res) {
+
+    console.log(req);
+    console.log(req.originalUrl);
+    console.log(req.body);
+    res.status(204).send();
 });
 
 /**

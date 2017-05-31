@@ -55,6 +55,14 @@ app.get('/:id/refresh', function (req, res) {
     });
 });
 
+app.get('/:id/subscribe', function (req, res) {
+
+    require('../fitbit').addSubscription(req.params.id, function (success) {
+        logResponse(success ? 200 : 500, 'Added subscription: ' + success);
+        return res.status(success ? 200 : 500).send({success: success});
+    });
+});
+
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
