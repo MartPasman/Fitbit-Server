@@ -9,6 +9,9 @@ var should = require('should');
 
 var server = supertest.agent('http://localhost:3000');
 
+
+var testuser = '10002';
+var testpassword = 'gebruiker';
 /**
  * Test for adding a goal
  */
@@ -21,7 +24,7 @@ describe('Add goal', function () {
     context('POST accounts/login/  Correct', function () {
         it('Should response 201 with access token', function (done) {
             server.post('/accounts/login')
-                .send({id: '123', password: 'chillchill'})
+                .send({id: testuser, password: testpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -135,7 +138,7 @@ describe("Delete goal", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chillchill'})
+                .send({id: testuser, password: testpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -210,7 +213,7 @@ describe("Load goal with offset", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chillchill'})
+                .send({id: testuser, password: testpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -264,7 +267,7 @@ describe("Changing goal", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chillchill'})
+                .send({id: testuser, password: testpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -612,4 +615,161 @@ describe("Handicap", function () {
 
 
 
+/**
+ * Test for changing the information of a user
+ */
+describe("Change user information", function () {
+    var token;
+    var id;
 
+    /**
+     * Getting a access token for testing
+     */
+    context("POST accounts/login/  Correct", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: testuser, password: testpassword})
+                .expect(201)
+                .end(function (err, res) {
+                    done(err);
+                    token = res.body.success;
+                    id = res.body.userid;
+                });
+        });
+    });
+
+    /**
+     * Changing information good
+     */
+    context("PUT /users/:id  Correct", function () {
+        it("Should response 201", function (done) {
+            server.put('/users/' + id)
+                .send({
+                    birthday: "05/30/2017",
+                    firstname: "Generic",
+                    lastname: "Userus",
+                    email: "lol@lol.nl"
+                }).set("Authorization", token)
+                .expect(201)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing information from other user
+     */
+    context("PUT /users/:id  Failed wrong id", function () {
+        it("Should response 403", function (done) {
+            server.put('/users/' + '1234')
+                .send({
+                    birthday: "05/30/2017",
+                    firstname: "Generic",
+                    lastname: "Userus",
+                    email: "lol@lol.nl"
+                }).set("Authorization", token)
+                .expect(403)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing information false date
+     */
+    context("PUT /users/:id  failed not correct birthday", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/' + id)
+                .send({
+                    birthday: "lol",
+                    firstname: "Generic",
+                    lastname: "Userus",
+                    email: "lol@lol.nl"
+                }).set("Authorization", token)
+                .expect(400)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing information no first name
+     */
+    context("PUT /users/:id  failed not correct no first name", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/' + id)
+                .send({
+                    birthday: "23/05/2017",
+                    firstname: "",
+                    lastname: "Userus",
+                    email: "lol@lol.nl"
+                }).set("Authorization", token)
+                .expect(400)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing information no last name
+     */
+    context("PUT /users/:id  failed not correct no last name", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/' + id)
+                .send({
+                    birthday: "23/05/2017",
+                    firstname: "Generic",
+                    lastname: "",
+                    email: "lol@lol.nl"
+                }).set("Authorization", token)
+                .expect(400)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing information no email
+     */
+    context("PUT /users/:id  failed not correct no last name", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/' + id)
+                .send({
+                    birthday: "23/05/2017",
+                    firstname: "Generic",
+                    lastname: "Userus",
+                    email: ""
+                }).set("Authorization", token)
+                .expect(400)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing information wrong email
+     */
+    context("PUT /users/:id  failed not correct wrong email", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/' + id)
+                .send({
+                    birthday: "23/05/2017",
+                    firstname: "Generic",
+                    lastname: "Userus",
+                    email: "lol.nl"
+                }).set("Authorization", token)
+                .expect(400)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+
+});

@@ -291,6 +291,49 @@ app.get('/:id', function (req, res) {
     })
 });
 
+app.put('/:id', function (req, res) {
+
+    if (req.params.id === '' || req.params.id === undefined) {
+        logResponse(400, 'id is not defined');
+        return res.status(400).send({error: 'id is not defined'});
+    }
+
+    if (req.body.birthday === '' || req.body.birthday === undefined || req.body.firstname === '' || req.body.firstname === undefined
+    || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined ||
+    !Date.parse(req.body.birthday) || !validateEmail(req.body.email)) {
+        logResponse(400, 'Information is not supplied correctly');
+        return res.status(400).send({error: 'Information is not supplied correctly'});
+    }
+
+
+
+
+    if (res.user.type !== 3) {
+        if (+req.params.id !== +res.user.id) {
+            logResponse(403, "Not authorized to make this request");
+            return res.status(403).send({error: 'Not authorized to make this request'});
+        }
+    }
+
+    var birthday = new Date(req.body.birthday);
+
+
+    User.findOneAndUpdate({type: 1, id: req.params.id}, {$set:{firstname: req.body.firstname, lastname: req.body.lastname,
+        email: req.body.email, birthday: birthday}}, function (err, user) {
+
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message})
+        }
+        if (user.length === 0) {
+            logResponse(404, "User account could not be found");
+            return res.status(404).send({error: "User account could not be found"});
+        }
+        logResponse(201, "Information is updated");
+        return res.status(201).send({success: 'Information is updated'});
+    })
+});
+
 app.put('/:id/handicap', function (req, res) {
 
     if (res.user.type !== 3) {
@@ -364,6 +407,11 @@ function getYYYYMMDD(date, splitBy) {
         (mm > 9 ? '' : '0') + mm,
         (dd > 9 ? '' : '0') + dd
     ].join(splitBy);
+}
+
+function validateEmail(email) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
 }
 
 module.exports = app;
