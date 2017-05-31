@@ -277,6 +277,7 @@ app.post("/", function (req, res) {
         var day = req.body.birthday.substring(0, 2);
         var month = req.body.birthday.substring(3, 5);
         var year = req.body.birthday.substring(6, 10);
+        var dateOfBirth = new Date(month + '/' + day + '/' + year);
 
         var email = req.body.email.toLowerCase();
 
@@ -322,7 +323,7 @@ app.post("/", function (req, res) {
                                 firstname: req.body.firstname,
                                 lastname: req.body.lastname,
                                 id: id,
-                                birthday: req.body.birthday,
+                                birthday: dateOfBirth,
                                 password: hashed,
                                 email: email,
                                 active: true,
@@ -335,7 +336,7 @@ app.post("/", function (req, res) {
                                 firstname: req.body.firstname,
                                 lastname: req.body.lastname,
                                 id: id,
-                                birthday: req.body.birthday,
+                                birthday: dateOfBirth,
                                 password: hashed,
                                 email: email,
                                 active: true,
