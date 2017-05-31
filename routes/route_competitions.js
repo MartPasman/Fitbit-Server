@@ -66,7 +66,6 @@ app.get('/', function (req, res) {
 
                     for (var i = 0; i < usrs.length; i++) {
                         results[i] = {
-                            name: usrs[i].firstname + ' ' + usrs[i].lastname,
                             userid: usrs[i].id,
                             score: 0,
                             goalAchieved: false

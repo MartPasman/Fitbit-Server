@@ -16,8 +16,8 @@ var client_id = '228HTD';
 var client_secret = '41764caf3b48fa811ce514ef38c62791';
 var client = new fitbitClient(client_id, client_secret);
 
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 
 var redirect = REST + '/accounts/oauth_callback';
@@ -485,17 +485,30 @@ app.get('/:id/connect', function (req, res) {
  */
 app.get('/', function (req, res) {
 
-    if (res.user.type !== 3) {
-        logResponse(403, "User not authorized to make this request");
-        return res.status(403).send({error: "User not authorized to make this request"});
-    }
-
+    var usrs = [];
     User.find({type: 1}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 
+        if(users.length == 0){
+            return res.status(200).send({success:usrs});
+        }
         if (err) {
             logResponse(500, "Something went wrong");
             return res.status(500).send({error: "Something went wrong"})
         }
+
+        if (res.user.type !== 3) {
+            console.log(users.length);
+
+            for(var i = 0; i < users.length; i++){
+                usrs[i] = {
+                    id: users[i].id,
+                    firstname : users[i].firstname,
+                    lastname: users[i].lastname
+                }
+            }
+            return res.status(200).send({success: usrs});
+        }
+
         if (users.length === 0) {
             logResponse(404, "No users found");
             return res.status(404).send({error: "No users found"});

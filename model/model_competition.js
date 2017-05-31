@@ -3,7 +3,6 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var resultSchema = new Schema({
-    name: {type: String, required:false},
     userid: {type: String, required:true},
     score: {type: Number, required:true},
     goalAchieved: {type: Boolean, required:true}
