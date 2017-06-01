@@ -16,28 +16,28 @@ var fitbitCall = require('../fitbit.js').fitbitCall;
 /**
  * must be logged in as administrator
  */
-// app.use('/', function (req, res, next) {
-//
-//     console.log('\tAuthentication required...');
-//     console.log(req.app.get('private-key'));
-//     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
-//         if (err) {
-//             logResponse(401, err.message);
-//             return res.status(401).send({error: "User is not logged in."});
-//         }
-//
-//         // Save user for future purposes
-//         res.user = decoded._doc;
-//         if (res.user.type !== 3) {
-//             logResponse(403, "Not authorized to make this request");
-//             return res.status(403).send({error: "Not authorized to make this request"});
-//         }
-//
-//         console.log('\tpassed');
-//
-//         next();
-//     });
-// });
+app.use('/', function (req, res, next) {
+
+    console.log('\tAuthentication required...');
+    console.log(req.app.get('private-key'));
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: "User is not logged in."});
+        }
+
+        // Save user for future purposes
+        res.user = decoded._doc;
+        if (res.user.type !== 3) {
+            logResponse(403, "Not authorized to make this request");
+            return res.status(403).send({error: "Not authorized to make this request"});
+        }
+
+        console.log('\tpassed');
+
+        next();
+    });
+});
 
 app.get('/', function (req, res) {
     var results = [];
@@ -93,13 +93,67 @@ app.get('/', function (req, res) {
 
                 });
             });
-        } else {
+        }
+
+        else {
             result.sort(function (m1, m2) {
                 return m1.start - m2.start;
             });
-
-            res.status(200).send(result[result.length - 1]);
         }
+        if(result[result.length-1]){
+            var defaultGoal = result[result.length-1].defaultGoal;
+
+            var date = new Date();
+            if(result[result.length-1].end < date){
+                //create new competition.
+                generatecompId(function (id) {
+                    var date = new Date();
+                    var end_date = new Date();
+                    end_date = end_date.setDate(date.getDate() + 7);
+
+                    //create results
+                    User.find({type: 1}, function (err, usrs) {
+                        if (err) {
+                            return res.status(500).send();
+                        }
+
+                        if (usrs.length == 0) {
+                            return res.status(404).send({error: "no users found"});
+                        }
+
+                        for (var i = 0; i < usrs.length; i++) {
+                            results[i] = {
+                                userid: usrs[i].id,
+                                score: 0,
+                                goalAchieved: false
+                            }
+                        }
+
+                        var comp = new Competition({
+                            id: id,
+                            goal: defaultGoal,
+                            defaultGoal:defaultGoal ,
+                            start: date,
+                            end: end_date,
+                            results: results
+                        });
+
+                        comp.save(function (err, resp) {
+                            if (err) {
+                                console.log(err);
+                                return res.status(500).send(err);
+                            }
+                            return res.status(200).send(resp);
+
+                        });
+
+
+                    });
+                });
+
+            }
+        }
+        res.status(200).send(result[result.length - 1]);
 
 
     });
@@ -237,6 +291,10 @@ app.post('/', function (req, res) {
 
 });
 
+
+/**
+ * change score from specific user in competition
+ */
 app.put('/:id/score', function (req, res) {
     var userid = req.body.userid;
     var score = req.body.score;
@@ -260,11 +318,40 @@ app.put('/:id/score', function (req, res) {
     })
 
 });
+
+/**
+ * change goal for next competition
+ */
+app.put('/lastgoal', function (req, res) {
+    Competition.find({}, function (err, comps) {
+        if (err) {
+            console.log(err);
+            res.status(500).send(err);
+        } else if (comps.length == 0) {
+            res.status(404).send({error: "no users found"});
+        }
+        var compid = comps[comps.length - 1].id;
+
+
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultGoal: req.body.goal}}, function (err, competition) {
+            if (err) {
+                console.log(err);
+                return res.status(500).send();
+            } else if (competition == null || competition == undefined) {
+                return res.status(404).send({error: "user not found"})
+            }
+
+            return res.status(201).send({success: competition});
+        });
+    });
+});
+
+
 function generatecompId(callback) {
     var id = Math.ceil((Math.random() * 200 ) + 100);
 
     Competition.find({id: id}, function (err, user) {
-        if (user.length === 0) {
+        if (user.length == 0) {
             callback(id);
         } else {
             generateId(callback);
@@ -278,5 +365,24 @@ Date.prototype.addDays = function (days) {
     return dat;
 };
 
+
+var logResponse = function (code, message, depth) {
+    if (depth === undefined) depth = '\t';
+    if (message === undefined) message = '';
+    if (code === undefined) return;
+
+    var COLOR_200 = '\u001B[32m';
+    var COLOR_300 = '\u001B[33m';
+    var COLOR_400 = '\u001B[31m';
+    var COLOR_500 = '\u001B[34m';
+    var COLOR_RESET = '\u001B[0m';
+
+    var color = COLOR_200;
+    if (code >= 300) color = COLOR_300;
+    if (code >= 400) color = COLOR_400;
+    if (code >= 500) color = COLOR_500;
+
+    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
+};
 
 module.exports = app;
