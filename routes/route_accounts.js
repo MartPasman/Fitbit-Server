@@ -2,29 +2,27 @@
  * Created by martpasman on 15-05-17.
  * aanmaken, verwijderen, inloggen, uitloggen
  */
+const express = require("express");
+const request = require('request');
+const mongoose = require('mongoose');
+const shortid = require('shortid');
+const bcrypt = require('bcrypt-nodejs');
+const fitbitClient = require('fitbit-node');
+const jwt = require('jsonwebtoken');
 
-var express = require("express");
-var request = require('request');
-var mongoose = require('mongoose');
-var shortid = require('shortid');
-var bcrypt = require('bcrypt-nodejs');
-var fitbitClient = require('fitbit-node');
-var jwt = require('jsonwebtoken');
-var base64 = require('base64_utility');
+const client_id = '228HTD';
+const client_secret = '41764caf3b48fa811ce514ef38c62791';
+const client = new fitbitClient(client_id, client_secret);
 
-var client_id = '228HTD';
-var client_secret = '41764caf3b48fa811ce514ef38c62791';
-var client = new fitbitClient(client_id, client_secret);
-
-const WEBAPP = 'http://127.0.0.1';
-// const WEBAPP = 'http://178.21.116.109';
+// const WEBAPP = 'http://127.0.0.1';
+const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 
-var redirect = REST + '/accounts/oauth_callback';
+const redirect = REST + '/accounts/oauth_callback';
 
-var User = require('../model/model_user');
+const User = require('../model/model_user');
 
-var app = express.Router();
+const app = express.Router();
 
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
@@ -227,6 +225,17 @@ app.get('/oauth_callback', function (req, res) {
         logResponse(500, error);
         return res.status(500).send({error: error.errors});
     });
+});
+
+/**
+ *
+ */
+app.get('/accounts/subscription_callback', function (req, res) {
+
+    console.log(req);
+    console.log(req.originalUrl);
+    console.log(req.body);
+    res.status(204).send();
 });
 
 /**
@@ -484,17 +493,30 @@ app.get('/:id/connect', function (req, res) {
  */
 app.get('/', function (req, res) {
 
-    if (res.user.type !== 3) {
-        logResponse(403, "User not authorized to make this request");
-        return res.status(403).send({error: "User not authorized to make this request"});
-    }
-
+    var usrs = [];
     User.find({type: 1}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 
+        if(users.length === 0){
+            return res.status(200).send({success:usrs});
+        }
         if (err) {
             logResponse(500, "Something went wrong");
             return res.status(500).send({error: "Something went wrong"})
         }
+
+        if (res.user.type !== 3) {
+            console.log(users.length);
+
+            for(var i = 0; i < users.length; i++){
+                usrs[i] = {
+                    id: users[i].id,
+                    firstname : users[i].firstname,
+                    lastname: users[i].lastname
+                }
+            }
+            return res.status(200).send({success: usrs});
+        }
+
         if (users.length === 0) {
             logResponse(404, "No users found");
             return res.status(404).send({error: "No users found"});
