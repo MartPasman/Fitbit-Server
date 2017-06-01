@@ -295,23 +295,21 @@ app.put('/:id', function (req, res) {
 
     if (req.params.id === '' || req.params.id === undefined) {
         logResponse(400, 'id is not defined');
-        return res.status(400).send({error: 'id is not defined'});
+        return res.status(400).send({error: 'Id is not defined.'});
     }
 
     if (req.body.birthday === '' || req.body.birthday === undefined || req.body.firstname === '' || req.body.firstname === undefined
     || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined ||
     !Date.parse(req.body.birthday) || !validateEmail(req.body.email)) {
         logResponse(400, 'Information is not supplied correctly');
-        return res.status(400).send({error: 'Information is not supplied correctly'});
+        return res.status(400).send({error: 'Information is not supplied correctly.'});
     }
-
-
 
 
     if (res.user.type !== 3) {
         if (+req.params.id !== +res.user.id) {
             logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: 'Not authorized to make this request'});
+            return res.status(403).send({error: 'Not authorized to make this request.'});
         }
     }
 
@@ -326,11 +324,11 @@ app.put('/:id', function (req, res) {
             return res.status(500).send({error: err.message})
         }
         if (user.length === 0) {
-            logResponse(404, "User account could not be found");
-            return res.status(404).send({error: "User account could not be found"});
+            logResponse(404, "User account could not be found.");
+            return res.status(404).send({error: "User account could not be found."});
         }
-        logResponse(201, "Information is updated");
-        return res.status(201).send({success: 'Information is updated'});
+        logResponse(200, 'Information is updated.');
+        return res.status(200).send({success: 'Information is updated.'});
     })
 });
 
@@ -375,9 +373,6 @@ app.put('/:id/handicap', function (req, res) {
     }
 });
 
-// app.put('/:id', function (req, res) {
-//
-// });
 
 
 var logResponse = function (code, message, depth) {

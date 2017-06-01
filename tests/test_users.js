@@ -616,7 +616,7 @@ describe("Handicap", function () {
 
 
 /**
- * Test for changing the information of a user
+ * Test for PUT users/:id
  */
 describe("Change user information", function () {
     var token;
@@ -642,7 +642,7 @@ describe("Change user information", function () {
      * Changing information good
      */
     context("PUT /users/:id  Correct", function () {
-        it("Should response 201", function (done) {
+        it("Should response 200", function (done) {
             server.put('/users/' + id)
                 .send({
                     birthday: "05/30/2017",
@@ -650,7 +650,7 @@ describe("Change user information", function () {
                     lastname: "Userus",
                     email: "lol@lol.nl"
                 }).set("Authorization", token)
-                .expect(201)
+                .expect(200)
                 .end(function (err, res) {
                     done(err);
                 });

@@ -195,7 +195,6 @@ app.get('/oauth_callback', function (req, res) {
     const promise = client.getAccessToken(req.query.code, redirect);
     promise.then(function (success) {
         // oath succeeded
-        console.log(success);
 
         var json = {
             userid: success.user_id,
@@ -500,7 +499,7 @@ app.get('/', function (req, res) {
             logResponse(404, "No users found");
             return res.status(404).send({error: "No users found"});
         }
-        logResponse(200, users);
+        logResponse(200, "Users are returned");
         return res.status(200).send({success: users});
     })
 });
