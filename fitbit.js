@@ -108,6 +108,42 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
         });
 }
 
+function fitbitAPICallNoResponse(url, user, callback) {
+    request.get(url.replace('[id]', user.fitbit.userid),
+        {
+            headers: {
+                Authorization: 'Bearer ' + user.fitbit.accessToken
+            }
+        }, function (error, response, body) {
+            if (error !== undefined && response.statusCode !== 200) {
+                if (response.statusCode === 401) {
+                    // token expires
+                    logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + user.id + '.');
+                    // try to refresh tokens
+                    doRefreshToken(user.id, user.fitbit.accessToken, user.fitbit.refreshToken, function (success) {
+                        if (success) {
+                            fitbitAPICallNoResponse(url, user, callback);
+                        } else {
+                            // if refreshing the token went wrong
+                            logResponse(500, 'Token could not be refreshed.');
+                        }
+                    });
+                } else {
+                    if (response.statusCode === 429) {
+                        // call limit reached
+                        logResponse(response.statusCode, 'Fitbit API request limit reached for user: ' + user.id + '.');
+                    } else {
+                        // all other errors
+                        console.error(response.body);
+                        logResponse(response.statusCode, 'Fitbit API error.');
+                    }
+                }
+            } else {
+                callback(body);
+            }
+        });
+}
+
 /**
  * Refreshes the token and updates the record in the database of a certain user
  * @param userid id of the user to refresh its token
@@ -225,5 +261,6 @@ function logResponse(code, message, depth) {
 }
 
 module.exports.fitbitCall = prepareAPICall;
+module.exports.fitbitCallSimple = fitbitAPICallNoResponse;
 module.exports.doRefreshToken = doRefreshToken;
 module.exports.addSubscription = addSubscription;
