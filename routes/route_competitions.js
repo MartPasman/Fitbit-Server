@@ -14,6 +14,7 @@ const Competition = require('../model/model_competition');
 
 const fitbitCall = require('../fitbit.js').fitbitCall;
 const logResponse = require('../support').logResponse;
+const day = require('../support').day;
 
 /**
  * must be logged in as administrator
@@ -100,11 +101,11 @@ app.get('/', function (req, res) {
                 return m1.start - m2.start;
             });
         }
-        if(result[result.length-1]){
-            var defaultGoal = result[result.length-1].defaultGoal;
+        if (result[result.length - 1]) {
+            var defaultGoal = result[result.length - 1].defaultGoal;
 
             var date = new Date();
-            if(result[result.length-1].end < date){
+            if (result[result.length - 1].end < date) {
                 //create new competition.
                 generatecompId(function (id) {
                     var date = new Date();
@@ -132,7 +133,7 @@ app.get('/', function (req, res) {
                         var comp = new Competition({
                             id: id,
                             goal: defaultGoal,
-                            defaultGoal:defaultGoal ,
+                            defaultGoal: defaultGoal,
                             start: date,
                             end: end_date,
                             results: results
@@ -238,8 +239,8 @@ app.get('/', function (req, res) {
  */
 app.post('/', function (req, res) {
     var goal = req.body.goal;
-    var startDate = req.body.start;
-    var endDate = req.body.end;
+    var startDate = day(req.body.start);
+    var endDate = day(req.body.end);
 
     if (goal === undefined || startDate === undefined || endDate === undefined || !Date.parse(startDate) || !Date.parse(endDate)) {
         return res.status(400).send({error: "Bad request, invalid parameters."});
@@ -265,10 +266,10 @@ app.post('/', function (req, res) {
 
             var comp = new Competition({
                 id: id,
-                goal: req.body.goal,
-                defaultgoal: req.body.goal,
-                start: req.body.start,
-                end: req.body.end,
+                goal: goal,
+                defaultgoal: goal,
+                start: startDate,
+                end: endDate,
                 results: results
             });
 
@@ -276,6 +277,7 @@ app.post('/', function (req, res) {
                 if (err) {
                     return res.status(500).send({error: "..."});
                 }
+
                 return res.status(201).send({succes: id});
             });
         })
@@ -293,15 +295,15 @@ app.put('/:id/score', function (req, res) {
     if (userid === undefined || score === undefined) {
         return res.status(400).send("Invalid parameters!");
     }
+
     Competition.findOneAndUpdate({
         id: req.params.id,
         "results.userid": userid
     }, {$set: {"results.$.score": score}}, function (err, result) {
         if (err) {
             return res.status(500).send({error: 'Internal server error!'});
-        }
-        else if (result === null) {
-            res.status(400).send("Competition/User not found!");
+        } else if (result === null) {
+            return res.status(400).send("Competition/User not found!");
         } else {
             return res.status(200).send({succes: 'updated!'});
         }
