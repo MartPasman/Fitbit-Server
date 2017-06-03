@@ -16,7 +16,7 @@ function today() {
  * @returns {Date}
  */
 function day(date) {
-    return new Date(getYYYYMMDD(Date.parse(date), '-'));
+    return new Date(getYYYYMMDD(date, '-'));
 }
 
 /**
@@ -26,6 +26,8 @@ function day(date) {
  * @returns {string}
  */
 function getYYYYMMDD(date, splitBy) {
+    date = Date.parse(date);
+
     var mm = date.getMonth() + 1;
     var dd = date.getDate();
 
@@ -33,6 +35,16 @@ function getYYYYMMDD(date, splitBy) {
         (mm > 9 ? '' : '0') + mm,
         (dd > 9 ? '' : '0') + dd
     ].join(splitBy);
+}
+
+/**
+ * @return {string}
+ */
+function NLDatetoUNIDate(dateString) {
+    const UNIYear = dateString.substring(7, 11);
+    const UNIMonth = dateString.substring(3, 5);
+    const UNIDay = dateString.substring(0, 2);
+    return (UNIYear + '-' + UNIMonth + '-' + UNIDay);
 }
 
 /**
@@ -72,6 +84,7 @@ function validateEmail(email) {
 
 module.exports.logResponse = logResponse;
 module.exports.getYYYYMMDD = getYYYYMMDD;
+module.exports.NLDatetoUNIDate = NLDatetoUNIDate;
 module.exports.today = today;
 module.exports.day = day;
 module.exports.validateMail = validateEmail;

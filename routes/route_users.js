@@ -17,6 +17,7 @@ const today = require('../support').today;
 const day = require('../support').day;
 const logResponse = require('../support').logResponse;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
+const NLDatetoUNIDate = require('../support').NLDatetoUNIDate;
 const validateMail = require('../support').validateMail;
 
 /**
@@ -99,17 +100,20 @@ app.get('/:id/stats/weeks/last', function (req, res) {
  */
 app.post('/:id/goals', function (req, res) {
 
+    const startDate = NLDatetoUNIDate(req.body.start);
+    const endDate = NLDatetoUNIDate(req.body.end);
+
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || !Date.parse(req.body.start) || !Date.parse(req.body.end) || isNaN(req.body.goal)) {
+        req.body.goal === undefined || !Date.parse(startDate) || !Date.parse(endDate) || isNaN(req.body.goal)) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
 
     var json = {
         goal: req.body.goal,
-        start: day(req.body.start),
-        end: day(req.body.end)
+        start: day(startDate),
+        end: day(endDate)
     };
 
     User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
