@@ -101,9 +101,14 @@ app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || isNaN(req.body.goal)) {
+        req.body.goal === undefined || isNaN(req.body.goal) ) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
+    }
+
+    if((new Date(req.body.start)) < (new Date(req.body.end))){
+        logResponse(400, 'End date is before start date.');
+        return res.status(400).send({error: 'End date is before start date.'});
     }
 
     var json = {
@@ -138,6 +143,11 @@ app.put('/:id/goals/:gid', function (req, res) {
         !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
+    }
+
+    if((new Date(req.body.start)) < (new Date(req.body.end))){
+        logResponse(400, 'End date is before start date.');
+        return res.status(400).send({error: 'End date is before start date.'});
     }
 
     User.findOneAndUpdate({id: req.params.id, 'goals._id': mongoose.Types.ObjectId(req.params.gid)},
@@ -384,5 +394,46 @@ app.put('/:id/handicap', function (req, res) {
         })
     }
 });
+
+app.put('/:id/active/', function (req, res) {
+
+    if (res.user.type !== 3) {
+        logResponse(403, "User is not authorized to make this request");
+        return res.status(403).send({error: "User is not authorized to make this request"});
+    }
+
+    if (req.params.id === undefined || req.body.id == '' || isNaN(req.params.id) || req.body.active == undefined || req.body.active == '') {
+        logResponse(400, "Id not provided or id is not a number.");
+        return res.status(400).send({error: "Id not provided or id is not a number."});
+    }
+    else {
+
+        if(req.body.active || !req.body.active) {
+            User.findOneAndUpdate({
+                id: req.params.id
+            }, {$set: {active: req.body.active}}, function (err, result) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message});
+                }
+                if (!result) {
+                    logResponse(404, "User could not be found.");
+                    return res.status(404).send({error: "User could not be found."});
+                }
+                logResponse(200, "User successfully updated.");
+                return res.status(200).send({success: "User successfully updated."});
+            })
+        }else{
+            logResponse(400, "active is not a boolean");
+            return res.status(400).send({error: "active is not a boolean"});
+        }
+    }
+});
+
+
+function validateEmail(email) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+}
 
 module.exports = app;

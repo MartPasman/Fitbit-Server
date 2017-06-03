@@ -32,7 +32,7 @@ const validateMail = require('../support').validateMail;
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
 
-    var password = "chillchill";
+    var password = "administrator";
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
@@ -46,13 +46,14 @@ app.get('/testnewuseradmin', function (req, res) {
             }
 
             var account = new User({
-                firstname: "aa",
-                lastname: "bb",
-                id: 321,
+                firstname: "Admin",
+                lastname: "user",
+                id: 10001,
                 password: hashed,
-                email: 'ham@hotie.com',
+                email: 'geen@mail.nl',
                 active: true,
-                type: 3
+                type: 3,
+                birthday: new Date()
             });
 
             account.save(function (err, result) {
@@ -677,7 +678,7 @@ app.get('/', function (req, res) {
             logResponse(404, "No users found");
             return res.status(404).send({error: "No users found"});
         }
-        logResponse(200, users);
+        logResponse(200, "User list sent");
         return res.status(200).send({success: users});
     })
 });
