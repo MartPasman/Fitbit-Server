@@ -18,10 +18,12 @@ const logResponse = require('../support').logResponse;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
 const validateMail = require('../support').validateMail;
 
+const ADMIN = 2;
+const USER = 1;
 /**
  * Authorization
  */
-app.all('/', function (req, res, next) {
+app.use('/', function (req, res, next) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -283,14 +285,14 @@ app.get('/:id', function (req, res) {
         return res.status(400).send({error: 'id is not defined'});
     }
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== ADMIN) {
         if (+req.params.id !== +res.user.id) {
             logResponse(403, "Not authorized to make this request");
             return res.status(403).send({error: 'Not authorized to make this request'});
         }
     }
 
-    User.find({type: 1, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+    User.find({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
 
         if (err) {
             logResponse(500, err.message);
@@ -319,16 +321,18 @@ app.put('/:id', function (req, res) {
         return res.status(400).send({error: 'Information is not supplied correctly.'});
     }
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== ADMIN) {
         if (+req.params.id !== +res.user.id) {
             logResponse(403, "Not authorized to make this request");
             return res.status(403).send({error: 'Not authorized to make this request.'});
         }
+    } else {
+
     }
 
     var birthday = day(req.body.birthday);
 
-    User.findOneAndUpdate({type: 1, id: req.params.id},
+    User.findOneAndUpdate({type: USER, id: req.params.id},
         {
             $set: {
                 firstname: req.body.firstname,
@@ -355,7 +359,7 @@ app.put('/:id', function (req, res) {
 
 app.put('/:id/handicap', function (req, res) {
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== ADMIN) {
         logResponse(403, "User is not authorized to make this request");
         return res.status(403).send({error: "User is not authorized to make this request"});
     }
@@ -378,7 +382,7 @@ app.put('/:id/handicap', function (req, res) {
 
         User.findOneAndUpdate({
             id: req.params.id,
-            type: 1
+            type: USER
         }, {$set: {handicap: req.body.handicap}}, function (err, result) {
             if (err) {
                 logResponse(500, err.message);
