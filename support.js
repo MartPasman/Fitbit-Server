@@ -26,9 +26,7 @@ function day(date) {
  * @returns {string}
  */
 function getYYYYMMDD(date, splitBy) {
-    if (!(date instanceof Date)) {
-        date = Date.parse(date);
-    }
+    date = Date.parse(date);
 
     var mm = date.getMonth() + 1;
     var dd = date.getDate();

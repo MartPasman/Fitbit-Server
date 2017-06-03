@@ -254,7 +254,7 @@ app.get('/accounts/subscription_callback', function (req, res) {
         console.log('\t\tFitbit id: ' + n.ownerId);
         console.log('\t\tdate: ' + date);
 
-        // find the userid
+        // find the with a certain fitbit
         User.findOne({'fitbit.userid': n.ownerId}, {password: false}, function (err, result) {
             if (err) {
                 console.error('MongoDB: ' + err.message);
@@ -299,6 +299,63 @@ app.get('/accounts/subscription_callback', function (req, res) {
                     // get the steps for the time period of the pending goals and competition
                     fitbitCallSimple('https://api.fitbit.com/1/user/[id]/activities/steps/date/' + minStart + '/' + maxEnd + '.json', user, function (body) {
 
+                        const steps = 'body.activities-log-steps';
+
+                        // for every ongoing competition, save the stats of the user
+                        comps.forEach(function (c) {
+                            // calculate the total steps in the comps time period
+                            var stepsSum = 0;
+                            for (var j = 0; j < steps.length; j++) {
+                                const date = new Date(steps.dateTime);
+                                // if the steps fall within the comps time period
+                                if (date >= c.start && date <= c.end) {
+                                    stepsSum += c.value;
+                                }
+                            }
+
+                            // TODO: calculation subject to change
+                            const newScore = user.handicap * stepsSum;
+                            const set = {
+                                'results.$.score': newScore,
+                                'results.$.goalAchieved': (newScore >= c.goal)
+                            };
+
+                            Competition.findOneAndUpdate({id: c.id, 'results.userid': userid}, {$set: set}, function (err, result) {
+                                if (err) {
+                                    console.error('MongoDB: ' + err.message);
+                                    return;
+                                }
+
+                                console.log('Competition result updated.');
+                            });
+                        });
+
+                        // for every ongoing goal, save the stats of the user
+                        user.goals.forEach(function (g) {
+                            // calculate the total steps in the goals time period
+                            var stepsSum = 0;
+                            for (var j = 0; j < steps.length; j++) {
+                                const date = new Date(steps.dateTime);
+                                // if the steps fall within the goals time period
+                                if (date >= g.start && date <= g.end) {
+                                    stepsSum += g.value;
+                                }
+                            }
+
+                            const set = {
+                                'goals.$.progress': stepsSum,
+                                'goals.$.percentage': Math.round(stepsSum / g.goal * 100)
+                            };
+
+                            User.findOneAndUpdate({id: userid, 'goals.id': g.id}, {$set: set}, function (err, result) {
+                                if (err) {
+                                    console.error('MongoDB: ' + err.message);
+                                    return;
+                                }
+
+                                console.log('Goal progress updated.');
+                            });
+                        });
                     });
                 });
             });
