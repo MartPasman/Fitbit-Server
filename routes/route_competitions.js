@@ -19,7 +19,7 @@ const day = require('../support').day;
 /**
  * must be logged in as administrator
  */
-app.all('/', function (req, res, next) {
+app.use('/', function (req, res, next) {
 
     console.log('\tAuthentication required...');
     console.log(req.app.get('private-key'));

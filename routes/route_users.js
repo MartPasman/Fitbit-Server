@@ -21,7 +21,7 @@ const validateMail = require('../support').validateMail;
 /**
  * Authorization
  */
-app.all('/', function (req, res, next) {
+app.use('/', function (req, res, next) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
@@ -100,12 +100,12 @@ app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || isNaN(req.body.goal) || !Date.parse(req.body.goal)) {
+        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1 || !Date.parse(req.body.goal)) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
 
-    if((new Date(req.body.start)) < (new Date(req.body.end))){
+    if((new Date(req.body.start)) > (new Date(req.body.end))){
         logResponse(400, 'End date is before start date.');
         return res.status(400).send({error: 'End date is before start date.'});
     }
@@ -129,6 +129,7 @@ app.post('/:id/goals', function (req, res) {
             return res.status(404).send({error: "User not found"});
         }
 
+        logResponse(201, 'Goal saved.');
         return res.status(201).send({
             success: true
         });
@@ -232,7 +233,7 @@ app.get('/:id/goals/:gid?', function (req, res) {
             return res.status(400).send({error: "No offset or limit supplied"});
         }
 
-        User.findOne({id: res.user.id}, function (err, result) {
+        User.findOne({id: req.params.id}, function (err, result) {
             // Check to see whether an error occurred
             if (err) {
                 logResponse(500, err.message);

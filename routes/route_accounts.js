@@ -27,6 +27,7 @@ const app = express.Router();
 const authentication = require('../app').authentication;
 const fitbitCallSimple = require('../fitbit').fitbitCallSimple;
 const today = require('../support').today;
+const getYYYYMMDD = require('../support').getYYYYMMDD;
 const logResponse = require('../support').logResponse;
 const validateMail = require('../support').validateMail;
 
@@ -259,23 +260,28 @@ app.post('/subscription_callback', function (req, res) {
         console.log('\t\tdate: ' + date);
 
         // find the with a certain fitbit
-        User.findOne({'fitbit.userid': n.ownerId}, {password: false}, function (err, result) {
+        User.findOne({'fitbit.userid': n.ownerId}, {password: false}, function (err, user) {
             if (err) {
                 console.error('MongoDB: ' + err.message);
                 return;
             }
 
-            if (result === undefined) {
+            if (user === undefined) {
                 console.error('User not found.');
                 return;
             }
 
-            const userid = result.userid;
+            const userid = user.id;
             const today = new Date();
             var minStart = today, maxEnd = today;
 
+            console.log('User id: ' + userid);
+
             // get the ongoing competitions
             getOngoingCompetition(function (comps) {
+
+                console.log(comps);
+
                 if (comps !== undefined && comps.length > 0) {
                     // check the dates to get the range that fits all
                     for (var i = 0; i < comps.length; i++) {
@@ -288,32 +294,45 @@ app.post('/subscription_callback', function (req, res) {
                 }
 
                 // also get all ongoing goals
-                getUserWithOngoingGoals(userid, function (user) {
-                    if (user !== undefined && user.goals.length > 0) {
-                        // check the dates to get the range that fits all
-                        for (var i = 0; i < user.length; i++) {
-                            const g = user.goals[i];
-                            if (g.start < minStart)
-                                minStart = g.start;
-                            if (g.end < maxEnd)
-                                maxEnd = g.end;
+                getUserWithOngoingGoals(userid, function (goals) {
+
+                    console.log(goals);
+
+                    if (goals === undefined) {
+                        console.error('Goals undefined.');
+                    } else {
+                        if (goals.length > 0) {
+                            // check the dates to get the range that fits all
+                            for (var i = 0; i < goals.length; i++) {
+                                const g = goals[i];
+                                if (g.start < minStart)
+                                    minStart = g.start;
+                                if (g.end < maxEnd)
+                                    maxEnd = g.end;
+                            }
                         }
                     }
 
                     // get the steps for the time period of the pending goals and competition
-                    fitbitCallSimple('https://api.fitbit.com/1/user/[id]/activities/steps/date/' + minStart + '/' + maxEnd + '.json', user, function (body) {
+                    fitbitCallSimple('https://api.fitbit.com/1/user/[id]/activities/steps/date/' + getYYYYMMDD(minStart, '-') + '/' + getYYYYMMDD(maxEnd, '-') + '.json', user, function (body) {
 
-                        const steps = 'body.activities-log-steps';
+                        body = JSON.parse(body);
+                        const steps = body['activities-steps'];
+
+                        if (steps === undefined) {
+                            console.error('Steps undefined.');
+                            return;
+                        }
 
                         // for every ongoing competition, save the stats of the user
                         comps.forEach(function (c) {
                             // calculate the total steps in the comps time period
                             var stepsSum = 0;
                             for (var j = 0; j < steps.length; j++) {
-                                const date = new Date(steps.dateTime);
+                                const date = new Date(steps[j].dateTime);
                                 // if the steps fall within the comps time period
                                 if (date >= c.start && date <= c.end) {
-                                    stepsSum += c.value;
+                                    stepsSum += parseInt(steps[j].value);
                                 }
                             }
 
@@ -324,10 +343,7 @@ app.post('/subscription_callback', function (req, res) {
                                 'results.$.goalAchieved': (newScore >= c.goal)
                             };
 
-                            Competition.findOneAndUpdate({
-                                id: c.id,
-                                'results.userid': userid
-                            }, {$set: set}, function (err, result) {
+                            Competition.findOneAndUpdate({id: c.id, 'results.userid': userid}, {$set: set}, function (err, result) {
                                 if (err) {
                                     console.error('MongoDB: ' + err.message);
                                     return;
@@ -338,14 +354,14 @@ app.post('/subscription_callback', function (req, res) {
                         });
 
                         // for every ongoing goal, save the stats of the user
-                        user.goals.forEach(function (g) {
+                        goals.forEach(function (g) {
                             // calculate the total steps in the goals time period
                             var stepsSum = 0;
                             for (var j = 0; j < steps.length; j++) {
-                                const date = new Date(steps.dateTime);
+                                const date = new Date(steps[j].dateTime);
                                 // if the steps fall within the goals time period
                                 if (date >= g.start && date <= g.end) {
-                                    stepsSum += g.value;
+                                    stepsSum += parseInt(steps[j].value);
                                 }
                             }
 
@@ -354,11 +370,15 @@ app.post('/subscription_callback', function (req, res) {
                                 'goals.$.percentage': Math.round(stepsSum / g.goal * 100)
                             };
 
-                            User.findOneAndUpdate({id: userid, 'goals.id': g.id}, {$set: set}, function (err, result) {
+                            console.log(set);
+
+                            User.update({id: userid, 'goals._id': g._id}, {$set: set}, function (err, newGoal) {
                                 if (err) {
                                     console.error('MongoDB: ' + err.message);
                                     return;
                                 }
+
+                                console.log(newGoal);
 
                                 console.log('Goal progress updated.');
                             });
@@ -423,7 +443,7 @@ function getUserWithOngoingGoals(userid, callback) {
  * Checks if user is logged in
  * all requests below this function will automatically go through this one first.
  */
-app.all('/', function (req, res, next) {
+app.use('/', function (req, res, next) {
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
