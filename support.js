@@ -16,7 +16,7 @@ function today() {
  * @returns {Date}
  */
 function day(date) {
-    return new Date(getYYYYMMDD(date, '-'));
+    return new Date(getYYYYMMDD(Date.parse(date), '-'));
 }
 
 /**
@@ -26,8 +26,6 @@ function day(date) {
  * @returns {string}
  */
 function getYYYYMMDD(date, splitBy) {
-    date = Date.parse(date);
-
     var mm = date.getMonth() + 1;
     var dd = date.getDate();
 

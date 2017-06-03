@@ -245,7 +245,6 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 return m1.start - m2.start;
             });
 
-
             var addition = req.query.limit;
             if (result.goals.length - req.params.offset < req.query.limit) {
                 addition = result.goals.length - req.params.offset;
