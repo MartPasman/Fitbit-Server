@@ -10,7 +10,6 @@ const shortid = require('shortid');
 const bcrypt = require('bcrypt-nodejs');
 const app = express.Router();
 const jwt = require('jsonwebtoken');
-const Competition = require('../model/model_competition');
 
 const fitbitCall = require('../fitbit.js').fitbitCall;
 const today = require('../support').today;
@@ -100,9 +99,6 @@ app.get('/:id/stats/weeks/last', function (req, res) {
  */
 app.post('/:id/goals', function (req, res) {
 
-    const startDate = NLDatetoUNIDate(req.body.start);
-    const endDate = NLDatetoUNIDate(req.body.end);
-
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
         req.body.goal === undefined || isNaN(req.body.goal)) {
@@ -112,8 +108,8 @@ app.post('/:id/goals', function (req, res) {
 
     var json = {
         goal: req.body.goal,
-        start: day(startDate),
-        end: day(endDate)
+        start: day(req.body.start),
+        end: day(req.body.end)
     };
 
     User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
