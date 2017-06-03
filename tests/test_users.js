@@ -12,6 +12,9 @@ var server = supertest.agent('http://localhost:3000');
 
 var testuser = '10002';
 var testpassword = 'gebruiker';
+
+var testadmin = '10001';
+var testadminpassword = 'administrator';
 /**
  * Test for adding a goal
  */
@@ -21,17 +24,15 @@ describe('Add goal', function () {
     /**
      * Getting a access token for testing
      */
-    context('POST accounts/login/  Correct', function () {
-        it('Should response 201 with access token', function (done) {
-            server.post('/accounts/login')
-                .send({id: testuser, password: testpassword})
-                .expect(201)
-                .end(function (err, res) {
-                    done(err);
-                    token = res.body.success;
-                    id = res.body.userid;
-                });
-        });
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: testuser, password: testpassword})
+            .end(function (err, result) {
+                token = result.body.success;
+                id = result.body.userid;
+                console.log(result.body)
+                done();
+            });
     });
 
     /**
@@ -771,5 +772,76 @@ describe("Change user information", function () {
         });
     });
 
+});
 
+/**
+ * Test for PUT users/:id/active
+ */
+describe("Active/Deactive user", function () {
+    var token;
+    var id;
+
+    /**
+     * Getting a access token for testing
+     */
+    context("POST accounts/login/  Correct", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: testadmin, password: testadminpassword})
+                .expect(201)
+                .end(function (err, res) {
+                    done(err);
+                    token = res.body.success;
+                    id = res.body.userid;
+                });
+        });
+    });
+
+    /**
+     * Changing to active true
+     */
+    context("PUT /users/:id/active true Correct", function () {
+        it("Should response 200", function (done) {
+            server.put('/users/' + id + '/active')
+                .send({
+                    active: true
+                }).set("Authorization", token)
+                .expect(200)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing to active false
+     */
+    context("PUT /users/:id/active false Correct", function () {
+        it("Should response 200", function (done) {
+            server.put('/users/' + id + '/active')
+                .send({
+                    active: false
+                }).set("Authorization", token)
+                .expect(200)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
+
+    /**
+     * Changing with not a boolean
+     */
+    context("PUT /users/:id/active not a boolean", function () {
+        it("Should response 400", function (done) {
+            server.put('/users/' + id + '/active')
+                .send({
+                    active: "Not a boolean"
+                }).set("Authorization", token)
+                .expect(400)
+                .end(function (err, res) {
+                    done(err);
+                });
+        });
+    });
 });
