@@ -31,6 +31,9 @@ const getYYYYMMDD = require('../support').getYYYYMMDD;
 const logResponse = require('../support').logResponse;
 const validateMail = require('../support').validateMail;
 
+const ADMIN = 2;
+const USER = 1;
+
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
 
@@ -54,7 +57,7 @@ app.get('/testnewuseradmin', function (req, res) {
                 password: hashed,
                 email: 'geen@mail.nl',
                 active: true,
-                type: 3,
+                type: ADMIN,
                 birthday: new Date()
             });
 
@@ -94,7 +97,7 @@ app.get('/testnewuser', function (req, res) {
                 password: hashed,
                 email: 'geen@mail.nl',
                 active: true,
-                type: 1,
+                type: USER,
                 birthday: date
             });
 
@@ -462,14 +465,9 @@ app.use('/', function (req, res, next) {
  */
 app.post("/", function (req, res) {
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== ADMIN) {
         logResponse(403, "Not authorized to make this request");
         return res.status(403).send({error: "Not authorized to make this request"});
-    }
-
-    //check if every field is entered
-    if (!req.body.password || !req.body.email || !req.body.type || !req.body.birthday) {
-        return res.status(400).send({error: "Not every field is (correctly) filled in."});
     }
 
     //check if all fields are entered
@@ -493,12 +491,12 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Email address is not valid."});
         }
 
-        if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 3) {
+        if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 2) {
             logResponse(400, 'Type is not valid');
             return res.status(400).send({error: "Type is not valid."});
         }
 
-        if (req.body.type === 1 && req.body.handicap === undefined || isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
+        if (req.body.type === USER && req.body.handicap === undefined || isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
             logResponse(400, 'Handicap is not valid.');
             return res.status(400).send({error: "Handicap is not valid."});
         }
@@ -524,7 +522,7 @@ app.post("/", function (req, res) {
                         }
 
                         var account;
-                        if (req.body.type === 2 || req.body.type === 3) {
+                        if (req.body.type === ADMIN) {
 
                             account = new User({
                                 firstname: req.body.firstname,
@@ -534,8 +532,7 @@ app.post("/", function (req, res) {
                                 password: hashed,
                                 email: email,
                                 active: true,
-                                type: req.body.type,
-                                handicap: undefined
+                                type: req.body.type
                             });
                         }
                         else {
@@ -666,12 +663,12 @@ app.put("/password", function (req, res) {
  */
 app.get('/', function (req, res) {
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== ADMIN) {
         logResponse(403, "User not authorized to make this request");
         return res.status(403).send({error: "User not authorized to make this request"});
     }
 
-    User.find({type: 1}, {password: 0, _id: 0, __v: 0}, function (err, users) {
+    User.find({type: USER}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 
         if (err) {
             logResponse(500, "Something went wrong");
@@ -691,7 +688,7 @@ app.get('/', function (req, res) {
  */
 app.get('/:id/connect', function (req, res) {
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== ADMIN) {
         logResponse(403, "Not authorized to make this request");
         return res.status(403).send({error: "Not authorized to make this request"});
     }

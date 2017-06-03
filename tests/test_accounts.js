@@ -286,7 +286,7 @@ describe("Sign up", function () {
                     password: "testtest",
                     email: "aap@live.nl",
                     handicap: 2,
-                    type: 2
+                    type: 1
                 }).set("Authorization", authToken)
                 .expect(201)
                 .expect(function (res) {
@@ -308,7 +308,7 @@ describe("Sign up", function () {
                     password: "testtest",
                     email: "aapje@live.nl",
                     handicap: 2,
-                    type: 3
+                    type: 2
                 })
                 .expect(401)
                 .end(done);
@@ -343,7 +343,7 @@ describe("Sign up", function () {
                 .send({
                     password: "aa",
                     email: "romy1@live.nl",
-                    type: 3,
+                    type: 1,
                     handicap: 2
                 })
                 .set("Authorization", authToken)
@@ -364,7 +364,7 @@ describe("Sign up", function () {
                 .send({
                     password: "asdfghjkl",
                     email: "romy@.nl",
-                    type: 3,
+                    type: 1,
                     handicap: 2
                 })
                 .set("Authorization", authToken)
@@ -407,7 +407,7 @@ describe("Sign up", function () {
                 .send({
                     password: "asdfghjkl",
                     email: "romy3@live.nl",
-                    type: 2,
+                    type: 1,
                     handicap: 4
                 })
                 .set("Authorization", authToken)
@@ -428,7 +428,7 @@ describe("Sign up", function () {
                 .send({
                     password: "asdfghjkl",
                     email: "aap@live.nl",
-                    type: 2,
+                    type: 1,
                     handicap: 2
                 })
                 .set("Authorization", authToken)

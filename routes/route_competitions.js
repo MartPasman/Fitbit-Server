@@ -16,6 +16,9 @@ const fitbitCall = require('../fitbit.js').fitbitCall;
 const logResponse = require('../support').logResponse;
 const day = require('../support').day;
 
+const ADMIN = 2;
+const USER = 1;
+
 /**
  * must be logged in as administrator
  */
@@ -31,7 +34,7 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        // if (res.user.type !== 3) {
+        // if (res.user.type !== ADMIN) {
         //     logResponse(403, "Not authorized to make this request");
         //     return res.status(403).send({error: "Not authorized to make this request"});
         // }
@@ -58,7 +61,7 @@ app.get('/', function (req, res) {
                 end_date = end_date.setDate(date.getDate() + 7);
 
                 //create results
-                User.find({type: 1}, function (err, usrs) {
+                User.find({type: USER}, function (err, usrs) {
                     if (err) {
                         return res.status(500).send();
                     }
@@ -113,7 +116,7 @@ app.get('/', function (req, res) {
                     end_date = end_date.setDate(date.getDate() + 7);
 
                     //create results
-                    User.find({type: 1}, function (err, usrs) {
+                    User.find({type: USER}, function (err, usrs) {
                         if (err) {
                             return res.status(500).send();
                         }
@@ -249,7 +252,7 @@ app.post('/', function (req, res) {
     generatecompId(function (id) {
         var results = [];
         //get all users and add them
-        User.find({type: 1}, function (err, result) {
+        User.find({type: USER}, function (err, result) {
             if (err) {
                 return res.status(500).send();
             }
