@@ -2,16 +2,19 @@
  * Created by martpasman on 15-05-17.
  * competitie aanmaken, competitie ophalen
  */
-var express = require("express");
-var request = require("request");
-var mongoose = require('mongoose');
-var User = require('../model/model_user');
-var shortid = require('shortid');
-var bcrypt = require('bcrypt-nodejs');
-var app = express.Router();
-var jwt = require('jsonwebtoken');
-var Competition = require('../model/model_competition');
-var fitbitCall = require('../fitbit.js').fitbitCall;
+const express = require("express");
+const request = require("request");
+const mongoose = require('mongoose');
+const User = require('../model/model_user');
+const shortid = require('shortid');
+const bcrypt = require('bcrypt-nodejs');
+const app = express.Router();
+const jwt = require('jsonwebtoken');
+const Competition = require('../model/model_competition');
+
+const fitbitCall = require('../fitbit.js').fitbitCall;
+const logResponse = require('../support').logResponse;
+const day = require('../support').day;
 
 /**
  * must be logged in as administrator
@@ -28,10 +31,10 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        if (res.user.type !== 3) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: "Not authorized to make this request"});
-        }
+        // if (res.user.type !== 3) {
+        //     logResponse(403, "Not authorized to make this request");
+        //     return res.status(403).send({error: "Not authorized to make this request"});
+        // }
 
         console.log('\tpassed');
 
@@ -47,7 +50,7 @@ app.get('/', function (req, res) {
             return res.status(500).send();
         }
 
-        if (result.length == 0) {
+        if (result.length === 0) {
             // create new competition
             generatecompId(function (id) {
                 var date = new Date();
@@ -60,7 +63,7 @@ app.get('/', function (req, res) {
                         return res.status(500).send();
                     }
 
-                    if (usrs.length == 0) {
+                    if (usrs.length === 0) {
                         return res.status(404).send({error: "no users found"});
                     }
 
@@ -93,18 +96,16 @@ app.get('/', function (req, res) {
 
                 });
             });
-        }
-
-        else {
+        } else {
             result.sort(function (m1, m2) {
                 return m1.start - m2.start;
             });
         }
-        if(result[result.length-1]){
-            var defaultGoal = result[result.length-1].defaultGoal;
+        if (result[result.length - 1]) {
+            var defaultGoal = result[result.length - 1].defaultGoal;
 
             var date = new Date();
-            if(result[result.length-1].end < date){
+            if (result[result.length - 1].end < date) {
                 //create new competition.
                 generatecompId(function (id) {
                     var date = new Date();
@@ -117,7 +118,7 @@ app.get('/', function (req, res) {
                             return res.status(500).send();
                         }
 
-                        if (usrs.length == 0) {
+                        if (usrs.length === 0) {
                             return res.status(404).send({error: "no users found"});
                         }
 
@@ -132,7 +133,7 @@ app.get('/', function (req, res) {
                         var comp = new Competition({
                             id: id,
                             goal: defaultGoal,
-                            defaultGoal:defaultGoal ,
+                            defaultGoal: defaultGoal,
                             start: date,
                             end: end_date,
                             results: results
@@ -143,19 +144,14 @@ app.get('/', function (req, res) {
                                 console.log(err);
                                 return res.status(500).send(err);
                             }
+
                             return res.status(200).send(resp);
-
                         });
-
-
                     });
                 });
-
             }
         }
         res.status(200).send(result[result.length - 1]);
-
-
     });
 });
 
@@ -243,15 +239,14 @@ app.get('/', function (req, res) {
  */
 app.post('/', function (req, res) {
     var goal = req.body.goal;
-    var startDate = req.body.start;
-    var endDate = req.body.end;
+    var startDate = day(req.body.start);
+    var endDate = day(req.body.end);
 
-    if (goal === undefined || startDate == undefined || endDate == undefined || !Date.parse(startDate) || !Date.parse(endDate)) {
+    if (goal === undefined || startDate === undefined || endDate === undefined || !Date.parse(startDate) || !Date.parse(endDate)) {
         return res.status(400).send({error: "Bad request, invalid parameters."});
     }
+
     generatecompId(function (id) {
-
-
         var results = [];
         //get all users and add them
         User.find({type: 1}, function (err, result) {
@@ -260,7 +255,6 @@ app.post('/', function (req, res) {
             }
             console.log(result);
 
-
             for (var i = 0; i < result.length; i++) {
                 results[i] = {
                     name: result[i].firstname + ' ' + result[i].lastname,
@@ -268,14 +262,14 @@ app.post('/', function (req, res) {
                     score: 1300,
                     goalAchieved: false
                 }
-
             }
+
             var comp = new Competition({
                 id: id,
-                goal: req.body.goal,
-                defaultgoal: req.body.goal,
-                start: req.body.start,
-                end: req.body.end,
+                goal: goal,
+                defaultgoal: goal,
+                start: startDate,
+                end: endDate,
                 results: results
             });
 
@@ -283,12 +277,11 @@ app.post('/', function (req, res) {
                 if (err) {
                     return res.status(500).send({error: "..."});
                 }
+
                 return res.status(201).send({succes: id});
             });
         })
     });
-
-
 });
 
 
@@ -299,24 +292,22 @@ app.put('/:id/score', function (req, res) {
     var userid = req.body.userid;
     var score = req.body.score;
 
-    if (userid === undefined || score == undefined) {
+    if (userid === undefined || score === undefined) {
         return res.status(400).send("Invalid parameters!");
     }
+
     Competition.findOneAndUpdate({
         id: req.params.id,
         "results.userid": userid
     }, {$set: {"results.$.score": score}}, function (err, result) {
         if (err) {
             return res.status(500).send({error: 'Internal server error!'});
+        } else if (result === null) {
+            return res.status(400).send("Competition/User not found!");
+        } else {
+            return res.status(200).send({succes: 'updated!'});
         }
-        else if (result === null) {
-            res.status(400).send("Competition/User not found!");
-        } else
-            return res.status(201).send({succes: 'updated!'});
-
-
     })
-
 });
 
 /**
@@ -327,17 +318,17 @@ app.put('/lastgoal', function (req, res) {
         if (err) {
             console.log(err);
             res.status(500).send(err);
-        } else if (comps.length == 0) {
+        } else if (comps.length === 0) {
             res.status(404).send({error: "no users found"});
         }
-        var compid = comps[comps.length - 1].id;
 
+        var compid = comps[comps.length - 1].id;
 
         Competition.findOneAndUpdate({id: compid}, {$set: {defaultGoal: req.body.goal}}, function (err, competition) {
             if (err) {
                 console.log(err);
                 return res.status(500).send();
-            } else if (competition == null || competition == undefined) {
+            } else if (competition === undefined || competition === undefined) {
                 return res.status(404).send({error: "user not found"})
             }
 
@@ -351,7 +342,7 @@ function generatecompId(callback) {
     var id = Math.ceil((Math.random() * 200 ) + 100);
 
     Competition.find({id: id}, function (err, user) {
-        if (user.length == 0) {
+        if (user.length === 0) {
             callback(id);
         } else {
             generateId(callback);
@@ -363,26 +354,6 @@ Date.prototype.addDays = function (days) {
     var dat = new Date(this.valueOf());
     dat.setDate(dat.getDate() + days);
     return dat;
-};
-
-
-var logResponse = function (code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 };
 
 module.exports = app;

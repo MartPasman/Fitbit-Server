@@ -2,16 +2,22 @@
  * Created by martpasman on 15-05-17.
  * account aanpassen, goal aanmaken, goal aanpassen, goal ophalen
  */
-var express = require("express");
-var request = require("request");
-var mongoose = require('mongoose');
-var User = require('../model/model_user');
-var shortid = require('shortid');
-var bcrypt = require('bcrypt-nodejs');
-var app = express.Router();
-var jwt = require('jsonwebtoken');
-var Competition = require('../model/model_competition');
-var fitbitCall = require('../fitbit.js').fitbitCall;
+const express = require("express");
+const request = require("request");
+const mongoose = require('mongoose');
+const User = require('../model/model_user');
+const shortid = require('shortid');
+const bcrypt = require('bcrypt-nodejs');
+const app = express.Router();
+const jwt = require('jsonwebtoken');
+const Competition = require('../model/model_competition');
+
+const fitbitCall = require('../fitbit.js').fitbitCall;
+const today = require('../support').today;
+const day = require('../support').day;
+const logResponse = require('../support').logResponse;
+const getYYYYMMDD = require('../support').getYYYYMMDD;
+const validateMail = require('../support').validateMail;
 
 /**
  * Authorization
@@ -102,8 +108,8 @@ app.post('/:id/goals', function (req, res) {
 
     var json = {
         goal: req.body.goal,
-        start: req.body.start,
-        end: req.body.end
+        start: day(req.body.start),
+        end: day(req.body.end)
     };
 
     User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
@@ -137,8 +143,8 @@ app.put('/:id/goals/:gid', function (req, res) {
     User.findOneAndUpdate({id: req.params.id, 'goals._id': mongoose.Types.ObjectId(req.params.gid)},
         {
             $set: {
-                'goals.$.start': req.body.start,
-                'goals.$.end': req.body.end,
+                'goals.$.start': day(req.body.start),
+                'goals.$.end': day(req.body.end),
                 'goals.$.goal': req.body.goal
             }
         }, function (err, result) {
@@ -299,12 +305,11 @@ app.put('/:id', function (req, res) {
     }
 
     if (req.body.birthday === '' || req.body.birthday === undefined || req.body.firstname === '' || req.body.firstname === undefined
-    || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined ||
-    !Date.parse(req.body.birthday) || !validateEmail(req.body.email)) {
+        || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined ||
+        !Date.parse(req.body.birthday) || !validateMail(req.body.email)) {
         logResponse(400, 'Information is not supplied correctly');
         return res.status(400).send({error: 'Information is not supplied correctly.'});
     }
-
 
     if (res.user.type !== 3) {
         if (+req.params.id !== +res.user.id) {
@@ -313,20 +318,28 @@ app.put('/:id', function (req, res) {
         }
     }
 
-    var birthday = new Date(req.body.birthday);
+    var birthday = day(req.body.birthday);
 
-
-    User.findOneAndUpdate({type: 1, id: req.params.id}, {$set:{firstname: req.body.firstname, lastname: req.body.lastname,
-        email: req.body.email, birthday: birthday}}, function (err, user) {
+    User.findOneAndUpdate({type: 1, id: req.params.id},
+        {
+            $set: {
+                firstname: req.body.firstname,
+                lastname: req.body.lastname,
+                email: req.body.email,
+                birthday: birthday
+            }
+        }, function (err, user) {
 
         if (err) {
             logResponse(500, err.message);
             return res.status(500).send({error: err.message})
         }
+
         if (user.length === 0) {
             logResponse(404, "User account could not be found.");
             return res.status(404).send({error: "User account could not be found."});
         }
+
         logResponse(200, 'Information is updated.');
         return res.status(200).send({success: 'Information is updated.'});
     })
@@ -372,41 +385,5 @@ app.put('/:id/handicap', function (req, res) {
         })
     }
 });
-
-
-
-var logResponse = function (code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-};
-
-function getYYYYMMDD(date, splitBy) {
-    var mm = date.getMonth() + 1;
-    var dd = date.getDate();
-
-    return [date.getFullYear(),
-        (mm > 9 ? '' : '0') + mm,
-        (dd > 9 ? '' : '0') + dd
-    ].join(splitBy);
-}
-
-function validateEmail(email) {
-    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email);
-}
 
 module.exports = app;

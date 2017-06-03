@@ -17,12 +17,17 @@ const client = new fitbitClient(client_id, client_secret);
 // const WEBAPP = 'http://127.0.0.1';
 const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
-
 const redirect = REST + '/accounts/oauth_callback';
 
 const User = require('../model/model_user');
+const Competition = require('../model/model_competition');
 
 const app = express.Router();
+
+const fitbitCallSimple = require('../fitbit').fitbitCallSimple;
+const today = require('../support').today;
+const logResponse = require('../support').logResponse;
+const validateMail = require('../support').validateMail;
 
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
@@ -232,11 +237,119 @@ app.get('/oauth_callback', function (req, res) {
  */
 app.get('/accounts/subscription_callback', function (req, res) {
 
+    // TODO: remove later
     console.log(req);
     console.log(req.originalUrl);
     console.log(req.body);
+
+    console.log('Received notification(s) from Fitbit.com');
     res.status(204).send();
+
+    // go through all notifications
+    const notifications = req.body;
+    notifications.forEach(function (n) {
+
+        const date = Date.parse(n.date);
+        console.log('Received notification for subscription id: ' + n.subscriptionId);
+        console.log('\t\tFitbit id: ' + n.ownerId);
+        console.log('\t\tdate: ' + date);
+
+        // find the userid
+        User.findOne({'fitbit.userid': n.ownerId}, {password: false}, function (err, result) {
+            if (err) {
+                console.error('MongoDB: ' + err.message);
+                return;
+            }
+
+            if (result === undefined) {
+                console.error('User not found.');
+                return;
+            }
+
+            const userid = result.userid;
+            const today = new Date();
+            var minStart = today, maxEnd = today;
+
+            // get the ongoing competitions
+            getOngoingCompetition(function (comps) {
+                if (comps !== undefined && comps.length > 0) {
+                    // check the dates to get the range that fits all
+                    for (var i = 0; i < comps.length; i++) {
+                        const c = comps[i];
+                        if (c.start < minStart)
+                            minStart = c.start;
+                        if (c.end < maxEnd)
+                            maxEnd = c.end;
+                    }
+                }
+
+                // also get all ongoing goals
+                getUserWithOngoingGoals(userid, function (user) {
+                    if (user !== undefined && user.goals.length > 0) {
+                        // check the dates to get the range that fits all
+                        for (var i = 0; i < user.length; i++) {
+                            const g = user.goals[i];
+                            if (g.start < minStart)
+                                minStart = g.start;
+                            if (g.end < maxEnd)
+                                maxEnd = g.end;
+                        }
+                    }
+
+                    // get the steps for the time period of the pending goals and competition
+                    fitbitCallSimple('https://api.fitbit.com/1/user/[id]/activities/steps/date/' + minStart + '/' + maxEnd + '.json', user, function (body) {
+
+                    });
+                });
+            });
+        });
+    });
 });
+
+// TODO: move or delete later
+app.get('/:id/goals/ongoing', function (req, res) {
+    getUserWithOngoingGoals(req.params.id, function (goals) {
+        logResponse(200, 'Ongoing goals send.');
+        res.status(200).send(goals);
+    });
+});
+
+function getOngoingCompetition(callback) {
+    const where = {
+        start: {
+            $lt: today()
+        },
+        end: {
+            $gt: today()
+        }
+    };
+
+    Competition.find(where, {}, function (err, comps) {
+        if (err) {
+            console.error('Competitions: MongoDB: ' + err.message);
+        }
+
+        callback(comps)
+    });
+}
+
+function getUserWithOngoingGoals(userid, callback) {
+    User.findOne({id: userid}, {}, function (err, user) {
+        if (err) {
+            console.error('Goals: MongoDB: ' + err.message);
+        }
+
+        const goals = [];
+        for (var i = 0; i < user.goals.length; i++) {
+            const g = user.goals[i];
+            if (g.start <= today() && g.end >= today()) {
+                goals.push(g);
+            }
+        }
+
+        callback(goals);
+    });
+}
 
 /**
  * Checks if user is logged in and if user is administrator
@@ -289,7 +402,7 @@ app.post("/", function (req, res) {
 
         var email = req.body.email.toLowerCase();
 
-        if (!validateEmail(email)) {
+        if (!validateMail(email)) {
             logResponse(400, 'Email not valid.');
             return res.status(400).send({error: "Email address is not valid."});
         }
@@ -320,7 +433,7 @@ app.post("/", function (req, res) {
 
                     bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                         if (err) {
-                            logResponse(500, "Can not hash account: " +  err.message);
+                            logResponse(500, "Can not hash account: " + err.message);
                             return res.status(500).send({error: err.message});
                         }
 
@@ -487,7 +600,6 @@ app.get('/:id/connect', function (req, res) {
     return res.status(201).send({success: authURL});
 });
 
-
 /**
  * Get all users without passwords
  */
@@ -513,26 +625,6 @@ app.get('/', function (req, res) {
     })
 });
 
-
-function logResponse(code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    const COLOR_200 = '\u001B[32m';
-    const COLOR_300 = '\u001B[33m';
-    const COLOR_400 = '\u001B[31m';
-    const COLOR_500 = '\u001B[34m';
-    const COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-}
-
 const OAuthMap = [];
 function mapOAuthRequest(userid) {
     const state = shortid.generate();
@@ -555,16 +647,6 @@ function getOAuthMapUserid(state) {
         }
     }
     return undefined;
-}
-
-/**
- * Check if a given email is a valid email
- * @param email
- * @returns {boolean}
- */
-function validateEmail(email) {
-    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email);
 }
 
 /**
