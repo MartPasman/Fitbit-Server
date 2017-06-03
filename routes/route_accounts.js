@@ -24,6 +24,7 @@ const Competition = require('../model/model_competition');
 
 const app = express.Router();
 
+const authentication = require('../app').authentication;
 const fitbitCallSimple = require('../fitbit').fitbitCallSimple;
 const today = require('../support').today;
 const logResponse = require('../support').logResponse;
@@ -235,18 +236,20 @@ app.get('/oauth_callback', function (req, res) {
 /**
  *
  */
-app.get('/accounts/subscription_callback', function (req, res) {
+app.post('/subscription_callback', function (req, res) {
 
     // TODO: remove later
-    console.log(req);
-    console.log(req.originalUrl);
     console.log(req.body);
+
+    const notifications = req.body;
+    if (!(notifications instanceof Array)) {
+        return res.status(400).send({error: 'No array in body'});
+    }
 
     console.log('Received notification(s) from Fitbit.com');
     res.status(204).send();
 
     // go through all notifications
-    const notifications = req.body;
     notifications.forEach(function (n) {
 
         const date = Date.parse(n.date);
@@ -320,7 +323,10 @@ app.get('/accounts/subscription_callback', function (req, res) {
                                 'results.$.goalAchieved': (newScore >= c.goal)
                             };
 
-                            Competition.findOneAndUpdate({id: c.id, 'results.userid': userid}, {$set: set}, function (err, result) {
+                            Competition.findOneAndUpdate({
+                                id: c.id,
+                                'results.userid': userid
+                            }, {$set: set}, function (err, result) {
                                 if (err) {
                                     console.error('MongoDB: ' + err.message);
                                     return;
@@ -396,6 +402,10 @@ function getUserWithOngoingGoals(userid, callback) {
             console.error('Goals: MongoDB: ' + err.message);
         }
 
+        if (user === null) {
+            return;
+        }
+
         const goals = [];
         for (var i = 0; i < user.goals.length; i++) {
             const g = user.goals[i];
@@ -409,12 +419,10 @@ function getUserWithOngoingGoals(userid, callback) {
 }
 
 /**
- * Checks if user is logged in and if user is administrator
- * all requests below this function will automatically go through this one first!
- * If your page doesn't need to be requested by admin, put it above this function
+ * Checks if user is logged in
+ * all requests below this function will automatically go through this one first.
  */
-app.use('/', function (req, res, next) {
-
+app.all('/', function (req, res, next) {
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -633,31 +641,6 @@ app.put("/password", function (req, res) {
 });
 
 /**
- *
- */
-app.get('/:id/connect', function (req, res) {
-
-    if (res.user.type !== 3) {
-        logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
-    }
-
-    if (req.params.id === undefined || isNaN(req.params.id)) {
-        logResponse(400, "Invalid id.");
-        return res.status(400).send({error: "Invalid id."});
-    }
-
-    const state = mapOAuthRequest(req.params.id);
-
-    // get the authorisation URL to get the acces code from fitbit.com
-    const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
-
-    //return to this URL to let the user login
-    logResponse(201, "authURL created");
-    return res.status(201).send({success: authURL});
-});
-
-/**
  * Get all users without passwords
  */
 app.get('/', function (req, res) {
@@ -680,6 +663,31 @@ app.get('/', function (req, res) {
         logResponse(200, users);
         return res.status(200).send({success: users});
     })
+});
+
+/**
+ *
+ */
+app.get('/:id/connect', function (req, res) {
+
+    if (res.user.type !== 3) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
+    if (req.params.id === undefined || isNaN(req.params.id)) {
+        logResponse(400, "Invalid id.");
+        return res.status(400).send({error: "Invalid id."});
+    }
+
+    const state = mapOAuthRequest(req.params.id);
+
+    // get the authorisation URL to get the acces code from fitbit.com
+    const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
+
+    //return to this URL to let the user login
+    logResponse(201, "authURL created");
+    return res.status(201).send({success: authURL});
 });
 
 const OAuthMap = [];

@@ -16,13 +16,12 @@ const today = require('../support').today;
 const day = require('../support').day;
 const logResponse = require('../support').logResponse;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
-const NLDatetoUNIDate = require('../support').NLDatetoUNIDate;
 const validateMail = require('../support').validateMail;
 
 /**
  * Authorization
  */
-app.use('/', function (req, res, next) {
+app.all('/', function (req, res, next) {
 
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {

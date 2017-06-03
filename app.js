@@ -66,5 +66,20 @@ app.get('/api', function (req, res) {
 //listen on port 3000
 app.listen(3000, function () {
     console.log('Listening on port 3000!');
-
 });
+
+function authentication(req, res, next) {
+    jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
+        if (err) {
+            logResponse(401, err.message);
+            return res.status(401).send({error: "User is not logged in."});
+        }
+
+        // Save user for future purposes
+        res.user = decoded._doc;
+
+        next();
+    });
+}
+
+module.exports.authentication = authentication;
