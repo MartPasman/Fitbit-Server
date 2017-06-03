@@ -105,7 +105,7 @@ app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || !Date.parse(startDate) || !Date.parse(endDate) || isNaN(req.body.goal)) {
+        req.body.goal === undefined || isNaN(req.body.goal)) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
@@ -333,19 +333,19 @@ app.put('/:id', function (req, res) {
             }
         }, function (err, user) {
 
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({error: err.message})
-        }
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message})
+            }
 
-        if (user.length === 0) {
-            logResponse(404, "User account could not be found.");
-            return res.status(404).send({error: "User account could not be found."});
-        }
+            if (user.length === 0) {
+                logResponse(404, "User account could not be found.");
+                return res.status(404).send({error: "User account could not be found."});
+            }
 
-        logResponse(200, 'Information is updated.');
-        return res.status(200).send({success: 'Information is updated.'});
-    })
+            logResponse(200, 'Information is updated.');
+            return res.status(200).send({success: 'Information is updated.'});
+        })
 });
 
 app.put('/:id/handicap', function (req, res) {
