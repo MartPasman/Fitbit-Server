@@ -236,7 +236,7 @@ describe("Wachtwoord veranderen", function () {
             server.put('/accounts/password')
                 .send({old: "wrong", new1: "chillchill", new2: "chillchill"})
                 .set("Authorization", token)
-                .expect(400)
+                .expect(401)
                 .end(function (err, result) {
                     done();
                 });

@@ -601,8 +601,8 @@ app.put("/password", function (req, res) {
                 }
 
                 if (!success) {
-                    logResponse(400, 'Invalid credentials');
-                    return res.status(400).send({error: "Invalid credentials"});
+                    logResponse(401, 'Invalid credentials');
+                    return res.status(401).send({error: "Invalid credentials"});
                 }
 
                 //Chek if the user is active
