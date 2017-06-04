@@ -322,7 +322,7 @@ describe("Changing goal", function () {
         it("Should response 201", function (done) {
             server.put('/users/' + id + '/goals/' + gid)
                 .send({
-                    end: '2017-05-23 00:00:00.000',
+                    end: '2017-05-30 00:00:00.000',
                     start: '2017-05-22 00:00:00.000',
                     goal: 1100
                 }).set("Authorization", token)
@@ -813,21 +813,6 @@ describe("Active/Deactive user", function () {
         });
     });
 
-    /**
-     * Changing to active false
-     */
-    context("PUT /users/:id/active false Correct", function () {
-        it("Should response 200", function (done) {
-            server.put('/users/' + id + '/active')
-                .send({
-                    active: false
-                }).set("Authorization", token)
-                .expect(200)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
-    });
 
     /**
      * Changing with not a boolean
@@ -836,7 +821,7 @@ describe("Active/Deactive user", function () {
         it("Should response 400", function (done) {
             server.put('/users/' + id + '/active')
                 .send({
-                    active: "Not a boolean"
+                    active: ""
                 }).set("Authorization", token)
                 .expect(400)
                 .end(function (err, res) {

@@ -102,7 +102,7 @@ app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1 || !Date.parse(req.body.goal)) {
+        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1 || !Date.parse(req.body.start)  || !Date.parse(req.body.end)) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
