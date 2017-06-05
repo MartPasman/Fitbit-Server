@@ -107,15 +107,15 @@ app.post('/:id/goals', function (req, res) {
         return res.status(400).send({error: 'Invalid request values.'});
     }
 
-    if((new Date(req.body.start)) > (new Date(req.body.end))){
+    if ((new Date(req.body.start)) > (new Date(req.body.end))) {
         logResponse(400, 'End date is before start date.');
         return res.status(400).send({error: 'End date is before start date.'});
     }
 
     var json = {
         goal: req.body.goal,
-        start: day(req.body.start),
-        end: day(req.body.end)
+        start: req.body.start,
+        end: req.body.end
     };
 
     User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
@@ -138,6 +138,9 @@ app.post('/:id/goals', function (req, res) {
     });
 });
 
+/**
+ *
+ */
 app.put('/:id/goals/:gid', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
@@ -147,7 +150,7 @@ app.put('/:id/goals/:gid', function (req, res) {
         return res.status(400).send({error: 'Invalid request values.'});
     }
 
-    if((new Date(req.body.start)) < (new Date(req.body.end))){
+    if ((new Date(req.body.start)) < (new Date(req.body.end))) {
         logResponse(400, 'End date is before start date.');
         return res.status(400).send({error: 'End date is before start date.'});
     }
@@ -178,8 +181,10 @@ app.put('/:id/goals/:gid', function (req, res) {
         });
 });
 
+/**
+ *
+ */
 app.delete('/:id/goals/:gid', function (req, res) {
-
 
     if (req.params.id === undefined || isNaN(req.params.id) ||
         req.params.gid === undefined) {
@@ -207,6 +212,9 @@ app.delete('/:id/goals/:gid', function (req, res) {
     });
 });
 
+/**
+ *
+ */
 app.get('/:id/goals/:gid?', function (req, res) {
     if (req.params.gid !== undefined) {
         User.findOne({id: res.user.id}, {goals: {$elemMatch: {_id: mongoose.Types.ObjectId(req.params.gid)}}}, function (err, result) {
@@ -253,8 +261,9 @@ app.get('/:id/goals/:gid?', function (req, res) {
                 return res.status(400).send({error: "Offset exceeded goals"});
             }
 
+            // changed to sort End date to have pending goals next to each other
             result.goals.sort(function (m1, m2) {
-                return m1.start - m2.start;
+                return m1.end - m2.end;
             });
 
             var addition = req.query.limit;
@@ -274,7 +283,6 @@ app.get('/:id/goals/:gid?', function (req, res) {
         });
     }
 });
-
 
 /**
  * Get user without password
@@ -308,6 +316,9 @@ app.get('/:id', function (req, res) {
     })
 });
 
+/**
+ *
+ */
 app.put('/:id', function (req, res) {
 
     if (req.params.id === '' || req.params.id === undefined) {
@@ -358,6 +369,9 @@ app.put('/:id', function (req, res) {
         })
 });
 
+/**
+ *
+ */
 app.put('/:id/handicap', function (req, res) {
 
     if (res.user.type !== ADMIN) {
@@ -399,6 +413,9 @@ app.put('/:id/handicap', function (req, res) {
     }
 });
 
+/**
+ *
+ */
 app.put('/:id/active/', function (req, res) {
 
     if (res.user.type !== 3) {
@@ -412,7 +429,7 @@ app.put('/:id/active/', function (req, res) {
     }
     else {
 
-        if(req.body.active || !req.body.active) {
+        if (req.body.active || !req.body.active) {
             User.findOneAndUpdate({
                 id: req.params.id
             }, {$set: {active: req.body.active}}, function (err, result) {
@@ -427,17 +444,11 @@ app.put('/:id/active/', function (req, res) {
                 logResponse(200, "User successfully updated.");
                 return res.status(200).send({success: "User successfully updated."});
             })
-        }else{
+        } else {
             logResponse(400, "active is not a boolean");
             return res.status(400).send({error: "active is not a boolean"});
         }
     }
 });
-
-
-function validateEmail(email) {
-    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email);
-}
 
 module.exports = app;

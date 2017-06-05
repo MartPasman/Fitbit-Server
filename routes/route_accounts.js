@@ -370,7 +370,8 @@ app.post('/subscription_callback', function (req, res) {
 
                             const set = {
                                 'goals.$.progress': stepsSum,
-                                'goals.$.percentage': Math.round(stepsSum / g.goal * 100)
+                                // max 100 percent
+                                'goals.$.percentage': Math.min(100, Math.round(stepsSum / g.goal * 100))
                             };
 
                             console.log(set);
