@@ -114,8 +114,8 @@ app.post('/:id/goals', function (req, res) {
 
     var json = {
         goal: req.body.goal,
-        start: req.body.start,
-        end: req.body.end
+        start: day(req.body.start),
+        end: day(req.body.end)
     };
 
     User.findOneAndUpdate({id: req.params.id}, {$push: {goals: json}}, function (err, result) {
