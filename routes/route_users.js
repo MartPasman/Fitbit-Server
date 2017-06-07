@@ -301,7 +301,7 @@ app.get('/:id', function (req, res) {
         }
     }
 
-    User.find({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+    User.find({id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
 
         if (err) {
             logResponse(500, err.message);
@@ -327,8 +327,7 @@ app.put('/:id', function (req, res) {
     }
 
     if (req.body.birthday === '' || req.body.birthday === undefined || req.body.firstname === '' || req.body.firstname === undefined
-        || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined ||
-        !Date.parse(req.body.birthday) || !validateMail(req.body.email)) {
+        || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined || !validateMail(req.body.email)) {
         logResponse(400, 'Information is not supplied correctly');
         return res.status(400).send({error: 'Information is not supplied correctly.'});
     }
@@ -344,7 +343,7 @@ app.put('/:id', function (req, res) {
 
     var birthday = day(req.body.birthday);
 
-    User.findOneAndUpdate({type: USER, id: req.params.id},
+    User.findOneAndUpdate({id: req.params.id},
         {
             $set: {
                 firstname: req.body.firstname,
@@ -357,6 +356,11 @@ app.put('/:id', function (req, res) {
             if (err) {
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message})
+            }
+
+            if (user === null) {
+                logResponse(404, "User account could not be found.");
+                return res.status(404).send({error: "User account could not be found."});
             }
 
             if (user.length === 0) {
