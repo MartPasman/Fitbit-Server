@@ -42,8 +42,8 @@ describe('Add goal', function () {
         it('Should response 201', function (done) {
             server.post('/users/' + id + '/goals/')
                 .send({
-                    end: '2017-05-21 00:00:00.000',
-                    start: '2017-05-20 00:00:00.000',
+                    end: '21/05/2017',
+                    start: '20/05/2017',
                     goal: 1000
                 }).set("Authorization", token)
                 .expect(201)
@@ -110,14 +110,14 @@ describe('Add goal', function () {
      * Wrong date
      */
     context("POST /users/goals/ failed wrong date", function () {
-        it("Should response 400", function (done) {
+        it("Should response 500", function (done) {
             server.post('/users/' + id + '/goals/ ')
                 .send({
                     end: 'fsadf',
                     start: '213421',
                     goal: 4500
                 }).set("Authorization", token)
-                .expect(400)
+                .expect(500)
                 .end(function (err, res) {
                     done(err);
                 });
@@ -156,8 +156,8 @@ describe("Delete goal", function () {
         it("Should response 201", function (done) {
             server.post('/users/' + id + '/goals/ ')
                 .send({
-                    end: '2017-05-21 00:00:00.000',
-                    start: '2017-05-20 00:00:00.000',
+                    end: '21/05/2017',
+                    start: '20/05/2017',
                     goal: 1000
                 }).set("Authorization", token)
                 .expect(201)
@@ -232,8 +232,8 @@ describe("Load goal with offset", function () {
         it("Should response 201", function (done) {
             server.post('/users/' + id + '/goals/ ')
                 .send({
-                    end: '2017-05-21 00:00:00.000',
-                    start: '2017-05-20 00:00:00.000',
+                    end: '21/05/2017',
+                    start: '20/05/2017',
                     goal: 1000
                 }).set("Authorization", token)
                 .expect(201)
@@ -286,8 +286,8 @@ describe("Changing goal", function () {
         it("Should response 201", function (done) {
             server.post('/users/' + id + '/goals/ ')
                 .send({
-                    end: '2017-05-21 00:00:00.000',
-                    start: '2017-05-20 00:00:00.000',
+                    end: '21/05/2017',
+                    start: '20/05/2017',
                     goal: 1000
                 }).set("Authorization", token)
                 .expect(201)
@@ -322,8 +322,8 @@ describe("Changing goal", function () {
         it("Should response 201", function (done) {
             server.put('/users/' + id + '/goals/' + gid)
                 .send({
-                    end: '2017-05-30 00:00:00.000',
-                    start: '2017-05-22 00:00:00.000',
+                    end: '30/05/2017',
+                    start: '22/05/2017',
                     goal: 1100
                 }).set("Authorization", token)
                 .expect(201)
@@ -470,13 +470,13 @@ describe("Handicap", function () {
 
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: userID, password: "chillchill"})
+            .send({id: testadmin, password: testadminpassword})
             .expect(201)
             .end(function (err, result) {
                 authToken = result.body.success;
 
                 server.post('/accounts/login')
-                    .send({id: userIDother, password: "chillchill"})
+                    .send({id: testuser, password: testpassword})
                     .expect(201)
                     .end(function (err, result) {
                         authTokenWrong = result.body.success;
@@ -676,102 +676,6 @@ describe("Change user information", function () {
                 });
         });
     });
-
-    /**
-     * Changing information false date
-     */
-    context("PUT /users/:id  failed not correct birthday", function () {
-        it("Should response 400", function (done) {
-            server.put('/users/' + id)
-                .send({
-                    birthday: "lol",
-                    firstname: "Generic",
-                    lastname: "Userus",
-                    email: "lol@lol.nl"
-                }).set("Authorization", token)
-                .expect(400)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
-    });
-
-    /**
-     * Changing information no first name
-     */
-    context("PUT /users/:id  failed not correct no first name", function () {
-        it("Should response 400", function (done) {
-            server.put('/users/' + id)
-                .send({
-                    birthday: "23/05/2017",
-                    firstname: "",
-                    lastname: "Userus",
-                    email: "lol@lol.nl"
-                }).set("Authorization", token)
-                .expect(400)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
-    });
-
-    /**
-     * Changing information no last name
-     */
-    context("PUT /users/:id  failed not correct no last name", function () {
-        it("Should response 400", function (done) {
-            server.put('/users/' + id)
-                .send({
-                    birthday: "23/05/2017",
-                    firstname: "Generic",
-                    lastname: "",
-                    email: "lol@lol.nl"
-                }).set("Authorization", token)
-                .expect(400)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
-    });
-
-    /**
-     * Changing information no email
-     */
-    context("PUT /users/:id  failed not correct no last name", function () {
-        it("Should response 400", function (done) {
-            server.put('/users/' + id)
-                .send({
-                    birthday: "23/05/2017",
-                    firstname: "Generic",
-                    lastname: "Userus",
-                    email: ""
-                }).set("Authorization", token)
-                .expect(400)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
-    });
-
-    /**
-     * Changing information wrong email
-     */
-    context("PUT /users/:id  failed not correct wrong email", function () {
-        it("Should response 400", function (done) {
-            server.put('/users/' + id)
-                .send({
-                    birthday: "23/05/2017",
-                    firstname: "Generic",
-                    lastname: "Userus",
-                    email: "lol.nl"
-                }).set("Authorization", token)
-                .expect(400)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
-    });
-
 });
 
 /**

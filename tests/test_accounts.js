@@ -9,6 +9,13 @@ var should = require('should');
 var User = require('../model/model_user');
 var server = supertest.agent("http://localhost:3000");
 
+
+var testuser = '10002';
+var testpassword = 'gebruiker';
+
+var testadmin = '10001';
+var testadminpassword = 'administrator';
+
 // describe("Fitbit connecting unittest", function () {
 //     before(function (done) {
 //         server.get('/accounts/testnewuser')
@@ -74,7 +81,7 @@ describe("Login", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'chillchill'})
+                .send({id: testuser, password: testpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -86,10 +93,10 @@ describe("Login", function () {
      * Testing a login path with a wrong password expected 400
      */
     context("POST accounts/login/  Wrong password", function () {
-        it("Should response 400 because, wrong password", function (done) {
+        it("Should response 401 because, wrong password", function (done) {
             server.post('/accounts/login/')
-                .send({id: '123', password: 'afdasf'})
-                .expect(400)
+                .send({id: testuser, password: 'afdasf'})
+                .expect(401)
                 .end(function (err, res) {
                     done(err);
                 });
@@ -102,8 +109,8 @@ describe("Login", function () {
     context("POST accounts/login/  Wrong id", function () {
         it("Should response 400 because, wrong id", function (done) {
             server.post('/accounts/login/')
-                .send({id: '1232314', password: 'chill'})
-                .expect(400)
+                .send({id: '1232314', password: testpassword})
+                .expect(401)
                 .end(function (err, res) {
                     done(err);
                 });
@@ -114,10 +121,10 @@ describe("Login", function () {
      * Testing a login path with no information in the json expected 400
      */
     context("POST accounts/login/  empty information", function () {
-        it("Should response 400 because, empty information passed", function (done) {
+        it("Should response 401 because, empty information passed", function (done) {
             server.post('/accounts/login/')
                 .send({id: '', password: ''})
-                .expect(400)
+                .expect(401)
                 .end(function (err, res) {
                     done(err);
                 });
@@ -156,16 +163,21 @@ describe("Login", function () {
 });
 
 describe("Wachtwoord veranderen", function () {
-    var token = "";
+    var token;
 
-    before(function (done) {
-        server.post('/accounts/login')
-            .send({id: 321, password: "chillhoor"})
-            .expect(201)
-            .end(function (err, result) {
-                token = result.body.success;
-                done();
-            });
+    /**
+     * Testing a correct login expect 201 with access token
+     */
+    context("POST accounts/login/  Correct", function () {
+        it("Should response 201 with access token", function (done) {
+            server.post('/accounts/login/')
+                .send({id: testuser, password: testpassword})
+                .expect(201)
+                .end(function (err, res) {
+                    token = res.body.success;
+                    done(err);
+                });
+        });
     });
 
     /**
@@ -174,7 +186,7 @@ describe("Wachtwoord veranderen", function () {
     context("PUT accounts/password correct change password", function () {
         it("Should response 201", function (done) {
             server.put('/accounts/password')
-                .send({old: "chillhoor", new1: "hallo123", new2: "hallo123"})
+                .send({old: testpassword, new1: "hallo123", new2: "hallo123"})
                 .set("Authorization", token)
                 .expect(201)
                 .end(function (err, result) {
@@ -189,7 +201,7 @@ describe("Wachtwoord veranderen", function () {
     context("POST accounts/login/  Correct login new password", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: '321', password: 'hallo123'})
+                .send({id: testuser, password: 'hallo123'})
                 .expect(201)
                 .end(function (err, res) {
                     token = res.body.success;
@@ -204,7 +216,7 @@ describe("Wachtwoord veranderen", function () {
     context("PUT accounts/password correct change back password", function () {
         it("Should response 201", function (done) {
             server.put('/accounts/password')
-                .send({old: "hallo123", new1: "chillchill", new2: "chillchill"})
+                .send({old: "hallo123", new1: testpassword, new2: testpassword})
                 .set("Authorization", token)
                 .expect(201)
                 .end(function (err, result) {
@@ -219,7 +231,7 @@ describe("Wachtwoord veranderen", function () {
     context("PUT accounts/password failed change password no old", function () {
         it("Should response 400", function (done) {
             server.put('/accounts/password')
-                .send({old: "", new1: "chillchill", new2: "chillchill"})
+                .send({old: "", new1: testpassword, new2: testpassword})
                 .set("Authorization", token)
                 .expect(400)
                 .end(function (err, result) {
@@ -267,7 +279,7 @@ describe("Sign up", function () {
 
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: 321, password: "chillchill"})
+            .send({id: testadmin, password: testadminpassword})
             .expect(201)
             .end(function (err, result) {
                 authToken = result.body.success;
@@ -450,14 +462,14 @@ describe("Get users", function () {
     var authTokenWrong = "";
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: 4236, password: "chillchill"})
+            .send({id: testadmin, password: testadminpassword})
             .expect(201)
             .end(function (err, result) {
                 authToken = result.body.success;
             });
 
         server.post('/accounts/login')
-            .send({id: 4235, password: "chill"})
+            .send({id: testuser, password: testpassword})
             .expect(201)
             .end(function (err, result) {
                 authTokenWrong = result.body.success;
