@@ -11,6 +11,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
+const ADMIN = 2;
+
 /**
  * Prepares an API call to the Fitbit API by checking authorization,
  * user existence, fitbit object extistence.
@@ -29,7 +31,7 @@ var prepareAPICall = function (req, res, url, callback) {
     const userid = req.params.id;
 
     // check if the user that requests the data is the user whose data is requested
-    if (res.user.type !== 3 && parseInt(res.user.id) !== parseInt(userid)) {
+    if (res.user.type !== ADMIN && parseInt(res.user.id) !== parseInt(userid)) {
         logResponse(403, 'User does not have permission to make this request.');
         return res.status(403).send({error: 'User does not have permission to make this request.'});
     }
