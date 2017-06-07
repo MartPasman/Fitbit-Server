@@ -132,68 +132,62 @@ app.get('/testdeleteuser/:id', function (req, res) {
 app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
-        logResponse(400, 'Invalid credentials');
-        return res.status(400).send({error: 'Invalid credentials'});
+        logResponse(400, 'Bad request');
+        return res.status(400).send({error: 'Bad request'});
     }
 
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
 
     // Find the user
     if (isNaN(req.body.id)) {
-        logResponse(400, 'Invalid credentials');
-        return res.status(400).send({error: 'Invalid credentials'});
-    } else {
-        User.findOne({id: req.body.id}, function (err, user) {
+        logResponse(400, 'ID not numerical');
+        return res.status(400).send({error: 'ID not numerical'});
+    }
 
-            // Check to see whether an error occurred
+    User.findOne({id: req.body.id}, function (err, user) {
+
+        // Check to see whether an error occurred
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        // Check to see whether a user was found
+        if (!user) {
+            logResponse(401, 'Invalid credentials');
+            return res.status(401).send({error: "Invalid credentials"});
+        }
+
+        // Check to see whether the given password matches the password of the user
+        bcrypt.compare(req.body.password, user.password, function (err, success) {
             if (err) {
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message});
             }
 
-            // Check to see whether a user was found
-            if (!user) {
-                logResponse(400, 'Invalid credentials');
-                return res.status(400).send({error: "Invalid credentials"});
+            if (!success) {
+                logResponse(401, 'Invalid credentials');
+                return res.status(401).send({error: "Invalid credentials"});
             }
 
-            try {
-                // Check to see whether the given password matches the password of the user
-                bcrypt.compare(req.body.password, user.password, function (err, success) {
-                    if (err) {
-                        logResponse(500, err.message);
-                        return res.status(500).send({error: err.message});
-                    }
-
-                    if (!success) {
-                        logResponse(400, 'Invalid credentials');
-                        return res.status(400).send({error: "Invalid credentials"});
-                    }
-
-                    if (!user.active) {
-                        logResponse(403, 'User inactive');
-                        return res.status(403).send({error: "User inactive"});
-                    }
-                    // remove sensitive data
-                    user.password = undefined;
-
-                    // sign json web token (expires in 12 hours)
-                    var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
-
-                    logResponse(201, 'Token created and in body');
-                    return res.status(201).send({
-                        success: token,
-                        permission: user.type,
-                        userid: req.body.id
-                    });
-                });
-            } catch (err) {
-                // if the bcrypt fails
-                logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+            if (!user.active) {
+                logResponse(403, 'User inactive');
+                return res.status(403).send({error: "User inactive"});
             }
+            // remove sensitive data
+            user.password = undefined;
+
+            // sign json web token (expires in 12 hours)
+            var token = jwt.sign(user, req.app.get('private-key'), {expiresIn: (60 * 60 * 12)});
+
+            logResponse(201, 'Token created and in body');
+            return res.status(201).send({
+                success: token,
+                permission: user.type,
+                userid: req.body.id
+            });
         });
-    }
+    });
 });
 
 /**
@@ -346,7 +340,10 @@ app.post('/subscription_callback', function (req, res) {
                                 'results.$.goalAchieved': (newScore >= c.goal)
                             };
 
-                            Competition.findOneAndUpdate({id: c.id, 'results.userid': userid}, {$set: set}, function (err, result) {
+                            Competition.findOneAndUpdate({
+                                id: c.id,
+                                'results.userid': userid
+                            }, {$set: set}, function (err, result) {
                                 if (err) {
                                     console.error('MongoDB: ' + err.message);
                                     return;
