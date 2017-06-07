@@ -418,7 +418,7 @@ app.put('/:id/handicap', function (req, res) {
  */
 app.put('/:id/active/', function (req, res) {
 
-    if (res.user.type !== 3) {
+    if (res.user.type !== 2) {
         logResponse(403, "User is not authorized to make this request");
         return res.status(403).send({error: "User is not authorized to make this request"});
     }
