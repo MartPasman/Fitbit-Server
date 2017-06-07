@@ -102,7 +102,7 @@ app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1 || !Date.parse(req.body.start)  || !Date.parse(req.body.end)) {
+        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
@@ -144,8 +144,8 @@ app.post('/:id/goals', function (req, res) {
 app.put('/:id/goals/:gid', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
-        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === '' || !Date.parse(req.body.start) ||
-        !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
+        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === ''
+        || isNaN(req.body.goal) || req.params.gid === undefined) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
