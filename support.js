@@ -16,9 +16,13 @@ function today() {
  * @returns {Date}
  */
 function day(date) {
+    console.log(date);
+    var dateParts = date.split('/');
     if (!(date instanceof Date)) {
-        date = new Date(Date.parse(date));
+        date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+
     }
+    console.log(date);
     return new Date(getYYYYMMDD(date, '-'));
 }
 
