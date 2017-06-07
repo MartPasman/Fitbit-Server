@@ -326,11 +326,36 @@ app.put('/:id', function (req, res) {
         return res.status(400).send({error: 'Id is not defined.'});
     }
 
-    if (req.body.birthday === '' || req.body.birthday === undefined || req.body.firstname === '' || req.body.firstname === undefined
-        || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined || !validateMail(req.body.email)) {
-        logResponse(400, 'Information is not supplied correctly');
-        return res.status(400).send({error: 'Information is not supplied correctly.'});
+    var json = {};
+
+    if(!(req.body.birthday === '' || req.body.birthday === undefined)){
+        var birthday = day(req.body.birthday);
+        json.birthday = birthday;
     }
+
+    if(!( req.body.firstname === '' || req.body.firstname === undefined)){
+        json.firstname = req.body.firstname;
+    }
+
+    if(!( req.body.lastname === '' || req.body.lastname === undefined)){
+        json.lastname = req.body.lastname;
+    }
+
+    if(!( req.body.handicap === '' || req.body.handicap === undefined)){
+        if (req.body.handicap < 1 || req.body.handicap > 3) {
+            logResponse(400, "Handicap is not valid.");
+            return res.status(400).send({error: "Handicap is not valid."});
+        }
+        json.handicap = req.body.handicap;
+    }
+
+    if(!(req.body.active == undefined || req.body.active == '')){
+        if (req.body.active || !req.body.active) {
+            json.active = req.body.active;
+        }
+    }
+
+    console.log(json);
 
     if (res.user.type !== ADMIN) {
         if (+req.params.id !== +res.user.id) {
@@ -341,16 +366,10 @@ app.put('/:id', function (req, res) {
 
     }
 
-    var birthday = day(req.body.birthday);
 
     User.findOneAndUpdate({id: req.params.id},
         {
-            $set: {
-                firstname: req.body.firstname,
-                lastname: req.body.lastname,
-                email: req.body.email,
-                birthday: birthday
-            }
+            $set: json
         }, function (err, user) {
 
             if (err) {
