@@ -96,6 +96,82 @@ app.get('/:id/stats/weeks/last', function (req, res) {
 });
 
 /**
+ *
+ */
+app.get('/:id/export/:start/:end', function (req, res) {
+    const id = req.params.id;
+    const start = req.params.start;
+    const end = req.params.end;
+
+    // validate id, start date and end date
+    if (isNaN(id) || isNaN(Date.parse(start)) || isNaN(Date.parse(end))) {
+        logResponse(400, 'Required fields are missing or invalid.');
+        return res.status(400).send({error: 'Required fields are missing or invalid.'});
+    }
+
+    // get the steps
+    fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/activities/steps/date/' + start + '/' + end + '.json', function (body) {
+        const steps = JSON.parse(body)["activities-steps"];
+
+        // get the sleep
+        fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/sleep/date/' + start + '/' + end + '.json', function (body) {
+            const sleep = JSON.parse(body).sleep;
+
+            var sleepData = [];
+            for (var i = 0; i < sleep.length; i++) {
+                sleepData[i] = {
+                    date: sleep[i].dateOfSleep,
+                    duration: sleep[i].duration / 1000 / 60 / 60,
+                    timeInBed: sleep[i].timeInBed
+                };
+            }
+
+            // get the goals
+            User.findOne({id: id}, {goals: true}, function (err, user) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message});
+                }
+
+                if (user === undefined) {
+                    logResponse(404, 'User not found.');
+                    return res.status(404).send({error: 'User not found.'});
+                }
+
+                if (user.goals === undefined) {
+                    logResponse(404, 'Goals not found.');
+                    return res.status(404).send({error: 'Goals not found.'});
+                }
+
+                var startDate = day(start);
+                var endDate = day(end);
+
+                // only pick the goals that match the period
+                var goals = [];
+                for (var i = 0; i < user.goals.length; i++) {
+                    var g = user.goals[i];
+                    if (g.start >= startDate && g.end <= endDate) {
+                        goals.push(g);
+                    }
+                }
+
+                // return the data
+                logResponse(200, 'Export data collected.');
+                return res.status(200).send(
+                    {
+                        success: {
+                            steps: steps,
+                            sleep: sleepData,
+                            goals: goals
+                        }
+                    }
+                );
+            });
+        });
+    });
+});
+
+/**
  * Add a goal
  */
 app.post('/:id/goals', function (req, res) {
@@ -328,20 +404,20 @@ app.put('/:id', function (req, res) {
 
     var json = {};
 
-    if(!(req.body.birthday === '' || req.body.birthday === undefined)){
+    if (!(req.body.birthday === '' || req.body.birthday === undefined)) {
         var birthday = day(req.body.birthday);
         json.birthday = birthday;
     }
 
-    if(!( req.body.firstname === '' || req.body.firstname === undefined)){
+    if (!( req.body.firstname === '' || req.body.firstname === undefined)) {
         json.firstname = req.body.firstname;
     }
 
-    if(!( req.body.lastname === '' || req.body.lastname === undefined)){
+    if (!( req.body.lastname === '' || req.body.lastname === undefined)) {
         json.lastname = req.body.lastname;
     }
 
-    if(!( req.body.handicap === '' || req.body.handicap === undefined)){
+    if (!( req.body.handicap === '' || req.body.handicap === undefined)) {
         if (req.body.handicap < 1 || req.body.handicap > 3) {
             logResponse(400, "Handicap is not valid.");
             return res.status(400).send({error: "Handicap is not valid."});
@@ -349,7 +425,7 @@ app.put('/:id', function (req, res) {
         json.handicap = req.body.handicap;
     }
 
-    if(!(req.body.active == undefined || req.body.active == '')){
+    if (!(req.body.active == undefined || req.body.active == '')) {
         if (req.body.active || !req.body.active) {
             json.active = req.body.active;
         }

@@ -10,7 +10,6 @@ var fitbitSchema = new Schema({
     refreshToken: {type: String, required: true}
 });
 
-
 var goalSchema = new Schema({
     id: {type: Number, required: false},
     start: {type: Date, required: true},
@@ -20,7 +19,6 @@ var goalSchema = new Schema({
     goal: {type: Number, required: true}
 });
 
-
 var userSchema = new Schema({
     firstname: {type: String, required: true, unique: false},
     lastname: {type: String, required: true, unique: false},
@@ -29,7 +27,6 @@ var userSchema = new Schema({
     password: {type: String, required: true},
     fitbit: {type: fitbitSchema, required: false},
     goals: {type: [goalSchema], required: false},
-    email: {type: String, required: true},
     active: {type: Boolean, required: true, default: true},
     handicap: {type: Number, required: false, default: 1},
     type: {type: Number, required: true, default: 1}
