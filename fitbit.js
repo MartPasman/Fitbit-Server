@@ -29,7 +29,7 @@ var prepareAPICall = function (req, res, url, callback) {
     const userid = req.params.id;
 
     // check if the user that requests the data is the user whose data is requested
-    if (res.user.type !== 3 && parseInt(res.user.id) !== parseInt(userid)) {
+    if (res.user.type !== 2 && parseInt(res.user.id) !== parseInt(userid)) {
         logResponse(403, 'User does not have permission to make this request.');
         return res.status(403).send({error: 'User does not have permission to make this request.'});
     }
@@ -44,7 +44,7 @@ var prepareAPICall = function (req, res, url, callback) {
         // no user found with the given id
         if (!user) {
             logResponse(404, 'User account could not be found.');
-            return res.status(404).send({error: 'User account could not be found.'});
+            return res.status(404).send({error: 'User account could nojt be found.'});
         }
 
         // no fitbit connected to this account

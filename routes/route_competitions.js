@@ -104,57 +104,56 @@ app.get('/', function (req, res) {
                 return m1.start - m2.start;
             });
         }
-        if (result[result.length - 1]) {
-            var defaultGoal = result[result.length - 1].defaultGoal;
+        if (result[result.length - 1].end < new Date()) {
+            var defaultGoal = resultresult[length - 1].defaultGoal;
 
             var date = new Date();
-            if (result[result.length - 1].end < date) {
-                //create new competition.
-                generatecompId(function (id) {
-                    var date = new Date();
-                    var end_date = new Date();
-                    end_date = end_date.setDate(date.getDate() + 7);
+            //create new competition.
+            generatecompId(function (id) {
+                var date = new Date();
+                var end_date = new Date();
+                end_date = end_date.setDate(date.getDate() + 7);
 
-                    //create results
-                    User.find({type: USER}, function (err, usrs) {
+                //create results
+                User.find({type: USER}, function (err, usrs) {
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
+
+                    if (usrs.length === 0) {
+                        return res.status(404).send({error: "no users found"});
+                    }
+
+                    for (var i = 0; i < usrs.length; i++) {
+                        results[i] = {
+                            userid: usrs[i].id,
+                            score: 0,
+                            goalAchieved: false
+                        }
+                    }
+
+                    var comp = new Competition({
+                        id: id,
+                        goal: defaultGoal,
+                        defaultGoal: defaultGoal,
+                        start: date,
+                        end: end_date,
+                        results: results
+                    });
+
+                    comp.save(function (err, resp) {
                         if (err) {
-                            return res.status(500).send();
+                            console.log(err);
+                            return res.status(500).send(err);
                         }
 
-                        if (usrs.length === 0) {
-                            return res.status(404).send({error: "no users found"});
-                        }
-
-                        for (var i = 0; i < usrs.length; i++) {
-                            results[i] = {
-                                userid: usrs[i].id,
-                                score: 0,
-                                goalAchieved: false
-                            }
-                        }
-
-                        var comp = new Competition({
-                            id: id,
-                            goal: defaultGoal,
-                            defaultGoal: defaultGoal,
-                            start: date,
-                            end: end_date,
-                            results: results
-                        });
-
-                        comp.save(function (err, resp) {
-                            if (err) {
-                                console.log(err);
-                                return res.status(500).send(err);
-                            }
-
-                            return res.status(200).send(resp);
-                        });
+                        return res.status(200).send(resp);
                     });
                 });
-            }
+            });
+        } else {
+            res.status(200).send(result[result.length - 1]);
         }
-        res.status(200).send(result[result.length - 1]);
     });
 });
 
@@ -299,6 +298,10 @@ app.put('/:id/score', function (req, res) {
         return res.status(400).send("Invalid parameters!");
     }
 
+    if (isNaN(userid) || isNaN(score)) {
+        return res.status(400).send({error: "not a number provided."})
+    }
+
     Competition.findOneAndUpdate({
         id: req.params.id,
         "results.userid": userid
@@ -310,6 +313,7 @@ app.put('/:id/score', function (req, res) {
         } else {
             return res.status(200).send({succes: 'updated!'});
         }
+
     })
 });
 
