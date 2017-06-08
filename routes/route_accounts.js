@@ -14,10 +14,10 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
-const redirect = REST + '/accounts/oauth_callback';
+const redirectURL = REST + '/accounts/oauth_callback';
 
 const User = require('../model/model_user');
 const Competition = require('../model/model_competition');
@@ -91,11 +91,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Generic",
+                firstname: "Active",
                 lastname: "User",
-                id: 10002,
+                id: 10004,
                 password: hashed,
-                email: 'geen@mail.nl',
+                email: 'ester@mail.nl',
                 active: true,
                 type: USER,
                 birthday: date
@@ -197,7 +197,7 @@ app.get('/oauth_callback', function (req, res) {
 
     const userid = getOAuthMapUserid(req.query.state);
 
-    const promise = client.getAccessToken(req.query.code, redirect);
+    const promise = client.getAccessToken(req.query.code, redirectURL);
     promise.then(function (success) {
         // oath succeeded
 
@@ -210,7 +210,7 @@ app.get('/oauth_callback', function (req, res) {
         // check if this fitbit was not connected to some other user already
         User.find({'fitbit.userid': json.userid}, {}, function (err, result) {
             if (err) {
-                logResponse(500, err.message);
+                logResponse(500, '1: ' + err.message);
                 return redirect(500, err.message);
             }
 
@@ -228,7 +228,7 @@ app.get('/oauth_callback', function (req, res) {
             //find the requested user and add the fitbit
             User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
                 if (err) {
-                    logResponse(500, err.message);
+                    logResponse(500, '2: ' + err.message);
                     return redirect(500, err.message);
                 }
 
@@ -242,8 +242,8 @@ app.get('/oauth_callback', function (req, res) {
             });
         });
     }, function (error) {
-        logResponse(500, error);
-        return redirect(500, error.errors);
+        logResponse(500, '3: ' + error);
+        return redirect(500, error);
     });
 
     function redirect(code, message) {
@@ -726,7 +726,7 @@ app.get('/:id/connect', function (req, res) {
         const state = mapOAuthRequest(req.params.id);
 
         // get the authorisation URL to get the access code from fitbit.com
-        const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
+        const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirectURL, undefined, state);
 
         //return to this URL to let the user login
         logResponse(201, "authURL created");

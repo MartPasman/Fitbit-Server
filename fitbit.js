@@ -46,7 +46,7 @@ var prepareAPICall = function (req, res, url, callback) {
         // no user found with the given id
         if (!user) {
             logResponse(404, 'User account could not be found.');
-            return res.status(404).send({error: 'User account could not be found.'});
+            return res.status(404).send({error: 'User account could nojt be found.'});
         }
 
         // no fitbit connected to this account
