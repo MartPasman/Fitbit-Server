@@ -3,6 +3,11 @@ var supertest = require('supertest');
 var should = require('should');
 var Competition = require('../model/model_competition');
 var server = supertest.agent("http://localhost:3000");
+var testuser = '10002';
+var testpassword = 'gebruiker';
+
+var testadmin = '10001';
+var testadminpassword = 'administrator';
 
 
 /**
@@ -17,7 +22,7 @@ describe('Add goal', function () {
     context('POST accounts/login/  Correct', function () {
         it('Should response 201 with access token', function (done) {
             server.post('/accounts/login')
-                .send({id: '321', password: 'chillchill'})
+                .send({id: testadmin, password: testadminpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -31,7 +36,7 @@ describe('Add goal', function () {
      * Correct
      */
     context('GET /competitions/  Correct', function () {
-        it('Should response 201', function (done) {
+        it('Should response 200', function (done) {
             server.get('/competitions/')
                 .set("Authorization", token)
                 .expect(200)
@@ -41,5 +46,21 @@ describe('Add goal', function () {
         });
     });
 
+
+    /**
+     * Correct
+     */
+    context('PUT /competitions/lastgoal/ Correct', function () {
+        it('Should response 201', function (done) {
+            server.put('/competitions/lastgoal/')
+                .set("Authorization", token)
+                .send({goal: 30000})
+                .expect(201)
+                .end(function (err, res) {
+                    console.log(res.body.success.should.have.property('defaultGoal', 30000));
+                    done(err);
+                })
+        })
+    })
 
 });

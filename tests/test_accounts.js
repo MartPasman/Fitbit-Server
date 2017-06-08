@@ -81,12 +81,12 @@ describe("Login", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: testuser, password: testpassword})
-                .expect(201)
-                .end(function (err, res) {
-                    done(err);
-                });
-        });
+        .send({id: testuser, password: testpassword})
+            .expect(201)
+            .end(function (err, res) {
+                done(err);
+            });
+    });
     });
 
     /**

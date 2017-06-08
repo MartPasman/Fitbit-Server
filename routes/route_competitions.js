@@ -101,7 +101,6 @@ app.get('/', function (req, res) {
             result.sort(function (m1, m2) {
                 return m1.start - m2.start;
             });
-        }
 
         if (result[result.length - 1].end < today()) {
             var defaultGoal = resultresult[length - 1].defaultGoal;
@@ -111,55 +110,54 @@ app.get('/', function (req, res) {
                 //create new competition.
                 generatecompId(function (id) {
                     var end_date = today();
-                    end_date = end_date.setDate(date.getDate() + 7);
-                    var date = new Date();
-                    //create new competition.
-                    generatecompId(function (id) {
-                        var date = new Date();
-                        var end_date = new Date();
-                        end_date = end_date.setDate(date.getDate() + 7);
+                    end_date = end_date.setDate(date.getDate() + 7);var date = new Date();
+            //create new competition.
+            generatecompId(function (id) {
+                var date = new Date();
+                var end_date = new Date();
+                end_date = end_date.setDate(date.getDate() + 7);
 
-                        //create results
-                        User.find({type: USER}, function (err, usrs) {
-                            if (err) {
-                                return res.status(500).send(err);
-                            }
+                //create results
+                User.find({type: USER}, function (err, usrs) {
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
 
-                            if (usrs.length === 0) {
-                                return res.status(404).send({error: "no users found"});
-                            }
+                    if (usrs.length === 0) {
+                        return res.status(404).send({error: "no users found"});
+                    }
 
-                            for (var i = 0; i < usrs.length; i++) {
-                                results[i] = {
-                                    userid: usrs[i].id,
-                                    score: 0,
-                                    goalAchieved: false
-                                }
-                            }
+                    for (var i = 0; i < usrs.length; i++) {
+                        results[i] = {
+                            userid: usrs[i].id,
+                            score: 0,
+                            goalAchieved: false
+                        }
+                    }
 
-                            var comp = new Competition({
-                                id: id,
-                                goal: defaultGoal,
-                                defaultGoal: defaultGoal,
-                                start: date,
-                                end: end_date,
-                                results: results
-                            });
+                    var comp = new Competition({
+                        id: id,
+                        goal: defaultGoal,
+                        defaultGoal: defaultGoal,
+                        start: date,
+                        end: end_date,
+                        results: results
+                    });
 
-                            comp.save(function (err, resp) {
-                                if (err) {
-                                    console.log(err);
-                                    return res.status(500).send(err);
-                                }
+                    comp.save(function (err, resp) {
+                        if (err) {
+                            console.log(err);
+                            return res.status(500).send(err);
+                        }
 
-                                return res.status(200).send(resp);
-                            });
-                        });
+                        return res.status(200).send(resp);
                     });
                 });
+            });
+        });
             }
         } else {
-            res.status(200).send(result[result.length - 1]);
+            res.status(200).send(result[result.length - 1]);}
         }
     });
 });
@@ -333,7 +331,7 @@ app.put('/lastgoal', function (req, res) {
 
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {$set: {defaultGoal: req.body.goal}}, function (err, competition) {
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultGoal: req.body.goal}}, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 return res.status(500).send();
