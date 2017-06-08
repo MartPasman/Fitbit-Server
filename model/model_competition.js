@@ -10,7 +10,7 @@ var resultSchema = new Schema({
 module.exports = mongoose.model('result', resultSchema);
 
 var competitionSchema = new Schema({
-    id: {type: Number, required: true},
+    id: {type: Number, required: true, unique: true},
     goal: {type: Number, required: true},
     defaultGoal: {type: Number, required: true},
     start: {type: Date, required: true},

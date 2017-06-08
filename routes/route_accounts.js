@@ -53,7 +53,7 @@ app.get('/testnewuseradmin', function (req, res) {
             var account = new User({
                 firstname: "Admin",
                 lastname: "user",
-                id: 12345,
+                id: 10001,
                 password: hashed,
                 email: 'geen@mail.nl',
                 active: true,
@@ -91,9 +91,9 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Anita",
-                lastname: "Amans",
-                id: 111111,
+                firstname: "Active",
+                lastname: "User",
+                id: 10004,
                 password: hashed,
                 email: 'ester@mail.nl',
                 active: true,
@@ -679,11 +679,6 @@ app.put("/password", function (req, res) {
  * Get all users without passwords
  */
 app.get('/', function (req, res) {
-
-    if (res.user.type !== ADMIN) {
-        logResponse(403, "User not authorized to make this request");
-        return res.status(403).send({error: "User not authorized to make this request"});
-    }
 
     User.find({type: USER}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 
