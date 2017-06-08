@@ -15,6 +15,7 @@ const Competition = require('../model/model_competition');
 const fitbitCall = require('../fitbit.js').fitbitCall;
 const logResponse = require('../support').logResponse;
 const day = require('../support').day;
+const today = require('../support').today;
 
 const ADMIN = 2;
 const USER = 1;
@@ -56,8 +57,8 @@ app.get('/', function (req, res) {
         if (result.length === 0) {
             // create new competition
             generatecompId(function (id) {
-                var date = new Date();
-                var end_date = new Date();
+                var date = today();
+                var end_date = today();
                 end_date = end_date.setDate(date.getDate() + 7);
 
                 //create results
@@ -93,10 +94,7 @@ app.get('/', function (req, res) {
                             return res.status(500).send(err);
                         }
                         return res.status(200).send(resp);
-
                     });
-
-
                 });
             });
         } else {
@@ -104,15 +102,15 @@ app.get('/', function (req, res) {
                 return m1.start - m2.start;
             });
         }
+
         if (result[result.length - 1]) {
             var defaultGoal = result[result.length - 1].defaultGoal;
 
-            var date = new Date();
+            var date = today();
             if (result[result.length - 1].end < date) {
                 //create new competition.
                 generatecompId(function (id) {
-                    var date = new Date();
-                    var end_date = new Date();
+                    var end_date = today();
                     end_date = end_date.setDate(date.getDate() + 7);
 
                     //create results
@@ -154,7 +152,8 @@ app.get('/', function (req, res) {
                 });
             }
         }
-        res.status(200).send(result[result.length - 1]);
+        // TODO: Cant set headers after they are send
+        // res.status(200).send(result[result.length - 1]);
     });
 });
 
