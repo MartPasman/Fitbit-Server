@@ -102,7 +102,7 @@ app.post('/:id/goals', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
-        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1 || !Date.parse(req.body.start)  || !Date.parse(req.body.end)) {
+        req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
@@ -144,8 +144,8 @@ app.post('/:id/goals', function (req, res) {
 app.put('/:id/goals/:gid', function (req, res) {
 
     if (req.params.id === undefined || isNaN(req.params.id) || req.body.start === undefined ||
-        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === '' || !Date.parse(req.body.start) ||
-        !Date.parse(req.body.end) || isNaN(req.body.goal) || req.params.gid === undefined) {
+        req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === ''
+        || isNaN(req.body.goal) || req.params.gid === undefined) {
         logResponse(400, 'Invalid request values.');
         return res.status(400).send({error: 'Invalid request values.'});
     }
@@ -301,7 +301,7 @@ app.get('/:id', function (req, res) {
         }
     }
 
-    User.find({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+    User.find({id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
 
         if (err) {
             logResponse(500, err.message);
@@ -326,12 +326,36 @@ app.put('/:id', function (req, res) {
         return res.status(400).send({error: 'Id is not defined.'});
     }
 
-    if (req.body.birthday === '' || req.body.birthday === undefined || req.body.firstname === '' || req.body.firstname === undefined
-        || req.body.lastname === '' || req.body.lastname === undefined || req.body.email === '' || req.body.email === undefined ||
-        !Date.parse(req.body.birthday) || !validateMail(req.body.email)) {
-        logResponse(400, 'Information is not supplied correctly');
-        return res.status(400).send({error: 'Information is not supplied correctly.'});
+    var json = {};
+
+    if(!(req.body.birthday === '' || req.body.birthday === undefined)){
+        var birthday = day(req.body.birthday);
+        json.birthday = birthday;
     }
+
+    if(!( req.body.firstname === '' || req.body.firstname === undefined)){
+        json.firstname = req.body.firstname;
+    }
+
+    if(!( req.body.lastname === '' || req.body.lastname === undefined)){
+        json.lastname = req.body.lastname;
+    }
+
+    if(!( req.body.handicap === '' || req.body.handicap === undefined)){
+        if (req.body.handicap < 1 || req.body.handicap > 3) {
+            logResponse(400, "Handicap is not valid.");
+            return res.status(400).send({error: "Handicap is not valid."});
+        }
+        json.handicap = req.body.handicap;
+    }
+
+    if(!(req.body.active == undefined || req.body.active == '')){
+        if (req.body.active || !req.body.active) {
+            json.active = req.body.active;
+        }
+    }
+
+    console.log(json);
 
     if (res.user.type !== ADMIN) {
         if (+req.params.id !== +res.user.id) {
@@ -342,21 +366,20 @@ app.put('/:id', function (req, res) {
 
     }
 
-    var birthday = day(req.body.birthday);
 
-    User.findOneAndUpdate({type: USER, id: req.params.id},
+    User.findOneAndUpdate({id: req.params.id},
         {
-            $set: {
-                firstname: req.body.firstname,
-                lastname: req.body.lastname,
-                email: req.body.email,
-                birthday: birthday
-            }
+            $set: json
         }, function (err, user) {
 
             if (err) {
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message})
+            }
+
+            if (user === null) {
+                logResponse(404, "User account could not be found.");
+                return res.status(404).send({error: "User account could not be found."});
             }
 
             if (user.length === 0) {

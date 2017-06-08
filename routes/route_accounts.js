@@ -31,8 +31,8 @@ const getYYYYMMDD = require('../support').getYYYYMMDD;
 const logResponse = require('../support').logResponse;
 const validateMail = require('../support').validateMail;
 
-const ADMIN = 2;
 const USER = 1;
+const ADMIN = 2;
 
 // TODO: delete later
 app.get('/testnewuseradmin', function (req, res) {
@@ -195,6 +195,8 @@ app.post('/login', function (req, res) {
  */
 app.get('/oauth_callback', function (req, res) {
 
+    const userid = getOAuthMapUserid(req.query.state);
+
     const promise = client.getAccessToken(req.query.code, redirect);
     promise.then(function (success) {
         // oath succeeded
@@ -205,31 +207,48 @@ app.get('/oauth_callback', function (req, res) {
             refreshToken: success.refresh_token
         };
 
-        const userid = getOAuthMapUserid(req.query.state);
-        if (userid === undefined) {
-            logResponse(500, 'OAuth state was lost.');
-            return res.status(500).send({error: 'OAuth state was lost.'});
-        }
-
-        //find the requested user and add the fitbit
-        User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
+        // check if this fitbit was not connected to some other user already
+        User.find({'fitbit.userid': json.userid}, {}, function (err, result) {
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return redirect(500, err.message);
             }
 
-            if (result === undefined) {
-                logResponse(404, 'User could not be found.');
-                return res.status(404).send({error: 'User could not be found.'});
+            // if the fitbit was already connected to some user
+            if (result === undefined || result.length > 0) {
+                logResponse(403, 'Fitbit can only be connected to a single user.');
+                return redirect(403, 'Fitbit can only be connected to a single user.');
             }
 
-            logResponse(201, 'Fitbit connected.');
-            res.redirect(WEBAPP + '/admin-dashboard.php');
+            if (userid === undefined) {
+                logResponse(500, 'OAuth state was lost.');
+                return redirect(500, 'OAuth state was lost.');
+            }
+
+            //find the requested user and add the fitbit
+            User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return redirect(500, err.message);
+                }
+
+                if (result === undefined) {
+                    logResponse(404, 'User could not be found.');
+                    return redirect(404, 'User could not be found.');
+                }
+
+                logResponse(201, 'Fitbit connected.');
+                redirect(201, 'Fitbit connected.');
+            });
         });
     }, function (error) {
         logResponse(500, error);
-        return res.status(500).send({error: error.errors});
+        return redirect(500, error.errors);
     });
+
+    function redirect(code, message) {
+        res.redirect(WEBAPP + '/admin-dashboard.php?id=' + userid + '&statusCode=' + code + '&message=' + encodeURI(message));
+    }
 });
 
 /**
@@ -696,14 +715,28 @@ app.get('/:id/connect', function (req, res) {
         return res.status(400).send({error: "Invalid id."});
     }
 
-    const state = mapOAuthRequest(req.params.id);
+    // check if the account to be connected is a user
+    User.findOne({id: req.params.id, type: USER}, {}, function (err, result) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message});
+        }
 
-    // get the authorisation URL to get the acces code from fitbit.com
-    const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
+        // the account was not found or is not a user
+        if (result === undefined) {
+            logResponse(404, 'Fitbit can only be connected to a user.');
+            return res.status(404).send({error: 'Fitbit can only be connected to a user.'});
+        }
 
-    //return to this URL to let the user login
-    logResponse(201, "authURL created");
-    return res.status(201).send({success: authURL});
+        const state = mapOAuthRequest(req.params.id);
+
+        // get the authorisation URL to get the access code from fitbit.com
+        const authURL = client.getAuthorizeUrl('activity profile settings sleep', redirect, undefined, state);
+
+        //return to this URL to let the user login
+        logResponse(201, "authURL created");
+        return res.status(201).send({success: authURL});
+    });
 });
 
 const OAuthMap = [];
