@@ -53,7 +53,7 @@ app.get('/testnewuseradmin', function (req, res) {
             var account = new User({
                 firstname: "Admin",
                 lastname: "user",
-                id: 10001,
+                id: 12345,
                 password: hashed,
                 email: 'geen@mail.nl',
                 active: true,
@@ -91,11 +91,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Generic",
-                lastname: "User",
-                id: 10002,
+                firstname: "Anita",
+                lastname: "Amans",
+                id: 111111,
                 password: hashed,
-                email: 'geen@mail.nl',
+                email: 'ester@mail.nl',
                 active: true,
                 type: USER,
                 birthday: date
