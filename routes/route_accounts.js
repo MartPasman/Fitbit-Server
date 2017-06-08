@@ -680,7 +680,6 @@ app.put("/password", function (req, res) {
  */
 app.get('/', function (req, res) {
 
-
     User.find({type: USER}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 
         if (err) {
