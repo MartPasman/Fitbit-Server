@@ -88,9 +88,15 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                         if (success) {
                             fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback);
                         } else {
-                            // if refreshing the token went wrong
-                            logResponse(500, 'Token could not be refreshed.');
-                            return res.status(500).send({error: 'Token could not be refreshed.'});
+                            // if refreshing the token went wrong, remove the Fitbit connection
+                            User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
+                                if (err) {
+                                    console.error(err.message);
+                                }
+
+                                logResponse(500, 'Token could not be refreshed! Removed Fitbit connection.');
+                                return res.status(500).send({error: 'Token could not be refreshed! Removed Fitbit connection.'});
+                            });
                         }
                     });
                 } else {
@@ -127,8 +133,14 @@ function fitbitAPICallNoResponse(url, user, callback) {
                         if (success) {
                             fitbitAPICallNoResponse(url, user, callback);
                         } else {
-                            // if refreshing the token went wrong
-                            logResponse(500, 'Token could not be refreshed.');
+                            // if refreshing the token went wrong, remove the Fitbit connection
+                            User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
+                                if (err) {
+                                    console.error(err.message);
+                                }
+
+                                logResponse(500, 'Token could not be refreshed! Removed Fitbit connection.');
+                            });
                         }
                     });
                 } else {
