@@ -109,6 +109,14 @@ app.get('/:id/export/:start/:end', function (req, res) {
         return res.status(400).send({error: 'Required fields are missing or invalid.'});
     }
 
+    // if the end date lies in the future
+    if (new Date(end) > today()) {
+        logResponse(400, 'End date lies in the future.');
+        return res.status(400).send({error: 'End date lies in the future.'});
+    }
+
+    // note: Fitbit will check for us if the end date is before the start date
+
     // get the steps
     fitbitCall(req, res, 'https://api.fitbit.com/1/user/[id]/activities/steps/date/' + start + '/' + end + '.json', function (body) {
         const steps = JSON.parse(body)["activities-steps"];

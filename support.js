@@ -30,7 +30,7 @@ function day(date) {
  */
 function getYYYYMMDD(date, splitBy) {
     if (!(date instanceof Date)) {
-        date = new Date(Date.parse(date));
+        date = new Date(date);
     }
 
     var mm = date.getMonth() + 1;

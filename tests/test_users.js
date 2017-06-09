@@ -1,20 +1,23 @@
 /**
  * account tests
  */
+const getYYYYMMDD = require('../support').getYYYYMMDD;
 
+const mocha = require('mocha');
+const supertest = require('supertest');
+const should = require('should');
 
-var mocha = require('mocha');
-var supertest = require('supertest');
-var should = require('should');
+const server = supertest.agent('http://localhost:3000');
 
-var server = supertest.agent('http://localhost:3000');
+const testuser = '10002';
+const testuserpassword = 'gebruiker';
 
+const testuser2 = '123';
+const testuser2password = 'chillchill';
 
-var testuser = '10002';
-var testpassword = 'gebruiker';
+const testadmin = '10001';
+const testadminpassword = 'administrator';
 
-var testadmin = '10001';
-var testadminpassword = 'administrator';
 /**
  * Test for adding a goal
  */
@@ -26,11 +29,11 @@ describe('Add goal', function () {
      */
     before(function (done) {
         server.post('/accounts/login')
-            .send({id: testuser, password: testpassword})
+            .send({id: testuser, password: testuserpassword})
             .end(function (err, result) {
                 token = result.body.success;
                 id = result.body.userid;
-                console.log(result.body)
+                console.log(result.body);
                 done();
             });
     });
@@ -139,7 +142,7 @@ describe("Delete goal", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: testuser, password: testpassword})
+                .send({id: testuser, password: testuserpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -214,7 +217,7 @@ describe("Load goal with offset", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: testuser, password: testpassword})
+                .send({id: testuser, password: testuserpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -268,7 +271,7 @@ describe("Changing goal", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: testuser, password: testpassword})
+                .send({id: testuser, password: testuserpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -476,7 +479,7 @@ describe("Handicap", function () {
                 authToken = result.body.success;
 
                 server.post('/accounts/login')
-                    .send({id: testuser, password: testpassword})
+                    .send({id: testuser, password: testuserpassword})
                     .expect(201)
                     .end(function (err, result) {
                         authTokenWrong = result.body.success;
@@ -629,7 +632,7 @@ describe("Change user information", function () {
     context("POST accounts/login/  Correct", function () {
         it("Should response 201 with access token", function (done) {
             server.post('/accounts/login/')
-                .send({id: testuser, password: testpassword})
+                .send({id: testuser, password: testuserpassword})
                 .expect(201)
                 .end(function (err, res) {
                     done(err);
@@ -732,5 +735,126 @@ describe("Active/Deactive user", function () {
                     done(err);
                 });
         });
+    });
+});
+
+/**
+ * Testing exporting a certain period
+ */
+describe('Exporting a certain period', function () {
+    var token;
+    var id;
+    var notMyID = 456;
+    var invalidID = 'invalid';
+
+    // Good period: one week
+    const goodOneWeek = {
+        start: '2017-06-01',
+        end: '2017-06-07'
+    };
+
+    // Good period: one day
+    const goodOneDay = {
+        start: '2017-06-01',
+        end: '2017-06-01'
+    };
+
+    // Bad period: start date comes after end date
+    const startAfterEnd = {
+        start: '2017-06-07',
+        end: '2017-06-01'
+    };
+
+    // Bad period: end date comes after today (day after tomorrow)
+    const endAfterToday = {
+        start: '2017-06-01',
+        end: getYYYYMMDD((new Date()).setDate((new Date()).getDate() + 2), '-')
+    };
+
+    // Login before we start the tests
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: testuser2, password: testuser2password})
+            .end(function (err, res) {
+                token = res.body.success;
+                id = res.body.userid;
+                done(err);
+            });
+    });
+
+    /**
+     * Test with a valid ID and valid dates, but without token
+     */
+    it('valid ID and valid dates, but without token should return a 401 status code', function (done) {
+        server.get('/users/' + id + '/export/' + goodOneWeek.start + '/' + goodOneWeek.end)
+            .send()
+            .expect(401)
+            .end(done);
+    });
+
+    /**
+     * Test with a valid ID and valid dates
+     */
+    it('valid ID and valid dates should return a 200 status code', function (done) {
+        server.get('/users/' + id + '/export/' + goodOneWeek.start + '/' + goodOneWeek.end)
+            .set('Authorization', token)
+            .send()
+            .expect(200)
+            .end(done);
+    });
+
+    /**
+     * Test with a valid ID and valid dates
+     */
+    it('valid ID and valid dates should return a 200 status code', function (done) {
+        server.get('/users/' + id + '/export/' + goodOneDay.start + '/' + goodOneDay.end)
+            .set('Authorization', token)
+            .send()
+            .expect(200)
+            .end(done);
+    });
+
+    /**
+     * Test with a invalid ID and valid dates
+     */
+    it('invalid ID and valid dates should return a 400 status code', function (done) {
+        server.get('/users/' + invalidID + '/export/' + goodOneWeek.start + '/' + goodOneWeek.end)
+            .set('Authorization', token)
+            .send()
+            .expect(400)
+            .end(done);
+    });
+
+    /**
+     * Test with a valid ID and invalid dates
+     */
+    it('valid ID and invalid dates should return a 400 status code', function (done) {
+        server.get('/users/' + id + '/export/' + endAfterToday.start + '/' + endAfterToday.end)
+            .set('Authorization', token)
+            .send()
+            .expect(400)
+            .end(done);
+    });
+
+    /**
+     * Test with a valid ID and invalid dates
+     */
+    it('valid ID and invalid dates should return a 400 status code', function (done) {
+        server.get('/users/' + id + '/export/' + startAfterEnd.start + '/' + startAfterEnd.end)
+            .set('Authorization', token)
+            .send()
+            .expect(400)
+            .end(done);
+    });
+
+    /**
+     * Test with not my ID and valid dates
+     */
+    it('not my ID and valid dates should return a 403 status code', function (done) {
+        server.get('/users/' + notMyID + '/export/' + goodOneWeek.start + '/' + goodOneWeek.end)
+            .set('Authorization', token)
+            .send()
+            .expect(403)
+            .end(done);
     });
 });
