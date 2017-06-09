@@ -86,7 +86,8 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                     // try to refresh tokens
                     doRefreshToken(userid, accessToken, refreshToken, function (success) {
                         if (success) {
-                            fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback);
+                            // start over
+                            prepareAPICall(req, res, url, callback);
                         } else {
                             // if refreshing the token went wrong, remove the Fitbit connection
                             User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
@@ -131,7 +132,10 @@ function fitbitAPICallNoResponse(url, user, callback) {
                     // try to refresh tokens
                     doRefreshToken(user.id, user.fitbit.accessToken, user.fitbit.refreshToken, function (success) {
                         if (success) {
-                            fitbitAPICallNoResponse(url, user, callback);
+                            // get the new access token
+                            User.find({id: user.id}, {}, function (err, newUser) {
+                                fitbitAPICallNoResponse(url, newUser, callback);
+                            });
                         } else {
                             // if refreshing the token went wrong, remove the Fitbit connection
                             User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
@@ -183,11 +187,11 @@ function doRefreshToken(userid, accessToken, refreshToken, callback) {
         User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err) {
             if (err) {
                 console.error('MongoDB: ' + err.message);
-                callback(false);
-                return;
+                return callback(false);
             }
 
             // successfully saved new access and refresh token
+            console.log('Refreshing token succeeded.');
             callback(true);
         });
     }, function (error) {
