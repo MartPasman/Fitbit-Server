@@ -6,6 +6,7 @@ const User = require('./model/model_user');
 const request = require('request');
 const mongoose = require('mongoose');
 const fitbitClient = require('fitbit-node');
+const logResponse = require('./support').logResponse;
 
 const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
@@ -46,7 +47,7 @@ var prepareAPICall = function (req, res, url, callback) {
         // no user found with the given id
         if (!user) {
             logResponse(404, 'User account could not be found.');
-            return res.status(404).send({error: 'User account could nojt be found.'});
+            return res.status(404).send({error: 'User account could not be found.'});
         }
 
         // no fitbit connected to this account
@@ -241,25 +242,6 @@ function addSubscription(userid, callback) {
                 }
             });
     });
-}
-
-function logResponse(code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 }
 
 module.exports.fitbitCall = prepareAPICall;

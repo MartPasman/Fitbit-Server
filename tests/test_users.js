@@ -744,7 +744,10 @@ describe("Active/Deactive user", function () {
 describe('Exporting a certain period', function () {
     var token;
     var id;
-    var notMyID = 456;
+    // a non existing id
+    var noUserID = 456;
+    // an existing other id
+    var notMyID = 13867;
     var invalidID = 'invalid';
 
     // Good period: one week
@@ -855,6 +858,101 @@ describe('Exporting a certain period', function () {
             .set('Authorization', token)
             .send()
             .expect(403)
+            .end(done);
+    });
+
+    /**
+     * Test with not a user ID and valid dates
+     *
+     * Why this a 403 and the same test when exporting since last export a 404?
+     * Because of the order of the checks in the paths.
+     */
+    it('not a user ID and valid dates should return a 403 status code', function (done) {
+        server.get('/users/' + noUserID + '/export/' + goodOneWeek.start + '/' + goodOneWeek.end)
+            .set('Authorization', token)
+            .send()
+            .expect(403)
+            .end(done);
+    });
+});
+
+/**
+ * Testing exporting since last export
+ */
+describe('Exporting since last export', function () {
+    var token;
+    var id;
+    // a non existing id
+    var noUserID = 456;
+    // an existing other id
+    var notMyID = 13867;
+    var invalidID = 'invalid';
+
+    // Login before we start the tests
+    before(function (done) {
+        server.post('/accounts/login')
+            .send({id: testuser2, password: testuser2password})
+            .end(function (err, res) {
+                token = res.body.success;
+                id = res.body.userid;
+                done(err);
+            });
+    });
+
+    /**
+     * Test with a valid ID and valid dates, but without token
+     */
+    it('valid ID and valid dates, but without token should return a 401 status code', function (done) {
+        server.get('/users/' + id + '/export/sincelast')
+            .send()
+            .expect(401)
+            .end(done);
+    });
+
+    /**
+     * Test with a valid ID and valid dates
+     */
+    it('valid ID and valid dates should return a 200 status code', function (done) {
+        server.get('/users/' + id + '/export/sincelast')
+            .set('Authorization', token)
+            .send()
+            .expect(200)
+            .end(done);
+    });
+
+    /**
+     * Test with a invalid ID and valid dates
+     */
+    it('invalid ID and valid dates should return a 400 status code', function (done) {
+        server.get('/users/' + invalidID + '/export/sincelast')
+            .set('Authorization', token)
+            .send()
+            .expect(400)
+            .end(done);
+    });
+
+    /**
+     * Test with not my ID and valid dates
+     */
+    it('not my ID and valid dates should return a 403 status code', function (done) {
+        server.get('/users/' + notMyID + '/export/sincelast')
+            .set('Authorization', token)
+            .send()
+            .expect(403)
+            .end(done);
+    });
+
+    /**
+     * Test with not a user ID and valid dates
+     *
+     * Why this a 404 and the same test when exporting a period a 403?
+     * Because of the order of the checks in the paths.
+     */
+    it('not a user ID and valid dates should return a 404 status code', function (done) {
+        server.get('/users/' + noUserID + '/export/sincelast')
+            .set('Authorization', token)
+            .send()
+            .expect(404)
             .end(done);
     });
 });

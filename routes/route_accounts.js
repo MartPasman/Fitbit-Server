@@ -1,6 +1,5 @@
 /**
  * Created by martpasman on 15-05-17.
- * aanmaken, verwijderen, inloggen, uitloggen
  */
 const express = require("express");
 const request = require('request');

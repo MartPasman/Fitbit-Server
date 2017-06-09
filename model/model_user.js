@@ -29,7 +29,8 @@ var userSchema = new Schema({
     goals: {type: [goalSchema], required: false},
     active: {type: Boolean, required: true, default: true},
     handicap: {type: Number, required: false, default: 1},
-    type: {type: Number, required: true, default: 1}
+    type: {type: Number, required: true, default: 1},
+    lastExport: {type: Date, required: false, default: new Date()}
 });
 
 module.exports = mongoose.model('user', userSchema);
