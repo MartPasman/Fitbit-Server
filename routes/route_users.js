@@ -252,6 +252,21 @@ function getExportData(req, res, id, start, end, callback) {
 }
 
 /**
+ * Update the last export date to now
+ */
+app.put('/:id/export', function (req, res) {
+    if (isNaN(req.params.id)) {
+        logResponse(400, 'Invalid id.');
+        res.status(400).send({error: 'Invalid id.'});
+    }
+
+    updateLastExportDate(req.params.id);
+
+    logResponse(204, 'OK');
+    res.status(204).send();
+});
+
+/**
  *
  */
 app.get('/:id/goals/:gid?', function (req, res) {
@@ -454,11 +469,6 @@ app.get('/:id', function (req, res) {
     if (res.user.type !== ADMIN && +req.params.id !== +res.user.id) {
         logResponse(403, "Not authorized to make this request");
         return res.status(403).send({error: 'Not authorized to make this request'});
-    }
-
-    // update the last export date when this GET call came from the export last week process
-    if (req.query.exportOption === 'export-last-week') {
-        updateLastExportDate(id);
     }
 
     User.findOne({id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
