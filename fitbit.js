@@ -192,8 +192,7 @@ function doRefreshToken(userid, accessToken, refreshToken, callback) {
         });
     }, function (error) {
         // refreshing fails
-        console.error('Refreshing token failed: ');
-        console.error(error.context.errors);
+        console.error('Refreshing token failed.');
         callback(false);
     });
 }
