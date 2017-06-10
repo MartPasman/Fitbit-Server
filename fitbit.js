@@ -95,8 +95,8 @@ function fitbitAPICall(req, res, url, user, callback) {
                                     console.error(err.message);
                                 }
 
-                                logResponse(500, 'Token could not be refreshed! Removed Fitbit connection.');
-                                return res.status(500).send({error: 'Token could not be refreshed! Removed Fitbit connection.'});
+                                logResponse(412, 'Token could not be refreshed! Removed Fitbit connection.');
+                                return res.status(412).send({error: 'Token could not be refreshed! Removed Fitbit connection.'});
                             });
                         }
                     });
