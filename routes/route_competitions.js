@@ -86,6 +86,7 @@ app.get('/', function (req, res) {
                         id: id,
                         goal: 100000,
                         defaultGoal: 100000,
+                        defaultLength: 7,
                         start: date,
                         end: end_date,
                         results: results
@@ -106,66 +107,63 @@ app.get('/', function (req, res) {
                 return m1.start - m2.start;
             });
 
-        if (result[result.length - 1].end < today()) {
-            var defaultGoal = resultresult[length - 1].defaultGoal;
+            if (result[result.length - 1].end < today()) {
+                var defaultGoal = result[result.length - 1].defaultGoal;
+                var defaultLength = result[result.length -1].defaultLength;
 
-            var date = today();
-            if (result[result.length - 1].end < date) {
                 //create new competition.
                 generatecompId(function (id) {
-                    var end_date = today();
-                    end_date = end_date.setDate(date.getDate() + 7);var date = new Date();
-            //create new competition.
-            generatecompId(function (id) {
-                var date = new Date();
-                var end_date = new Date();
-                end_date = end_date.setDate(date.getDate() + 7);
+                    var date = new Date();
+                    var end_date = new Date();
+                    end_date = end_date.setDate(date.getDate() + defaultLength);
 
-                //create results
-                User.find({type: USER}, function (err, usrs) {
-                    if (err) {
-                        logResponse(500, "Internal server error");
-                        return res.status(500).send(err);
-                    }
-
-                    if (usrs.length === 0) {
-                        logResponse(404, "No users where found.");
-                        return res.status(404).send({error: "no users found"});
-                    }
-
-                    for (var i = 0; i < usrs.length; i++) {
-                        results[i] = {
-                            userid: usrs[i].id,
-                            score: 0,
-                            goalAchieved: false
-                        }
-                    }
-
-                    var comp = new Competition({
-                        id: id,
-                        goal: defaultGoal,
-                        defaultGoal: defaultGoal,
-                        start: date,
-                        end: end_date,
-                        results: results
-                    });
-
-                    comp.save(function (err, resp) {
+                    //create results
+                    User.find({type: USER}, function (err, usrs) {
                         if (err) {
-                            console.log(err);
                             logResponse(500, "Internal server error");
                             return res.status(500).send(err);
                         }
-                        logResponse(200, "Competition sent.");
-                        return res.status(200).send(resp);
+
+                        if (usrs.length === 0) {
+                            logResponse(404, "No users where found.");
+                            return res.status(404).send({error: "no users found"});
+                        }
+
+                        for (var i = 0; i < usrs.length; i++) {
+                            results[i] = {
+                                userid: usrs[i].id,
+                                score: 0,
+                                goalAchieved: false
+                            }
+                        }
+
+                        var comp = new Competition({
+                            id: id,
+                            goal: defaultGoal,
+                            defaultGoal: defaultGoal,
+                            defaultLength: defaultLength,
+                            start: date,
+                            end: end_date,
+                            results: results
+                        });
+
+                        comp.save(function (err, resp) {
+                            if (err) {
+                                console.log(err);
+                                logResponse(500, "Internal server error");
+                                return res.status(500).send(err);
+                            }
+                            logResponse(200, "Competition sent.");
+                            return res.status(200).send(resp);
+                        });
                     });
                 });
-            });
-        });
+
+
+            } else {
+                logResponse(200, "Competition sent.");
+                res.status(200).send(result[result.length - 1]);
             }
-        } else {
-            logResponse(200, "Competition sent.");
-            res.status(200).send(result[result.length - 1]);}
         }
     });
 });
@@ -362,7 +360,37 @@ app.put('/lastgoal', function (req, res) {
     });
 });
 
+/**
+ * Change length for next competition
+ *
+ */
+app.put('/lastlength',function (req,res) {
+    Competition.find({}, function (err, comps) {
+        if (err) {
+            console.log(err);
+            logResponse(500, "Internal server error.");
+            res.status(500).send(err);
+        } else if (comps.length === 0) {
+            logResponse(404, "Nu users where found");
+            res.status(404).send({error: "no users found"});
+        }
 
+        var compid = comps[comps.length - 1].id;
+
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length}}, {new: 1}, function (err, competition) {
+            if (err) {
+                console.log(err);
+                logResponse(500, "Internal server error");
+                return res.status(500).send();
+            } else if (competition === undefined || competition === undefined) {
+                logResponse(404, "No competitions where found");
+                return res.status(404).send({error: "competition not found"})
+            }
+            logResponse(201, "Competition updated!");
+            return res.status(201).send({success: competition});
+        });
+    });
+});
 function generatecompId(callback) {
     var id = Math.ceil((Math.random() * 200 ) + 100);
 

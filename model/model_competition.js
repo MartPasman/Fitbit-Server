@@ -13,6 +13,7 @@ var competitionSchema = new Schema({
     id: {type: Number, required: true, unique: true},
     goal: {type: Number, required: true},
     defaultGoal: {type: Number, required: true},
+    defaultLength: {type: Number, required: true},
     start: {type: Date, required: true},
     end: {type: Date, required: true},
     results: [resultSchema]
