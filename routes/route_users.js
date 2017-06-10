@@ -16,7 +16,6 @@ const today = require('../support').today;
 const day = require('../support').day;
 const logResponse = require('../support').logResponse;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
-const validateMail = require('../support').validateMail;
 
 const ADMIN = 2;
 const USER = 1;

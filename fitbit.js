@@ -45,7 +45,7 @@ var prepareAPICall = function (req, res, url, callback) {
         }
 
         // no user found with the given id
-        if (!user) {
+        if (user === undefined) {
             logResponse(404, 'User account could not be found.');
             return res.status(404).send({error: 'User account could not be found.'});
         }
@@ -84,7 +84,7 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                     // token expires
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + userid + '.');
                     // try to refresh tokens
-                    doRefreshToken(userid, accessToken, refreshToken, function (success) {
+                    doRefreshToken(userid, function (success) {
                         if (success) {
                             // start over
                             prepareAPICall(req, res, url, callback);
@@ -118,6 +118,12 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
         });
 }
 
+/**
+ *
+ * @param url
+ * @param user
+ * @param callback
+ */
 function fitbitAPICallNoResponse(url, user, callback) {
     request.get(url.replace('[id]', user.fitbit.userid),
         {
@@ -130,7 +136,7 @@ function fitbitAPICallNoResponse(url, user, callback) {
                     // token expires
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + user.id + '.');
                     // try to refresh tokens
-                    doRefreshToken(user.id, user.fitbit.accessToken, user.fitbit.refreshToken, function (success) {
+                    doRefreshToken(user.id, function (success) {
                         if (success) {
                             // get the new access token
                             User.find({id: user.id}, {}, function (err, newUser) {
@@ -166,41 +172,58 @@ function fitbitAPICallNoResponse(url, user, callback) {
 /**
  * Refreshes the token and updates the record in the database of a certain user
  * @param userid id of the user to refresh its token
- * @param accessToken
- * @param refreshToken
  * @param callback function to call after refreshing
  */
-function doRefreshToken(userid, accessToken, refreshToken, callback) {
+function doRefreshToken(userid, callback) {
     console.log('Going to refresh token of user: ' + userid + '.');
-    const promise = client.refreshAccessToken(accessToken, refreshToken);
 
-    promise.then(function (success) {
-        // if the request succeeds
+    User.findOne({id: userid}, {}, function (err, user) {
+        if (err) {
+            console.error('MongoDB error: ' + err.message);
+            return callback(false);
+        }
 
-        var json = {
-            userid: success.user_id,
-            accessToken: success.access_token,
-            refreshToken: success.refresh_token
-        };
+        // no user found with the given id
+        if (user === undefined || user.fitbit === undefined) {
+            console.error('User account could not be found.');
+            return callback(false);
+        }
 
-        //find the requested user and add the renewed fitbit
-        User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err) {
-            if (err) {
-                console.error('MongoDB: ' + err.message);
-                return callback(false);
-            }
+        const promise = client.refreshAccessToken(user.fitbit.accessToken, user.fitbit.refreshToken);
 
-            // successfully saved new access and refresh token
-            console.log('Refreshing token succeeded.');
-            callback(true);
+        promise.then(function (success) {
+            // if the request succeeds
+
+            var json = {
+                userid: success.user_id,
+                accessToken: success.access_token,
+                refreshToken: success.refresh_token
+            };
+
+            //find the requested user and add the renewed fitbit
+            User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err) {
+                if (err) {
+                    console.error('MongoDB: ' + err.message);
+                    return callback(false);
+                }
+
+                // successfully saved new access and refresh token
+                console.log('Refreshing token succeeded.');
+                callback(true);
+            });
+        }, function (error) {
+            // refreshing fails
+            console.error('Refreshing token failed.');
+            callback(false);
         });
-    }, function (error) {
-        // refreshing fails
-        console.error('Refreshing token failed.');
-        callback(false);
     });
 }
 
+/**
+ *
+ * @param userid
+ * @param callback
+ */
 function addSubscription(userid, callback) {
 
     User.findOne({id: userid}, {fitbit: true}, function (err, result) {

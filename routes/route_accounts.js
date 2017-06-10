@@ -23,7 +23,6 @@ const Competition = require('../model/model_competition');
 
 const app = express.Router();
 
-const authentication = require('../app').authentication;
 const fitbitCallSimple = require('../fitbit').fitbitCallSimple;
 const today = require('../support').today;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
