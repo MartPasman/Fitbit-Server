@@ -40,7 +40,7 @@ var prepareAPICall = function (req, res, url, callback) {
     }
 
     // get the authorization token from the database
-    User.findOne({id: userid}, {fitbit: 1}, function (err, user) {
+    User.findOne({id: userid}, {password: 0}, function (err, user) {
         if (err) {
             logResponse(500, 'MongoDB error: ' + err.message);
             return res.status(500).send({error: 'MongoDB error: ' + err.message});
