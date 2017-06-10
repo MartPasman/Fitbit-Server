@@ -23,11 +23,13 @@ const ADMIN = 2;
  * @param callback what to do when we prepared the API call
  */
 var prepareAPICall = function (req, res, url, callback) {
+    console.log('\t\tPreparing API call to URL: ' + url);
+
     // check if a valid id was provided
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, 'No valid user id provided: ' + req.params.id);
         return res.status(400).send({error: 'No valid user id provided.'});
-    }
+    }prepareAPICall
 
     const userid = req.params.id;
 
@@ -51,12 +53,12 @@ var prepareAPICall = function (req, res, url, callback) {
         }
 
         // no fitbit connected to this account
-        if (user.fitbit === undefined || user.fitbit.accessToken === undefined || user.fitbit.userid === undefined) {
+        if (user.fitbit === undefined) {
             logResponse(412, 'User account not connected to a Fitbit.');
             return res.status(412).send({error: 'User account not connected to a Fitbit.'});
         }
 
-        fitbitAPICall(req, res, url, user.fitbit.accessToken, user.fitbit.refreshToken, user.fitbit.userid, userid, callback);
+        fitbitAPICall(req, res, url, user, callback);
     });
 };
 
@@ -65,30 +67,28 @@ var prepareAPICall = function (req, res, url, callback) {
  * @param req
  * @param res
  * @param url
- * @param accessToken
- * @param refreshToken
- * @param fitbitid
- * @param userid
+ * @param user
  * @param callback
  * @constructor
  */
-function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback) {
-    request.get(url.replace('[id]', fitbitid),
+function fitbitAPICall(req, res, url, user, callback) {
+    request.get(url.replace('[id]', user.fitbit.userid),
         {
             headers: {
-                Authorization: 'Bearer ' + accessToken
+                Authorization: 'Bearer ' + user.fitbit.accessToken
             }
         }, function (error, response, body) {
             if (error !== undefined && response.statusCode !== 200) {
                 if (response.statusCode === 401) {
                     // token expires
-                    logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + userid + '.');
+                    logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + user.id + '.');
                     // try to refresh tokens
-                    doRefreshToken(userid, function (success) {
+                    doRefreshToken(user.id, function (success) {
                         if (success) {
                             // start over
-                            prepareAPICall(req, res, url, callback);
+                            (req, res, url, callback);
                         } else {
+                            console.log('\t\tRemoving Fitbit connection...');
                             // if refreshing the token went wrong, remove the Fitbit connection
                             User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
                                 if (err) {
@@ -103,8 +103,8 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                 } else {
                     if (response.statusCode === 429) {
                         // call limit reached
-                        logResponse(response.statusCode, 'Fitbit API request limit reached for user: ' + userid + '.');
-                        return res.status(response.statusCode).send({error: 'Fitbit API request limit reached for user: ' + userid + '.'});
+                        logResponse(response.statusCode, 'Fitbit API request limit reached for user: ' + user.id + '.');
+                        return res.status(response.statusCode).send({error: 'Fitbit API request limit reached for user: ' + user.id + '.'});
                     } else {
                         // all other errors
                         console.error(response.body);
@@ -137,16 +137,17 @@ function fitbitAPICallNoResponse(url, user, callback) {
                     logResponse(response.statusCode, 'Fitbit API authorization token expired for user: ' + user.id + '.');
                     // try to refresh tokens
                     doRefreshToken(user.id, function (success) {
+                        console.log(success);
                         if (success) {
                             // get the new access token
-                            User.find({id: user.id}, {}, function (err, newUser) {
+                            User.findOne({id: user.id}, {}, function (err, newUser) {
                                 fitbitAPICallNoResponse(url, newUser, callback);
                             });
                         } else {
                             // if refreshing the token went wrong, remove the Fitbit connection
                             User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
                                 if (err) {
-                                    console.error(err.message);
+                                    console.error('\t\t' + err.message);
                                 }
 
                                 logResponse(500, 'Token could not be refreshed! Removed Fitbit connection.');
@@ -175,17 +176,17 @@ function fitbitAPICallNoResponse(url, user, callback) {
  * @param callback function to call after refreshing
  */
 function doRefreshToken(userid, callback) {
-    console.log('Going to refresh token of user: ' + userid + '.');
+    console.log('\t\t\tGoing to refresh token of user: ' + userid + '.');
 
     User.findOne({id: userid}, {}, function (err, user) {
         if (err) {
-            console.error('MongoDB error: ' + err.message);
+            console.error('\t\t\tMongoDB error: ' + err.message);
             return callback(false);
         }
 
         // no user found with the given id
         if (user === undefined || user.fitbit === undefined) {
-            console.error('User account could not be found.');
+            console.error('\t\t\tUser account could not be found.');
             return callback(false);
         }
 
@@ -203,17 +204,17 @@ function doRefreshToken(userid, callback) {
             //find the requested user and add the renewed fitbit
             User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err) {
                 if (err) {
-                    console.error('MongoDB: ' + err.message);
+                    console.error('\t\t\tMongoDB: ' + err.message);
                     return callback(false);
                 }
 
                 // successfully saved new access and refresh token
-                console.log('Refreshing token succeeded.');
+                console.log('\t\t\tRefreshing token succeeded.');
                 callback(true);
             });
         }, function (error) {
             // refreshing fails
-            console.error('Refreshing token failed.');
+            console.error('\t\t\tRefreshing token failed.');
             callback(false);
         });
     });
