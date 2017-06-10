@@ -1,6 +1,5 @@
 /**
  * Created by martpasman on 15-05-17.
- * aanmaken, verwijderen, inloggen, uitloggen
  */
 const express = require("express");
 const request = require('request');
@@ -14,8 +13,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-const WEBAPP = 'http://127.0.0.1';
-// const WEBAPP = 'http://178.21.116.109';
+// const WEBAPP = 'http://127.0.0.1';
+const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -679,11 +678,6 @@ app.put("/password", function (req, res) {
  * Get all users without passwords
  */
 app.get('/', function (req, res) {
-
-    if (res.user.type !== ADMIN) {
-        logResponse(403, "User not authorized to make this request");
-        return res.status(403).send({error: "User not authorized to make this request"});
-    }
 
     User.find({type: USER}, {password: 0, _id: 0, __v: 0}, function (err, users) {
 

@@ -6,6 +6,7 @@ const User = require('./model/model_user');
 const request = require('request');
 const mongoose = require('mongoose');
 const fitbitClient = require('fitbit-node');
+const logResponse = require('./support').logResponse;
 
 const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
@@ -46,7 +47,7 @@ var prepareAPICall = function (req, res, url, callback) {
         // no user found with the given id
         if (!user) {
             logResponse(404, 'User account could not be found.');
-            return res.status(404).send({error: 'User account could nojt be found.'});
+            return res.status(404).send({error: 'User account could not be found.'});
         }
 
         // no fitbit connected to this account
@@ -85,11 +86,18 @@ function fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, useri
                     // try to refresh tokens
                     doRefreshToken(userid, accessToken, refreshToken, function (success) {
                         if (success) {
-                            fitbitAPICall(req, res, url, accessToken, refreshToken, fitbitid, userid, callback);
+                            // start over
+                            prepareAPICall(req, res, url, callback);
                         } else {
-                            // if refreshing the token went wrong
-                            logResponse(500, 'Token could not be refreshed.');
-                            return res.status(500).send({error: 'Token could not be refreshed.'});
+                            // if refreshing the token went wrong, remove the Fitbit connection
+                            User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
+                                if (err) {
+                                    console.error(err.message);
+                                }
+
+                                logResponse(500, 'Token could not be refreshed! Removed Fitbit connection.');
+                                return res.status(500).send({error: 'Token could not be refreshed! Removed Fitbit connection.'});
+                            });
                         }
                     });
                 } else {
@@ -124,10 +132,19 @@ function fitbitAPICallNoResponse(url, user, callback) {
                     // try to refresh tokens
                     doRefreshToken(user.id, user.fitbit.accessToken, user.fitbit.refreshToken, function (success) {
                         if (success) {
-                            fitbitAPICallNoResponse(url, user, callback);
+                            // get the new access token
+                            User.find({id: user.id}, {}, function (err, newUser) {
+                                fitbitAPICallNoResponse(url, newUser, callback);
+                            });
                         } else {
-                            // if refreshing the token went wrong
-                            logResponse(500, 'Token could not be refreshed.');
+                            // if refreshing the token went wrong, remove the Fitbit connection
+                            User.findOneAndUpdate({id: user.id}, {$unset: {fitbit: 1}}, function (err) {
+                                if (err) {
+                                    console.error(err.message);
+                                }
+
+                                logResponse(500, 'Token could not be refreshed! Removed Fitbit connection.');
+                            });
                         }
                     });
                 } else {
@@ -170,17 +187,16 @@ function doRefreshToken(userid, accessToken, refreshToken, callback) {
         User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err) {
             if (err) {
                 console.error('MongoDB: ' + err.message);
-                callback(false);
-                return;
+                return callback(false);
             }
 
             // successfully saved new access and refresh token
+            console.log('Refreshing token succeeded.');
             callback(true);
         });
     }, function (error) {
         // refreshing fails
-        console.error('Refreshing token failed: ');
-        console.error(error.context.errors);
+        console.error('Refreshing token failed.');
         callback(false);
     });
 }
@@ -241,25 +257,6 @@ function addSubscription(userid, callback) {
                 }
             });
     });
-}
-
-function logResponse(code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
 }
 
 module.exports.fitbitCall = prepareAPICall;
