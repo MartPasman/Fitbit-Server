@@ -29,7 +29,7 @@ var prepareAPICall = function (req, res, url, callback) {
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, 'No valid user id provided: ' + req.params.id);
         return res.status(400).send({error: 'No valid user id provided.'});
-    }prepareAPICall
+    }
 
     const userid = req.params.id;
 
@@ -86,7 +86,7 @@ function fitbitAPICall(req, res, url, user, callback) {
                     doRefreshToken(user.id, function (success) {
                         if (success) {
                             // start over
-                            (req, res, url, callback);
+                            prepareAPICall(req, res, url, callback);
                         } else {
                             console.log('\t\tRemoving Fitbit connection...');
                             // if refreshing the token went wrong, remove the Fitbit connection
@@ -185,7 +185,7 @@ function doRefreshToken(userid, callback) {
         }
 
         // no user found with the given id
-        if (user === undefined || user.fitbit === undefined) {
+        if (user === undefined || user === null || user.fitbit === undefined) {
             console.error('\t\t\tUser account could not be found.');
             return callback(false);
         }
