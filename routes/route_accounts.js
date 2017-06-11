@@ -725,13 +725,13 @@ app.get('/:id/connect', function (req, res) {
 app.post('/:id/revoke', function (req, res) {
 
     if (res.user.type !== ADMIN) {
-        logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
+        logResponse(403, "Not authorized to make this request.");
+        return res.status(403).send({error: "Not authorized to make this request."});
     }
 
     if (req.params.id === undefined || isNaN(req.params.id)) {
-        logResponse(400, "Invalid id.");
-        return res.status(400).send({error: "Invalid id."});
+        logResponse(400, "Invalid id given.");
+        return res.status(400).send({error: "Invalid id given."});
     }
 
     User.findOne({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
@@ -761,10 +761,10 @@ app.post('/:id/revoke', function (req, res) {
                 return res.status(500).send({error: err.message});
             }
             if (result === undefined) {
-                logResponse(404, 'User could not be found.');
-                return res.status(404).send('User could not be found.');
+                logResponse(404, {error: "User account could not be found."});
+                return res.status(404).send({error: "User account could not be found."});
             }
-            return res.status(401).send();
+            return res.status(204).send();
         });
     }
 });
