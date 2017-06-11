@@ -645,7 +645,7 @@ app.put('/:id/active/', function (req, res) {
         return res.status(403).send({error: "User is not authorized to make this request"});
     }
 
-    if (req.params.id === undefined || req.body.id == '' || isNaN(req.params.id) || req.body.active == undefined || req.body.active == '') {
+    if (req.params.id === undefined || req.body.id === '' || isNaN(req.params.id) || req.body.active == undefined || req.body.active == '') {
         logResponse(400, "Id not provided or id is not a number.");
         return res.status(400).send({error: "Id not provided or id is not a number."});
     }
