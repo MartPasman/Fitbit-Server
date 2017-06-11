@@ -16,6 +16,7 @@ var testpassword = 'gebruiker';
 var testadmin = '10001';
 var testadminpassword = 'administrator';
 
+
 // describe("Fitbit connecting unittest", function () {
 //     before(function (done) {
 //         server.get('/accounts/testnewuser')
@@ -296,7 +297,6 @@ describe("Sign up", function () {
             server.post('/accounts/')
                 .send({
                     password: "testtest",
-                    email: "aap@live.nl",
                     handicap: 2,
                     type: 1
                 }).set("Authorization", authToken)
@@ -318,7 +318,6 @@ describe("Sign up", function () {
             server.post('/accounts/')
                 .send({
                     password: "testtest",
-                    email: "aapje@live.nl",
                     handicap: 2,
                     type: 2
                 })
@@ -334,13 +333,12 @@ describe("Sign up", function () {
         it("Should response 400 empty fields", function (done) {
             server.post('/accounts/')
                 .send({
-                    password: "",
-                    email: ""
+                    password: ""
                 })
                 .set("Authorization", authToken)
                 .expect(400)
                 .expect(function (res) {
-                    if (!res.body) throw new Error("Empty password and email")
+                    if (!res.body) throw new Error("Empty password")
                 })
                 .end(done);
         });
@@ -354,7 +352,6 @@ describe("Sign up", function () {
             server.post('/accounts/')
                 .send({
                     password: "aa",
-                    email: "romy1@live.nl",
                     type: 1,
                     handicap: 2
                 })
@@ -368,28 +365,6 @@ describe("Sign up", function () {
     });
 
     /**
-     * Testing a sign up expect 400 email not valid
-     */
-    context("POST accounts/  failed", function () {
-        it("Should response 400  email not valid", function (done) {
-            server.post('/accounts/')
-                .send({
-                    password: "asdfghjkl",
-                    email: "romy@.nl",
-                    type: 1,
-                    handicap: 2
-                })
-                .set("Authorization", authToken)
-                .expect(400)
-                .expect(function (res) {
-                    if (!res.body) throw new Error("Email not valid")
-                })
-                .end(done);
-        });
-    });
-
-
-    /**
      * Testing a sign up expect 400 type not valid
      */
     context("POST accounts/  failed", function () {
@@ -397,7 +372,6 @@ describe("Sign up", function () {
             server.post('/accounts/')
                 .send({
                     password: "asdfghjkl",
-                    email: "romy2@live.nl",
                     type: 4,
                     handicap: 2
                 })
@@ -418,7 +392,6 @@ describe("Sign up", function () {
             server.post('/accounts/')
                 .send({
                     password: "asdfghjkl",
-                    email: "romy3@live.nl",
                     type: 1,
                     handicap: 4
                 })
@@ -431,26 +404,7 @@ describe("Sign up", function () {
         });
     });
 
-    /**
-     * Testing a sign up expect 400 email already exists
-     */
-    context("POST accounts/  failed", function () {
-        it("Should response 400  email already exists", function (done) {
-            server.post('/accounts/')
-                .send({
-                    password: "asdfghjkl",
-                    email: "aap@live.nl",
-                    type: 1,
-                    handicap: 2
-                })
-                .set("Authorization", authToken)
-                .expect(400)
-                .expect(function (res) {
-                    if (!res.body) throw new Error("Email already exists")
-                })
-                .end(done);
-        });
-    });
+
 });
 
 
@@ -526,7 +480,4 @@ describe("Get users", function () {
     });
 
 });
-
-
-
 

@@ -16,7 +16,6 @@ const today = require('../support').today;
 const day = require('../support').day;
 const logResponse = require('../support').logResponse;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
-const validateMail = require('../support').validateMail;
 
 const ADMIN = 2;
 const USER = 1;
@@ -328,20 +327,21 @@ app.put('/:id', function (req, res) {
 
     var json = {};
 
-    if(!(req.body.birthday === '' || req.body.birthday === undefined)){
+
+    if (!(req.body.birthday === '' || req.body.birthday === undefined)) {
         var birthday = day(req.body.birthday);
         json.birthday = birthday;
     }
 
-    if(!( req.body.firstname === '' || req.body.firstname === undefined)){
+    if (!( req.body.firstname === '' || req.body.firstname === undefined)) {
         json.firstname = req.body.firstname;
     }
 
-    if(!( req.body.lastname === '' || req.body.lastname === undefined)){
+    if (!( req.body.lastname === '' || req.body.lastname === undefined)) {
         json.lastname = req.body.lastname;
     }
 
-    if(!( req.body.handicap === '' || req.body.handicap === undefined)){
+    if (!( req.body.handicap === '' || req.body.handicap === undefined)) {
         if (req.body.handicap < 1 || req.body.handicap > 3) {
             logResponse(400, "Handicap is not valid.");
             return res.status(400).send({error: "Handicap is not valid."});
@@ -349,29 +349,58 @@ app.put('/:id', function (req, res) {
         json.handicap = req.body.handicap;
     }
 
-    if(!(req.body.active == undefined || req.body.active == '')){
+    if (!(req.body.active === undefined || req.body.active === '')) {
         if (req.body.active || !req.body.active) {
             json.active = req.body.active;
         }
     }
 
-    console.log(json);
+    if (!(req.body.password === undefined || req.body.password === '')) {
+        genPassword(res, req.body.password, function (password) {
+            json.password = password;
+            console.log(json);
 
-    if (res.user.type !== ADMIN) {
-        if (+req.params.id !== +res.user.id) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: 'Not authorized to make this request.'});
-        }
+            if (res.user.type !== ADMIN) {
+                if (+req.params.id !== +res.user.id) {
+                    logResponse(403, "Not authorized to make this request");
+                    return res.status(403).send({error: 'Not authorized to make this request.'});
+                }
+            }
+
+            //Update user in database
+            User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message})
+                }
+
+                if (user === null) {
+                    logResponse(404, "User account could not be found.");
+                    return res.status(404).send({error: "User account could not be found."});
+                }
+
+                if (user.length === 0) {
+                    logResponse(404, "User account could not be found.");
+                    return res.status(404).send({error: "User account could not be found."});
+                }
+
+                logResponse(200, 'Information is updated.');
+                return res.status(200).send({success: 'Information is updated.'});
+            });
+        });
     } else {
 
-    }
+        console.log(json);
 
+        if (res.user.type !== ADMIN) {
+            if (+req.params.id !== +res.user.id) {
+                logResponse(403, "Not authorized to make this request");
+                return res.status(403).send({error: 'Not authorized to make this request.'});
+            }
+        }
 
-    User.findOneAndUpdate({id: req.params.id},
-        {
-            $set: json
-        }, function (err, user) {
-
+        //Update user in database
+        User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
             if (err) {
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message})
@@ -389,7 +418,8 @@ app.put('/:id', function (req, res) {
 
             logResponse(200, 'Information is updated.');
             return res.status(200).send({success: 'Information is updated.'});
-        })
+        });
+    }
 });
 
 /**
@@ -473,5 +503,24 @@ app.put('/:id/active/', function (req, res) {
         }
     }
 });
+
+function genPassword(res, password, callback) {
+
+    bcrypt.genSalt(10, function (err, salt) {
+        if (err) {
+            logResponse(500, "Can not gen salt: " + err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        bcrypt.hash(password, salt, undefined, function (err, hashed) {
+            if (err) {
+                logResponse(500, "Can not hash account: " + err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            callback(hashed);
+        });
+    });
+}
 
 module.exports = app;

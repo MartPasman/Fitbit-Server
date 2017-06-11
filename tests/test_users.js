@@ -648,8 +648,7 @@ describe("Change user information", function () {
                 .send({
                     birthday: "05/30/2017",
                     firstname: "Generic",
-                    lastname: "Userus",
-                    email: "lol@lol.nl"
+                    lastname: "Userus"
                 }).set("Authorization", token)
                 .expect(200)
                 .end(function (err, res) {
@@ -667,8 +666,7 @@ describe("Change user information", function () {
                 .send({
                     birthday: "05/30/2017",
                     firstname: "Generic",
-                    lastname: "Userus",
-                    email: "lol@lol.nl"
+                    lastname: "Userus"
                 }).set("Authorization", token)
                 .expect(403)
                 .end(function (err, res) {

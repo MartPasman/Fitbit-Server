@@ -14,8 +14,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -29,7 +29,6 @@ const fitbitCallSimple = require('../fitbit').fitbitCallSimple;
 const today = require('../support').today;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
 const logResponse = require('../support').logResponse;
-const validateMail = require('../support').validateMail;
 
 const USER = 1;
 const ADMIN = 2;
@@ -55,7 +54,6 @@ app.get('/testnewuseradmin', function (req, res) {
                 lastname: "user",
                 id: 12345,
                 password: hashed,
-                email: 'geen@mail.nl',
                 active: true,
                 type: ADMIN,
                 birthday: new Date()
@@ -91,11 +89,10 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Anita",
-                lastname: "Amans",
-                id: 111111,
+                firstname: "Generic",
+                lastname: "User",
+                id: 10002,
                 password: hashed,
-                email: 'ester@mail.nl',
                 active: true,
                 type: USER,
                 birthday: date
@@ -215,10 +212,10 @@ app.get('/oauth_callback', function (req, res) {
             }
 
             // if the fitbit was already connected to some user
-            if (result === undefined || result.length > 0) {
-                logResponse(403, 'Fitbit can only be connected to a single user.');
-                return redirect(403, 'Fitbit can only be connected to a single user.');
-            }
+            // if (result === undefined || result.length > 0) {
+            //     logResponse(403, 'Fitbit can only be connected to a single user.');
+            //     return redirect(403, 'Fitbit can only be connected to a single user.');
+            // }
 
             if (userid === undefined) {
                 logResponse(500, 'OAuth state was lost.');
@@ -488,7 +485,7 @@ app.post("/", function (req, res) {
     }
 
     //check if all fields are entered
-    if (req.body.firstname && req.body.lastname && req.body.password && req.body.email && req.body.birthday &&
+    if (req.body.firstname && req.body.lastname && req.body.password && req.body.birthday &&
         req.body.type) {
 
         if (req.body.password.length < 8) {
@@ -501,12 +498,6 @@ app.post("/", function (req, res) {
         var year = req.body.birthday.substring(6, 10);
         var dateOfBirth = new Date(month + '/' + day + '/' + year);
 
-        var email = req.body.email.toLowerCase();
-
-        if (!validateMail(email)) {
-            logResponse(400, 'Email not valid.');
-            return res.status(400).send({error: "Email address is not valid."});
-        }
 
         if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 2) {
             logResponse(400, 'Type is not valid');
@@ -518,12 +509,6 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Handicap is not valid."});
         }
 
-        //find email if found do not make account
-        User.find({email: email}, function (err, user) {
-            if (user.length > 0) {
-                logResponse(400, 'Email already exists');
-                return res.status(400).send({error: "Email address already exists."});
-            }
 
             generateId(function (id) {
                 bcrypt.genSalt(10, function (err, salt) {
@@ -547,7 +532,6 @@ app.post("/", function (req, res) {
                                 id: id,
                                 birthday: dateOfBirth,
                                 password: hashed,
-                                email: email,
                                 active: true,
                                 type: req.body.type
                             });
@@ -559,7 +543,6 @@ app.post("/", function (req, res) {
                                 id: id,
                                 birthday: dateOfBirth,
                                 password: hashed,
-                                email: email,
                                 active: true,
                                 type: req.body.type,
                                 handicap: req.body.handicap
@@ -578,7 +561,6 @@ app.post("/", function (req, res) {
                     });
                 });
             });
-        });
     } else {
         logResponse(400, "Not every field is (correctly) filled in.");
         return res.status(400).send({error: "Not every field is (correctly) filled in."});
@@ -737,6 +719,56 @@ app.get('/:id/connect', function (req, res) {
         logResponse(201, "authURL created");
         return res.status(201).send({success: authURL});
     });
+});
+
+/**
+ *  Revoke access token and delete the Fitbit from user
+ */
+app.post('/:id/revoke', function (req, res) {
+
+    if (res.user.type !== ADMIN) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
+    if (req.params.id === undefined || isNaN(req.params.id)) {
+        logResponse(400, "Invalid id.");
+        return res.status(400).send({error: "Invalid id."});
+    }
+
+    User.findOne({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message})
+        }
+
+        if (user === undefined) {
+            logResponse(404, "User account could not be found.");
+            return res.status(404).send({error: "User account could not be found."});
+        }
+
+        if (user.fitbit === undefined) {
+            logResponse(404, "No connected Fitbit found.");
+            return res.status(404).send({error: "No connected Fitbit found."});
+        }
+
+        const revoke = client.revokeAccessToken(user.fitbit.accessToken);
+        revoke.then(removeFitbit, removeFitbit);
+    });
+
+    function removeFitbit(){
+        User.findOneAndUpdate({id: req.params.id}, {$unset: {fitbit: 1}}, function (err, result) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+            if (result === undefined) {
+                logResponse(404, 'User could not be found.');
+                return res.status(404).send('User could not be found.');
+            }
+            return res.status(401).send();
+        });
+    }
 });
 
 const OAuthMap = [];
