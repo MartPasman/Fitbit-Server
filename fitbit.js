@@ -47,7 +47,7 @@ var prepareAPICall = function (req, res, url, callback) {
         }
 
         // no user found with the given id
-        if (user === undefined) {
+        if (user === undefined || user === null) {
             logResponse(404, 'User account could not be found.');
             return res.status(404).send({error: 'User account could not be found.'});
         }

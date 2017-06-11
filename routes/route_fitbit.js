@@ -4,6 +4,7 @@
 const express = require("express");
 const request = require("request");
 const app = express.Router();
+const logResponse = require('../support').logResponse;
 
 const User = require('../model/model_user');
 
@@ -62,25 +63,5 @@ app.get('/:id/subscribe', function (req, res) {
         return res.status(success ? 200 : 500).send({success: success});
     });
 });
-
-
-var logResponse = function (code, message, depth) {
-    if (depth === undefined) depth = '\t';
-    if (message === undefined) message = '';
-    if (code === undefined) return;
-
-    var COLOR_200 = '\u001B[32m';
-    var COLOR_300 = '\u001B[33m';
-    var COLOR_400 = '\u001B[31m';
-    var COLOR_500 = '\u001B[34m';
-    var COLOR_RESET = '\u001B[0m';
-
-    var color = COLOR_200;
-    if (code >= 300) color = COLOR_300;
-    if (code >= 400) color = COLOR_400;
-    if (code >= 500) color = COLOR_500;
-
-    console.log(depth + color + code + COLOR_RESET + ' ' + message + '\n');
-};
 
 module.exports = app;
