@@ -518,29 +518,58 @@ app.put('/:id', function (req, res) {
         json.handicap = req.body.handicap;
     }
 
-    if (!(req.body.active == undefined || req.body.active == '')) {
+    if (!(req.body.active === undefined || req.body.active === '')) {
         if (req.body.active || !req.body.active) {
             json.active = req.body.active;
         }
     }
 
-    console.log(json);
+    if (!(req.body.password === undefined || req.body.password === '')) {
+        genPassword(res, req.body.password, function (password) {
+            json.password = password;
+            console.log(json);
 
-    if (res.user.type !== ADMIN) {
-        if (+req.params.id !== +res.user.id) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: 'Not authorized to make this request.'});
-        }
+            if (res.user.type !== ADMIN) {
+                if (+req.params.id !== +res.user.id) {
+                    logResponse(403, "Not authorized to make this request");
+                    return res.status(403).send({error: 'Not authorized to make this request.'});
+                }
+            }
+
+            //Update user in database
+            User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message})
+                }
+
+                if (user === null) {
+                    logResponse(404, "User account could not be found.");
+                    return res.status(404).send({error: "User account could not be found."});
+                }
+
+                if (user.length === 0) {
+                    logResponse(404, "User account could not be found.");
+                    return res.status(404).send({error: "User account could not be found."});
+                }
+
+                logResponse(200, 'Information is updated.');
+                return res.status(200).send({success: 'Information is updated.'});
+            });
+        });
     } else {
 
-    }
+        console.log(json);
 
+        if (res.user.type !== ADMIN) {
+            if (+req.params.id !== +res.user.id) {
+                logResponse(403, "Not authorized to make this request");
+                return res.status(403).send({error: 'Not authorized to make this request.'});
+            }
+        }
 
-    User.findOneAndUpdate({id: req.params.id},
-        {
-            $set: json
-        }, function (err, user) {
-
+        //Update user in database
+        User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
             if (err) {
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message})
@@ -558,7 +587,8 @@ app.put('/:id', function (req, res) {
 
             logResponse(200, 'Information is updated.');
             return res.status(200).send({success: 'Information is updated.'});
-        })
+        });
+    }
 });
 
 /**
@@ -642,5 +672,24 @@ app.put('/:id/active/', function (req, res) {
         }
     }
 });
+
+function genPassword(res, password, callback) {
+
+    bcrypt.genSalt(10, function (err, salt) {
+        if (err) {
+            logResponse(500, "Can not gen salt: " + err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        bcrypt.hash(password, salt, undefined, function (err, hashed) {
+            if (err) {
+                logResponse(500, "Can not hash account: " + err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            callback(hashed);
+        });
+    });
+}
 
 module.exports = app;

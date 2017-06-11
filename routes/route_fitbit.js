@@ -63,6 +63,7 @@ app.get('/:id/subscribe', function (req, res) {
     });
 });
 
+
 var logResponse = function (code, message, depth) {
     if (depth === undefined) depth = '\t';
     if (message === undefined) message = '';
