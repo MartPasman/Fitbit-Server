@@ -13,8 +13,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-const WEBAPP = 'http://127.0.0.1';
-// const WEBAPP = 'http://178.21.116.109';
+// const WEBAPP = 'http://127.0.0.1';
+const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -360,10 +360,13 @@ app.post('/subscription_callback', function (req, res) {
                                 }
                             }
 
+                            // set the new scores and stats
                             const set = {
                                 'results.$.score': newScore,
                                 'results.$.goalAchieved': (newScore >= c.goal),
-                                sharedScore: newSharedScore
+                                sharedScore: newSharedScore,
+                                sharedGoalProgress: Math.floor(newSharedScore / c.sharedGoal * 100),
+                                sharedGoalAchieved: (newSharedScore >= c.sharedGoal)
                             };
 
                             Competition.findOneAndUpdate({
@@ -520,57 +523,57 @@ app.post("/", function (req, res) {
         }
 
 
-            generateId(function (id) {
-                bcrypt.genSalt(10, function (err, salt) {
+        generateId(function (id) {
+            bcrypt.genSalt(10, function (err, salt) {
+                if (err) {
+                    logResponse(500, "Can not gen salt: " + err.message);
+                    return res.status(500).send({error: err.message});
+                }
+
+                bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                     if (err) {
-                        logResponse(500, "Can not gen salt: " + err.message);
+                        logResponse(500, "Can not hash account: " + err.message);
                         return res.status(500).send({error: err.message});
                     }
 
-                    bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
+                    var account;
+                    if (req.body.type === ADMIN) {
+
+                        account = new User({
+                            firstname: req.body.firstname,
+                            lastname: req.body.lastname,
+                            id: id,
+                            birthday: dateOfBirth,
+                            password: hashed,
+                            active: true,
+                            type: req.body.type
+                        });
+                    }
+                    else {
+                        account = new User({
+                            firstname: req.body.firstname,
+                            lastname: req.body.lastname,
+                            id: id,
+                            birthday: dateOfBirth,
+                            password: hashed,
+                            active: true,
+                            type: req.body.type,
+                            handicap: req.body.handicap
+                        });
+                    }
+
+
+                    account.save(function (err, result) {
                         if (err) {
-                            logResponse(500, "Can not hash account: " + err.message);
+                            logResponse(500, "Can not save account: " + err.message);
                             return res.status(500).send({error: err.message});
                         }
-
-                        var account;
-                        if (req.body.type === ADMIN) {
-
-                            account = new User({
-                                firstname: req.body.firstname,
-                                lastname: req.body.lastname,
-                                id: id,
-                                birthday: dateOfBirth,
-                                password: hashed,
-                                active: true,
-                                type: req.body.type
-                            });
-                        }
-                        else {
-                            account = new User({
-                                firstname: req.body.firstname,
-                                lastname: req.body.lastname,
-                                id: id,
-                                birthday: dateOfBirth,
-                                password: hashed,
-                                active: true,
-                                type: req.body.type,
-                                handicap: req.body.handicap
-                            });
-                        }
-
-
-                        account.save(function (err, result) {
-                            if (err) {
-                                logResponse(500, "Can not save account: " + err.message);
-                                return res.status(500).send({error: err.message});
-                            }
-                            logResponse(201, "id given");
-                            return res.status(201).send({id: id});
-                        });
+                        logResponse(201, "id given");
+                        return res.status(201).send({id: id});
                     });
                 });
             });
+        });
     } else {
         logResponse(400, "Not every field is (correctly) filled in.");
         return res.status(400).send({error: "Not every field is (correctly) filled in."});
@@ -761,7 +764,7 @@ app.post('/:id/revoke', function (req, res) {
         revoke.then(removeFitbit, removeFitbit);
     });
 
-    function removeFitbit(){
+    function removeFitbit() {
         User.findOneAndUpdate({id: req.params.id}, {$unset: {fitbit: 1}}, function (err, result) {
             if (err) {
                 logResponse(500, err.message);
