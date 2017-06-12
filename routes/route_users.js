@@ -19,6 +19,43 @@ const getYYYYMMDD = require('../support').getYYYYMMDD;
 
 const ADMIN = 2;
 const USER = 1;
+
+/**
+ * Get the birthdays of the last week
+ */
+app.get('/birthdays', function (req, res) {
+    const weekDay = new Date().getDay();
+    const dayFrom = day(new Date().setDate(new Date().getDate() - (weekDay - 1)));
+    const dayTo = day(new Date().setDate(new Date().getDate() + (7 - weekDay)));
+
+    User.find({type: USER}, {birthday: 1, firstname: 1, lastname: 1}, function (err, users) {
+        var userBirthdays = [];
+
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message})
+        }
+
+        for (var i = 0; i < users.length; i++) {
+            var day = users[i].birthday.getDate();
+            var month = users[i].birthday.getMonth();
+            var birthday = getCompareDate(users[i].birthday);
+
+            if (dayFrom <= birthday && birthday <= dayTo) {
+                userBirthdays.push(users[i]);
+            }
+        }
+
+        userBirthdays.sort(function (u1, u2) {
+            return u1.birthday - u2.birthday;
+        });
+
+        logResponse(200, "Users with birthdays returned.");
+        return res.status(200).send({success: userBirthdays});
+    })
+});
+
+
 /**
  * Authorization
  */
@@ -673,6 +710,7 @@ app.put('/:id/active/', function (req, res) {
     }
 });
 
+
 function genPassword(res, password, callback) {
 
     bcrypt.genSalt(10, function (err, salt) {
@@ -690,6 +728,10 @@ function genPassword(res, password, callback) {
             callback(hashed);
         });
     });
+}
+
+function getCompareDate(birthdate) {
+    return compareDate = Date.UTC(new Date().getFullYear(), birthdate.getMonth(), birthdate.getDate(), 0, 0, 0, 0);
 }
 
 module.exports = app;
