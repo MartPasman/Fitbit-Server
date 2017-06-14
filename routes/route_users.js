@@ -42,6 +42,7 @@ app.get('/birthdays', function (req, res) {
             var birthday = getCompareDate(users[i].birthday);
 
             if (dayFrom <= birthday && birthday <= dayTo) {
+                //todo nodig? 
                 users[i].birthday = birthday;
                 userBirthdays.push(users[i]);
             }
