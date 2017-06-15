@@ -3,8 +3,8 @@ var Schema = mongoose.Schema;
 
 var resultSchema = new Schema({
     userid: {type: Number, required: true},
-    score: {type: Number, required: true},
-    goalAchieved: {type: Boolean, required: true}
+    score: {type: Number, required: true, default: 0},
+    goalAchieved: {type: Boolean, required: true, default: false}
 });
 
 module.exports = mongoose.model('result', resultSchema);
