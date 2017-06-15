@@ -51,10 +51,9 @@ app.get('/', function (req, res) {
 
     Competition.find({}, function (err, result) {
         if (err) {
-            logResponse(500, "Internal server error!");
-            return res.status(500).send();
+            logResponse(500, "Internal server error!" + err);
+            return res.status(500).send(err);
         }
-
         if (result.length === 0) {
             // create new competition
             generatecompId(function (id) {
@@ -65,8 +64,8 @@ app.get('/', function (req, res) {
                 //create results
                 User.find({type: USER}, function (err, usrs) {
                     if (err) {
-                        logResponse(500, "Internal server error!");
-                        return res.status(500).send();
+                        logResponse(500, "Internal server error!" + err);
+                        return res.status(500).send(err);
                     }
 
                     if (usrs.length === 0) {
@@ -87,9 +86,14 @@ app.get('/', function (req, res) {
                         goal: 100000,
                         defaultGoal: 100000,
                         defaultLength: 7,
+                        length: 7,
                         start: date,
                         end: end_date,
-                        results: results
+                        results: results,
+                        sharedGoal: 20000,
+                        defaultSharedGoal: 20000,
+                        sharedGoalProcess: 0,
+                        sharedGoalAchieved: false
                     });
 
                     comp.save(function (err, resp) {
@@ -109,7 +113,8 @@ app.get('/', function (req, res) {
 
             if (result[result.length - 1].end < today()) {
                 var defaultGoal = result[result.length - 1].defaultGoal;
-                var defaultLength = result[result.length -1].defaultLength;
+                var defaultLength = result[result.length - 1].defaultLength;
+                var defaultSharedGoal = result[result.length-1].defaultSharedGoal;
 
                 //create new competition.
                 generatecompId(function (id) {
@@ -141,10 +146,15 @@ app.get('/', function (req, res) {
                             id: id,
                             goal: defaultGoal,
                             defaultGoal: defaultGoal,
+                            length: defaultLength,
                             defaultLength: defaultLength,
                             start: date,
                             end: end_date,
-                            results: results
+                            results: results,
+                            sharedGoal: defaultSharedGoal,
+                            defaultSharedGoal: defaultSharedGoal,
+                            sharedGoalProcess: 0,
+                            sharedGoalAchieved: false
                         });
 
                         comp.save(function (err, resp) {
@@ -361,10 +371,34 @@ app.put('/lastgoal', function (req, res) {
 });
 
 /**
+ * Get the sharedGoal in %
+ */
+app.get('/sharedGoal', function (req, res) {
+
+    Competition.find({}, function (err, competitions) {
+        if (err) {
+            logResponse(500, "Internal server error!");
+            res.status(500).send({error: 'Internal server error!'});
+        }
+        competitions.sort(function (m1, m2) {
+            return m1.start - m2.start;
+        });
+
+        var JSON = {
+            percentage: competitions[competitions.length-1].sharedGoalProcess,
+            achieved: competitions[competitions.length-1].sharedGoalAchieved
+        };
+
+        res.status(200).send({success: JSON});
+
+    })
+});
+
+/**
  * Change length for next competition
  *
  */
-app.put('/lastlength',function (req,res) {
+app.put('/lastlength', function (req, res) {
     Competition.find({}, function (err, comps) {
         if (err) {
             console.log(err);
@@ -377,7 +411,7 @@ app.put('/lastlength',function (req,res) {
 
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length}}, {new: 1}, function (err, competition) {
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length, length: req.body.length}}, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 logResponse(500, "Internal server error");

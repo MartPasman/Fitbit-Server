@@ -13,8 +13,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -87,11 +87,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Active",
-                lastname: "User",
-                id: 10004,
+                firstname: "Martje",
+                lastname: "Kasii",
+                id: 10005,
                 password: hashed,
-                active: true,
+                active: false,
                 type: USER,
                 birthday: date
             });
