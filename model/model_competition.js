@@ -14,14 +14,14 @@ var competitionSchema = new Schema({
     goal: {type: Number, required: true},
     defaultGoal: {type: Number, required: true},
     defaultLength: {type: Number, required: true},
-    length:{type: Number, required: true},
+    length: {type: Number, required: true},
     start: {type: Date, required: true},
     end: {type: Date, required: true},
     results: [resultSchema],
-    sharedGoal: {type:Number, required: true},
-    defaultSharedGoal: {type:Number, required:true},
-    sharedGoalProcess: {type:Number, required:true},
-    sharedGoalAchieved: {type:Boolean, required:true}
+    sharedGoal: {type: Number, required: true},
+    defaultSharedGoal: {type: Number, required: true},
+    sharedGoalProcess: {type: Number, required: true},
+    sharedGoalAchieved: {type: Boolean, required: true}
 });
 
 module.exports = mongoose.model('competition', competitionSchema);

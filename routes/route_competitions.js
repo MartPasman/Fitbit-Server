@@ -20,6 +20,8 @@ const today = require('../support').today;
 const ADMIN = 2;
 const USER = 1;
 
+app.get();
+
 /**
  * must be logged in as administrator
  */
@@ -35,10 +37,6 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        // if (res.user.type !== ADMIN) {
-        //     logResponse(403, "Not authorized to make this request");
-        //     return res.status(403).send({error: "Not authorized to make this request"});
-        // }
 
         console.log('\tpassed');
 
@@ -46,6 +44,9 @@ app.use('/', function (req, res, next) {
     });
 });
 
+/**
+ *
+ */
 app.get('/', function (req, res) {
     var results = [];
 
@@ -179,90 +180,16 @@ app.get('/', function (req, res) {
 });
 
 /**
- * THIS IS A VERSION WHERE YOU CAN GET HISTORY OF COMPS
- */
-// app.get('/:offset?', function (req, res) {
-//     Competition.find({}, function (err, result) {
-//         if (err) {
-//             return res.status(500).send();
-//         }
-//
-//         if(result.length == 0){
-//             // create new competition
-//
-//         }
-//
-//         result.sort(function (m1, m2) {
-//             return m1.start - m2.start;
-//         });
-//
-//
-//
-//         var date = new Date();
-//
-//         var i = 0;
-//         var resultdate = new Date(result[result.length - 1].start);
-//
-//         while (resultdate > date) {
-//             i++;
-//             if(result.length - i <= 0){
-//                 generatecompId(function (id) {
-//                     var date = new Date();
-//
-//                     var oneDay = 24*60*60*1000;
-//                     var diffDays = Math.round(Math.abs((result[result.length - 1].start - result[result.length - 1].end)/(oneDay)));
-//
-//                     var end_date = new Date();
-//                     end_date.addDays(diffDays);
-//                     //TODO 0 results
-//                     var comp = new Competition({
-//                         id: id,
-//                         goal: result[result.length - 1].defaultgoal,
-//                         defaultgoal: result[result.length - 1].defaultgoal,
-//                         start: date,
-//                         end: end_date,
-//                         results: result[result.length-1].results
-//                     });
-//
-//                     comp.save(function (err, resp) {
-//                         if (err) {
-//                             return res.status(500).send({error: "..."});
-//                         }
-//                         i = 1;
-//                     });
-//                 });
-//             }
-//             resultdate = new Date(result[result.length - i]);
-//         }
-//         if (req.params.offset == undefined || req.params.offset == 0) {
-//
-//             result[result.length - i].results.sort(function (m1, m2) {
-//                 return m2.score - m1.score;
-//             });
-//             return res.status(200).send({total: result.length-1, current: result.length-i, competition: result[result.length - i]});
-//
-//         } else {
-//
-//             if(result.length - i + +req.params.offset < 0 || result.length - i + +req.params.offset > result.length - 1){
-//                 return res.status(400).send({error: "index out of bounds"});
-//             }
-//             result[result.length - i + +req.params.offset].results.sort(function (m1, m2) {
-//                 return m2.score - m1.score;
-//             });
-//             return res.status(200).send({total: result.length-1, current: (result.length-i + +req.params.offset), competition: result[result.length - i + +req.params.offset]});
-//
-//         }
-//
-//
-//     });
-// });
-
-/**
  * Create a competition.
  */
-
 //TODO: Delete this later.
 app.post('/', function (req, res) {
+
+    if (res.user.type !== ADMIN) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
     var goal = req.body.goal;
     var startDate = day(req.body.start);
     var endDate = day(req.body.end);
@@ -313,6 +240,7 @@ app.post('/', function (req, res) {
 /**
  * change score from specific user in competition
  */
+// TODO: Delete this later
 app.put('/:id/score', function (req, res) {
     var userid = req.body.userid;
     var score = req.body.score;
@@ -342,6 +270,7 @@ app.put('/:id/score', function (req, res) {
 /**
  * change goal for next competition
  */
+// TODO: rename
 app.put('/lastgoal', function (req, res) {
     Competition.find({}, function (err, comps) {
         if (err) {
@@ -373,6 +302,7 @@ app.put('/lastgoal', function (req, res) {
 /**
  * Get the sharedGoal in %
  */
+// TODO: rename
 app.get('/sharedGoal', function (req, res) {
 
     Competition.find({}, function (err, competitions) {
@@ -398,6 +328,7 @@ app.get('/sharedGoal', function (req, res) {
  * Change length for next competition
  *
  */
+// TODO: rename
 app.put('/lastlength', function (req, res) {
     Competition.find({}, function (err, comps) {
         if (err) {
