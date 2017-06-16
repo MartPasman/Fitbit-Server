@@ -13,8 +13,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-const WEBAPP = 'http://127.0.0.1';
-// const WEBAPP = 'http://178.21.116.109';
+// const WEBAPP = 'http://127.0.0.1';
+const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -365,7 +365,7 @@ app.post('/subscription_callback', function (req, res) {
                                 'results.$.score': newScore,
                                 'results.$.goalAchieved': (newScore >= c.goal),
                                 sharedScore: newSharedScore,
-                                sharedGoalProgress: Math.floor(newSharedScore / c.sharedGoal * 100),
+                                sharedGoalProgress: Math.min(100, Math.floor(newSharedScore / c.sharedGoal * 100)),
                                 sharedGoalAchieved: (newSharedScore >= c.sharedGoal)
                             };
 
@@ -397,7 +397,7 @@ app.post('/subscription_callback', function (req, res) {
                             const set = {
                                 'goals.$.progress': stepsSum,
                                 // max 100 percent
-                                'goals.$.percentage': Math.min(100, Math.round(stepsSum / g.goal * 100))
+                                'goals.$.percentage': Math.min(100, Math.floor(stepsSum / g.goal * 100))
                             };
 
                             console.log(set);
