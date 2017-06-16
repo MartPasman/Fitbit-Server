@@ -28,7 +28,7 @@ app.get('/birthdays', function (req, res) {
     const dayFrom = day(new Date().setDate(new Date().getDate() - (weekDay - 1)));
     const dayTo = day(new Date().setDate(new Date().getDate() + (7 - weekDay)));
 
-    User.find({type: USER}, {birthday: 1, firstname: 1, lastname: 1}, function (err, users) {
+    User.find({type: USER, active: true}, {birthday: 1, firstname: 1, lastname: 1}, function (err, users) {
         var userBirthdays = [];
 
         if (err) {
