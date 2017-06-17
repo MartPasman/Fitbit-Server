@@ -37,12 +37,9 @@ app.get('/birthdays', function (req, res) {
         }
 
         for (var i = 0; i < users.length; i++) {
-            // var today = users[i].birthday.getDate();
-            // var month = users[i].birthday.getMonth();
             var birthday = getCompareDate(users[i].birthday);
 
             if (dayFrom <= birthday && birthday <= dayTo) {
-                //todo nodig? 
                 users[i].birthday = birthday;
                 userBirthdays.push(users[i]);
             }
