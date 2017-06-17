@@ -506,11 +506,7 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
 
-        var day = req.body.birthday.substring(0, 2);
-        var month = req.body.birthday.substring(3, 5);
-        var year = req.body.birthday.substring(6, 10);
-        var dateOfBirth = new Date(month + '/' + day + '/' + year);
-
+        var dateOfBirth = new Date(req.body.birthday);
 
         if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 2) {
             logResponse(400, 'Type is not valid');
@@ -538,7 +534,6 @@ app.post("/", function (req, res) {
 
                     var account;
                     if (req.body.type === ADMIN) {
-
                         account = new User({
                             firstname: req.body.firstname,
                             lastname: req.body.lastname,
@@ -562,6 +557,16 @@ app.post("/", function (req, res) {
                         });
                     }
 
+                    console.dir({
+                        firstname: req.body.firstname,
+                        lastname: req.body.lastname,
+                        id: id,
+                        birthday: dateOfBirth,
+                        password: hashed,
+                        active: true,
+                        type: req.body.type,
+                        handicap: req.body.handicap
+                    });
 
                     account.save(function (err, result) {
                         if (err) {
