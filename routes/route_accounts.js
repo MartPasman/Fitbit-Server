@@ -532,41 +532,22 @@ app.post("/", function (req, res) {
                         return res.status(500).send({error: err.message});
                     }
 
-                    var account;
-                    if (req.body.type === ADMIN) {
-                        account = new User({
-                            firstname: req.body.firstname,
-                            lastname: req.body.lastname,
-                            id: id,
-                            birthday: dateOfBirth,
-                            password: hashed,
-                            active: true,
-                            type: req.body.type
-                        });
-                    }
-                    else {
-                        account = new User({
-                            firstname: req.body.firstname,
-                            lastname: req.body.lastname,
-                            id: id,
-                            birthday: dateOfBirth,
-                            password: hashed,
-                            active: true,
-                            type: req.body.type,
-                            handicap: req.body.handicap
-                        });
-                    }
-
-                    console.dir({
+                    const accountDetails = {
                         firstname: req.body.firstname,
                         lastname: req.body.lastname,
                         id: id,
                         birthday: dateOfBirth,
                         password: hashed,
                         active: true,
-                        type: req.body.type,
-                        handicap: req.body.handicap
-                    });
+                        type: req.body.type
+                    };
+
+                    // if it is a user, add the handicap
+                    if (req.body.type === USER) {
+                        accountDetails.handicap = req.body.handicap;
+                    }
+
+                    const account = new User(accountDetails);
 
                     account.save(function (err, result) {
                         if (err) {
