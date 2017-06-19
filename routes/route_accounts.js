@@ -277,7 +277,7 @@ app.post('/subscription_callback', function (req, res) {
                 return;
             }
 
-            if (user === undefined) {
+            if (user === undefined || user === null) {
                 console.error('User not found.');
                 return;
             }
@@ -441,12 +441,14 @@ app.get('/:id/goals/ongoing', function (req, res) {
 function getOngoingCompetition(callback) {
     const where = {
         start: {
-            $lt: today()
+            $lte: today()
         },
         end: {
-            $gt: today()
+            $gte: today()
         }
     };
+
+    console.log(where);
 
     Competition.find(where, {}, function (err, comps) {
         if (err) {

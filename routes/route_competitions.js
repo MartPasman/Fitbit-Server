@@ -96,7 +96,7 @@ app.get('/shared', function (req, res) {
 
         // just get seven
         const lastSeven = [];
-        for (var i = 0; (i < 7 && i < result.length); i++) {
+        for (var i = Math.max(0, result.length - 7); (i < Math.max(0, result.length - 7) + 7 && i < result.length); i++) {
             var start = getDDMM(result[i].start, '/');
             var end = getDDMM(result[i].end, '/');
             lastSeven.push({
@@ -384,7 +384,7 @@ app.get('/sharedGoal', function (req, res) {
         });
 
         var JSON = {
-            percentage: competitions[competitions.length - 1].sharedGoalProcess,
+            percentage: competitions[competitions.length - 1].sharedGoalProgress,
             achieved: competitions[competitions.length - 1].sharedGoalAchieved
         };
 
