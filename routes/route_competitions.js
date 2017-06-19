@@ -20,13 +20,39 @@ const today = require('../support').today;
 const ADMIN = 2;
 const USER = 1;
 
+// TODO: remove later
+app.delete('/', function (req, res) {
+    // get all competitions
+    Competition.find({}, {results: 0, length: 0, defaultGoal: 0, defaultLength: 0, goal: 0}, function (err, result) {
+        // MongoDB error
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({message: err.message});
+        }
+
+        // if no competitions were found
+        if (result.length === 0) {
+            logResponse(404, 'No competitions found.');
+            return res.status(404).send({message: 'No competitions found.'});
+        }
+
+        // sort them by end date
+        result.sort(function (c1, c2) {
+            return c1.end - c2.end;
+        });
+
+        const id = result[0].id;
+        Competition.findOne({id: id}).remove().exec();
+        console.log('Removed comp with id: ' + id);
+    });
+});
+
 /**
  * must be logged in as administrator
  */
 app.use('/', function (req, res, next) {
 
     console.log('\tAuthentication required...');
-    console.log(req.app.get('private-key'));
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -35,10 +61,6 @@ app.use('/', function (req, res, next) {
 
         // Save user for future purposes
         res.user = decoded._doc;
-        // if (res.user.type !== ADMIN) {
-        //     logResponse(403, "Not authorized to make this request");
-        //     return res.status(403).send({error: "Not authorized to make this request"});
-        // }
 
         console.log('\tpassed');
 
@@ -46,15 +68,62 @@ app.use('/', function (req, res, next) {
     });
 });
 
+/**
+ * Get the latest seven shared goals and there progress and score
+ */
+app.get('/shared', function (req, res) {
+
+    // get all competitions
+    Competition.find({}, {results: 0, length: 0, defaultGoal: 0, defaultLength: 0, goal: 0}, function (err, result) {
+        // MongoDB error
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({message: err.message});
+        }
+
+        // if no competitions were found
+        if (result.length === 0) {
+            logResponse(404, 'No competitions found.');
+            return res.status(404).send({message: 'No competitions found.'});
+        }
+
+        // sort them by end date
+        result.sort(function (c1, c2) {
+            return c1.end - c2.end;
+        });
+
+        console.log(result);
+
+        // just get seven
+        const lastSeven = [];
+        for (var i = Math.max(0, result.length - 7); (i < Math.max(0, result.length - 7) + 7 && i < result.length); i++) {
+            var start = getDDMM(result[i].start, '/');
+            var end = getDDMM(result[i].end, '/');
+            lastSeven.push({
+                goal: result[i].sharedGoal,
+                score: result[i].sharedScore,
+                period: start + ' - ' + end,
+                achieved: result[i].sharedGoalAchieved,
+                progress: result[i].sharedGoalProgress
+            });
+        }
+
+        logResponse(200, 'Returned goals');
+        return res.status(200).send({success: lastSeven});
+    });
+});
+
+/**
+ *
+ */
 app.get('/', function (req, res) {
     var results = [];
 
     Competition.find({}, function (err, result) {
         if (err) {
-            logResponse(500, "Internal server error!");
-            return res.status(500).send();
+            logResponse(500, "Internal server error!" + err);
+            return res.status(500).send(err);
         }
-
         if (result.length === 0) {
             // create new competition
             generatecompId(function (id) {
@@ -65,8 +134,8 @@ app.get('/', function (req, res) {
                 //create results
                 User.find({type: USER}, function (err, usrs) {
                     if (err) {
-                        logResponse(500, "Internal server error!");
-                        return res.status(500).send();
+                        logResponse(500, "Internal server error!" + err);
+                        return res.status(500).send(err);
                     }
 
                     if (usrs.length === 0) {
@@ -87,9 +156,14 @@ app.get('/', function (req, res) {
                         goal: 100000,
                         defaultGoal: 100000,
                         defaultLength: 7,
+                        length: 7,
                         start: date,
                         end: end_date,
-                        results: results
+                        results: results,
+                        sharedGoal: 20000,
+                        defaultSharedGoal: 20000,
+                        sharedGoalProcess: 0,
+                        sharedGoalAchieved: false
                     });
 
                     comp.save(function (err, resp) {
@@ -109,12 +183,13 @@ app.get('/', function (req, res) {
 
             if (result[result.length - 1].end < today()) {
                 var defaultGoal = result[result.length - 1].defaultGoal;
-                var defaultLength = result[result.length -1].defaultLength;
+                var defaultLength = result[result.length - 1].defaultLength;
+                var defaultSharedGoal = result[result.length - 1].defaultSharedGoal;
 
                 //create new competition.
                 generatecompId(function (id) {
-                    var date = new Date();
-                    var end_date = new Date();
+                    var date = today();
+                    var end_date = today();
                     end_date = end_date.setDate(date.getDate() + defaultLength);
 
                     //create results
@@ -141,10 +216,15 @@ app.get('/', function (req, res) {
                             id: id,
                             goal: defaultGoal,
                             defaultGoal: defaultGoal,
+                            length: defaultLength,
                             defaultLength: defaultLength,
                             start: date,
                             end: end_date,
-                            results: results
+                            results: results,
+                            sharedGoal: defaultSharedGoal,
+                            defaultSharedGoal: defaultSharedGoal,
+                            sharedGoalProcess: 0,
+                            sharedGoalAchieved: false
                         });
 
                         comp.save(function (err, resp) {
@@ -169,90 +249,16 @@ app.get('/', function (req, res) {
 });
 
 /**
- * THIS IS A VERSION WHERE YOU CAN GET HISTORY OF COMPS
- */
-// app.get('/:offset?', function (req, res) {
-//     Competition.find({}, function (err, result) {
-//         if (err) {
-//             return res.status(500).send();
-//         }
-//
-//         if(result.length == 0){
-//             // create new competition
-//
-//         }
-//
-//         result.sort(function (m1, m2) {
-//             return m1.start - m2.start;
-//         });
-//
-//
-//
-//         var date = new Date();
-//
-//         var i = 0;
-//         var resultdate = new Date(result[result.length - 1].start);
-//
-//         while (resultdate > date) {
-//             i++;
-//             if(result.length - i <= 0){
-//                 generatecompId(function (id) {
-//                     var date = new Date();
-//
-//                     var oneDay = 24*60*60*1000;
-//                     var diffDays = Math.round(Math.abs((result[result.length - 1].start - result[result.length - 1].end)/(oneDay)));
-//
-//                     var end_date = new Date();
-//                     end_date.addDays(diffDays);
-//                     //TODO 0 results
-//                     var comp = new Competition({
-//                         id: id,
-//                         goal: result[result.length - 1].defaultgoal,
-//                         defaultgoal: result[result.length - 1].defaultgoal,
-//                         start: date,
-//                         end: end_date,
-//                         results: result[result.length-1].results
-//                     });
-//
-//                     comp.save(function (err, resp) {
-//                         if (err) {
-//                             return res.status(500).send({error: "..."});
-//                         }
-//                         i = 1;
-//                     });
-//                 });
-//             }
-//             resultdate = new Date(result[result.length - i]);
-//         }
-//         if (req.params.offset == undefined || req.params.offset == 0) {
-//
-//             result[result.length - i].results.sort(function (m1, m2) {
-//                 return m2.score - m1.score;
-//             });
-//             return res.status(200).send({total: result.length-1, current: result.length-i, competition: result[result.length - i]});
-//
-//         } else {
-//
-//             if(result.length - i + +req.params.offset < 0 || result.length - i + +req.params.offset > result.length - 1){
-//                 return res.status(400).send({error: "index out of bounds"});
-//             }
-//             result[result.length - i + +req.params.offset].results.sort(function (m1, m2) {
-//                 return m2.score - m1.score;
-//             });
-//             return res.status(200).send({total: result.length-1, current: (result.length-i + +req.params.offset), competition: result[result.length - i + +req.params.offset]});
-//
-//         }
-//
-//
-//     });
-// });
-
-/**
  * Create a competition.
  */
-
 //TODO: Delete this later.
 app.post('/', function (req, res) {
+
+    if (res.user.type !== ADMIN) {
+        logResponse(403, "Not authorized to make this request");
+        return res.status(403).send({error: "Not authorized to make this request"});
+    }
+
     var goal = req.body.goal;
     var startDate = day(req.body.start);
     var endDate = day(req.body.end);
@@ -303,6 +309,7 @@ app.post('/', function (req, res) {
 /**
  * change score from specific user in competition
  */
+// TODO: Delete this later
 app.put('/:id/score', function (req, res) {
     var userid = req.body.userid;
     var score = req.body.score;
@@ -332,6 +339,7 @@ app.put('/:id/score', function (req, res) {
 /**
  * change goal for next competition
  */
+// TODO: rename
 app.put('/lastgoal', function (req, res) {
     Competition.find({}, function (err, comps) {
         if (err) {
@@ -361,10 +369,36 @@ app.put('/lastgoal', function (req, res) {
 });
 
 /**
+ * Get the sharedGoal in %
+ */
+// TODO: rename
+app.get('/sharedGoal', function (req, res) {
+
+    Competition.find({}, function (err, competitions) {
+        if (err) {
+            logResponse(500, "Internal server error!");
+            res.status(500).send({error: 'Internal server error!'});
+        }
+        competitions.sort(function (m1, m2) {
+            return m1.start - m2.start;
+        });
+
+        var JSON = {
+            percentage: competitions[competitions.length - 1].sharedGoalProgress,
+            achieved: competitions[competitions.length - 1].sharedGoalAchieved
+        };
+
+        res.status(200).send({success: JSON});
+
+    })
+});
+
+/**
  * Change length for next competition
  *
  */
-app.put('/lastlength',function (req,res) {
+// TODO: rename
+app.put('/lastlength', function (req, res) {
     Competition.find({}, function (err, comps) {
         if (err) {
             console.log(err);
@@ -377,7 +411,12 @@ app.put('/lastlength',function (req,res) {
 
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length}}, {new: 1}, function (err, competition) {
+        Competition.findOneAndUpdate({id: compid}, {
+            $set: {
+                defaultLength: req.body.length,
+                length: req.body.length
+            }
+        }, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 logResponse(500, "Internal server error");
@@ -391,6 +430,7 @@ app.put('/lastlength',function (req,res) {
         });
     });
 });
+
 function generatecompId(callback) {
     var id = Math.ceil((Math.random() * 200 ) + 100);
 
@@ -403,10 +443,22 @@ function generatecompId(callback) {
     });
 }
 
-Date.prototype.addDays = function (days) {
-    var dat = new Date(this.valueOf());
-    dat.setDate(dat.getDate() + days);
-    return dat;
-};
+/**
+ *
+ * @param date
+ * @param splitBy
+ * @returns {*}
+ */
+function getDDMM(date, splitBy) {
+    var day = date.getDate();
+    var month = date.getMonth() + 1;
+    if (day < 10) {
+        day = '0' + day;
+    }
+    if (month < 10) {
+        month = '0' + month;
+    }
+    return day + splitBy + month;
+}
 
 module.exports = app;

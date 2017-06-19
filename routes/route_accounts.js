@@ -27,7 +27,6 @@ const fitbitCallSimple = require('../fitbit').fitbitCallSimple;
 const today = require('../support').today;
 const getYYYYMMDD = require('../support').getYYYYMMDD;
 const logResponse = require('../support').logResponse;
-const validateMail = require('../support').validateMail;
 
 const USER = 1;
 const ADMIN = 2;
@@ -53,7 +52,6 @@ app.get('/testnewuseradmin', function (req, res) {
                 lastname: "user",
                 id: 10001,
                 password: hashed,
-                email: 'geen@mail.nl',
                 active: true,
                 type: ADMIN,
                 birthday: new Date()
@@ -89,12 +87,11 @@ app.get('/testnewuser', function (req, res) {
             }
 
             var account = new User({
-                firstname: "Active",
-                lastname: "User",
-                id: 10004,
+                firstname: "Martje",
+                lastname: "Kasii",
+                id: 10005,
                 password: hashed,
-                email: 'ester@mail.nl',
-                active: true,
+                active: false,
                 type: USER,
                 birthday: date
             });
@@ -280,7 +277,7 @@ app.post('/subscription_callback', function (req, res) {
                 return;
             }
 
-            if (user === undefined) {
+            if (user === undefined || user === null) {
                 console.error('User not found.');
                 return;
             }
@@ -338,8 +335,12 @@ app.post('/subscription_callback', function (req, res) {
                             return;
                         }
 
+                        console.log('Got results...');
+
                         // for every ongoing competition, save the stats of the user
                         comps.forEach(function (c) {
+                            console.log(c);
+
                             // calculate the total steps in the comps time period
                             var stepsSum = 0;
                             for (var j = 0; j < steps.length; j++) {
@@ -350,12 +351,33 @@ app.post('/subscription_callback', function (req, res) {
                                 }
                             }
 
+                            console.log(stepsSum);
+
                             // TODO: calculation subject to change
                             const newScore = user.handicap * stepsSum;
+
+                            // calculate new shared score
+                            var newSharedScore = newScore;
+                            for (var k = 0; k < c.results.length; k++) {
+                                const r = c.results[k];
+                                // count all other scores
+                                if (parseInt(r.userid) !== parseInt(user.id)) {
+                                    newSharedScore += r.score;
+                                }
+                            }
+
+                            console.log(newScore);
+
+                            // set the new scores and stats
                             const set = {
                                 'results.$.score': newScore,
-                                'results.$.goalAchieved': (newScore >= c.goal)
+                                'results.$.goalAchieved': (newScore >= c.goal),
+                                sharedScore: newSharedScore,
+                                sharedGoalProgress: Math.min(100, Math.floor(newSharedScore / c.sharedGoal * 100)),
+                                sharedGoalAchieved: (newSharedScore >= c.sharedGoal)
                             };
+
+                            console.log(set);
 
                             Competition.findOneAndUpdate({
                                 id: c.id,
@@ -385,7 +407,7 @@ app.post('/subscription_callback', function (req, res) {
                             const set = {
                                 'goals.$.progress': stepsSum,
                                 // max 100 percent
-                                'goals.$.percentage': Math.min(100, Math.round(stepsSum / g.goal * 100))
+                                'goals.$.percentage': Math.min(100, Math.floor(stepsSum / g.goal * 100))
                             };
 
                             console.log(set);
@@ -419,12 +441,14 @@ app.get('/:id/goals/ongoing', function (req, res) {
 function getOngoingCompetition(callback) {
     const where = {
         start: {
-            $lt: today()
+            $lte: today()
         },
         end: {
-            $gt: today()
+            $gte: today()
         }
     };
+
+    console.log(where);
 
     Competition.find(where, {}, function (err, comps) {
         if (err) {
@@ -494,17 +518,7 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
 
-        var day = req.body.birthday.substring(0, 2);
-        var month = req.body.birthday.substring(3, 5);
-        var year = req.body.birthday.substring(6, 10);
-        var dateOfBirth = new Date(month + '/' + day + '/' + year);
-
-        var email = req.body.email.toLowerCase();
-
-        if (!validateMail(email)) {
-            logResponse(400, 'Email not valid.');
-            return res.status(400).send({error: "Email address is not valid."});
-        }
+        var dateOfBirth = new Date(req.body.birthday);
 
         if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 2) {
             logResponse(400, 'Type is not valid');
@@ -516,63 +530,44 @@ app.post("/", function (req, res) {
             return res.status(400).send({error: "Handicap is not valid."});
         }
 
-        //find email if found do not make account
-        User.find({email: email}, function (err, user) {
-            if (user.length > 0) {
-                logResponse(400, 'Email already exists');
-                return res.status(400).send({error: "Email address already exists."});
-            }
 
-            generateId(function (id) {
-                bcrypt.genSalt(10, function (err, salt) {
+        generateId(function (id) {
+            bcrypt.genSalt(10, function (err, salt) {
+                if (err) {
+                    logResponse(500, "Can not gen salt: " + err.message);
+                    return res.status(500).send({error: err.message});
+                }
+
+                bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                     if (err) {
-                        logResponse(500, "Can not gen salt: " + err.message);
+                        logResponse(500, "Can not hash account: " + err.message);
                         return res.status(500).send({error: err.message});
                     }
 
-                    bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
+                    const accountDetails = {
+                        firstname: req.body.firstname,
+                        lastname: req.body.lastname,
+                        id: id,
+                        birthday: dateOfBirth,
+                        password: hashed,
+                        active: true,
+                        type: req.body.type
+                    };
+
+                    // if it is a user, add the handicap
+                    if (req.body.type === USER) {
+                        accountDetails.handicap = req.body.handicap;
+                    }
+
+                    const account = new User(accountDetails);
+
+                    account.save(function (err, result) {
                         if (err) {
-                            logResponse(500, "Can not hash account: " + err.message);
+                            logResponse(500, "Can not save account: " + err.message);
                             return res.status(500).send({error: err.message});
                         }
-
-                        var account;
-                        if (req.body.type === ADMIN) {
-
-                            account = new User({
-                                firstname: req.body.firstname,
-                                lastname: req.body.lastname,
-                                id: id,
-                                birthday: dateOfBirth,
-                                password: hashed,
-                                email: email,
-                                active: true,
-                                type: req.body.type
-                            });
-                        }
-                        else {
-                            account = new User({
-                                firstname: req.body.firstname,
-                                lastname: req.body.lastname,
-                                id: id,
-                                birthday: dateOfBirth,
-                                password: hashed,
-                                email: email,
-                                active: true,
-                                type: req.body.type,
-                                handicap: req.body.handicap
-                            });
-                        }
-
-
-                        account.save(function (err, result) {
-                            if (err) {
-                                logResponse(500, "Can not save account: " + err.message);
-                                return res.status(500).send({error: err.message});
-                            }
-                            logResponse(201, "id given");
-                            return res.status(201).send({id: id});
-                        });
+                        logResponse(201, "id given");
+                        return res.status(201).send({id: id});
                     });
                 });
             });
@@ -730,6 +725,56 @@ app.get('/:id/connect', function (req, res) {
         logResponse(201, "authURL created");
         return res.status(201).send({success: authURL});
     });
+});
+
+/**
+ *  Revoke access token and delete the Fitbit from user
+ */
+app.post('/:id/revoke', function (req, res) {
+
+    if (res.user.type !== ADMIN) {
+        logResponse(403, "Not authorized to make this request.");
+        return res.status(403).send({error: "Not authorized to make this request."});
+    }
+
+    if (req.params.id === undefined || isNaN(req.params.id)) {
+        logResponse(400, "Invalid id given.");
+        return res.status(400).send({error: "Invalid id given."});
+    }
+
+    User.findOne({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message})
+        }
+
+        if (user === undefined) {
+            logResponse(404, "User account could not be found.");
+            return res.status(404).send({error: "User account could not be found."});
+        }
+
+        if (user.fitbit === undefined) {
+            logResponse(404, "No connected Fitbit found.");
+            return res.status(404).send({error: "No connected Fitbit found."});
+        }
+
+        const revoke = client.revokeAccessToken(user.fitbit.accessToken);
+        revoke.then(removeFitbit, removeFitbit);
+    });
+
+    function removeFitbit() {
+        User.findOneAndUpdate({id: req.params.id}, {$unset: {fitbit: 1}}, function (err, result) {
+            if (err) {
+                logResponse(500, err.message);
+                return res.status(500).send({error: err.message});
+            }
+            if (result === undefined) {
+                logResponse(404, {error: "User account could not be found."});
+                return res.status(404).send({error: "User account could not be found."});
+            }
+            return res.status(204).send();
+        });
+    }
 });
 
 const OAuthMap = [];

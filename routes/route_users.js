@@ -19,6 +19,42 @@ const getYYYYMMDD = require('../support').getYYYYMMDD;
 
 const ADMIN = 2;
 const USER = 1;
+
+/**
+ * Get the birthdays of the last week
+ */
+app.get('/birthdays', function (req, res) {
+    const weekDay = new Date().getDay();
+    const dayFrom = day(new Date().setDate(new Date().getDate() - (weekDay - 1)));
+    const dayTo = day(new Date().setDate(new Date().getDate() + (7 - weekDay)));
+
+    User.find({type: USER, active: true}, {birthday: 1, firstname: 1, lastname: 1}, function (err, users) {
+        var userBirthdays = [];
+
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({error: err.message})
+        }
+
+        for (var i = 0; i < users.length; i++) {
+            var birthday = getCompareDate(users[i].birthday);
+
+            if (dayFrom <= birthday && birthday <= dayTo) {
+                users[i].birthday = birthday;
+                userBirthdays.push(users[i]);
+            }
+        }
+
+        userBirthdays.sort(function (u1, u2) {
+            return u1.birthday - u2.birthday;
+        });
+
+        logResponse(200, "Users with birthdays returned.");
+        return res.status(200).send({success: userBirthdays});
+    })
+});
+
+
 /**
  * Authorization
  */
@@ -522,27 +558,58 @@ app.put('/:id', function (req, res) {
         json.handicap = req.body.handicap;
     }
 
-    if (!(req.body.active == undefined || req.body.active == '')) {
+    if (!(req.body.active === undefined || req.body.active === '')) {
         if (req.body.active || !req.body.active) {
             json.active = req.body.active;
         }
     }
 
-    if (res.user.type !== ADMIN) {
-        if (+req.params.id !== +res.user.id) {
-            logResponse(403, "Not authorized to make this request");
-            return res.status(403).send({error: 'Not authorized to make this request.'});
-        }
+    if (!(req.body.password === undefined || req.body.password === '')) {
+        genPassword(res, req.body.password, function (password) {
+            json.password = password;
+            console.log(json);
+
+            if (res.user.type !== ADMIN) {
+                if (+req.params.id !== +res.user.id) {
+                    logResponse(403, "Not authorized to make this request");
+                    return res.status(403).send({error: 'Not authorized to make this request.'});
+                }
+            }
+
+            //Update user in database
+            User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
+                if (err) {
+                    logResponse(500, err.message);
+                    return res.status(500).send({error: err.message})
+                }
+
+                if (user === null) {
+                    logResponse(404, "User account could not be found.");
+                    return res.status(404).send({error: "User account could not be found."});
+                }
+
+                if (user.length === 0) {
+                    logResponse(404, "User account could not be found.");
+                    return res.status(404).send({error: "User account could not be found."});
+                }
+
+                logResponse(200, 'Information is updated.');
+                return res.status(200).send({success: 'Information is updated.'});
+            });
+        });
     } else {
 
-    }
+        console.log(json);
 
+        if (res.user.type !== ADMIN) {
+            if (+req.params.id !== +res.user.id) {
+                logResponse(403, "Not authorized to make this request");
+                return res.status(403).send({error: 'Not authorized to make this request.'});
+            }
+        }
 
-    User.findOneAndUpdate({id: req.params.id},
-        {
-            $set: json
-        }, function (err, user) {
-
+        //Update user in database
+        User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
             if (err) {
                 logResponse(500, err.message);
                 return res.status(500).send({error: err.message})
@@ -560,7 +627,8 @@ app.put('/:id', function (req, res) {
 
             logResponse(200, 'Information is updated.');
             return res.status(200).send({success: 'Information is updated.'});
-        })
+        });
+    }
 });
 
 /**
@@ -617,7 +685,7 @@ app.put('/:id/active/', function (req, res) {
         return res.status(403).send({error: "User is not authorized to make this request"});
     }
 
-    if (req.params.id === undefined || req.body.id == '' || isNaN(req.params.id) || req.body.active == undefined || req.body.active == '') {
+    if (req.params.id === undefined || req.body.id === '' || isNaN(req.params.id) || req.body.active == undefined || req.body.active == '') {
         logResponse(400, "Id not provided or id is not a number.");
         return res.status(400).send({error: "Id not provided or id is not a number."});
     }
@@ -644,5 +712,29 @@ app.put('/:id/active/', function (req, res) {
         }
     }
 });
+
+
+function genPassword(res, password, callback) {
+
+    bcrypt.genSalt(10, function (err, salt) {
+        if (err) {
+            logResponse(500, "Can not gen salt: " + err.message);
+            return res.status(500).send({error: err.message});
+        }
+
+        bcrypt.hash(password, salt, undefined, function (err, hashed) {
+            if (err) {
+                logResponse(500, "Can not hash account: " + err.message);
+                return res.status(500).send({error: err.message});
+            }
+
+            callback(hashed);
+        });
+    });
+}
+
+function getCompareDate(birthdate) {
+    return compareDate = Date.UTC(new Date().getFullYear(), birthdate.getMonth(), birthdate.getDate(), 0, 0, 0, 0);
+}
 
 module.exports = app;
