@@ -503,11 +503,15 @@ app.put('/:id', function (req, res) {
     }
 
     if (!( req.body.firstname === '' || req.body.firstname === undefined)) {
-        json.firstname = req.body.firstname;
+        if(req.body.firstname.length < 50) {
+            json.firstname = req.body.firstname;
+        }
     }
 
     if (!( req.body.lastname === '' || req.body.lastname === undefined)) {
-        json.lastname = req.body.lastname;
+        if(req.body.firstname.length < 50) {
+            json.lastname = req.body.lastname;
+        }
     }
 
     if (!( req.body.handicap === '' || req.body.handicap === undefined)) {
@@ -523,8 +527,6 @@ app.put('/:id', function (req, res) {
             json.active = req.body.active;
         }
     }
-
-    console.log(json);
 
     if (res.user.type !== ADMIN) {
         if (+req.params.id !== +res.user.id) {
