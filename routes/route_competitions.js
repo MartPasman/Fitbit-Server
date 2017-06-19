@@ -38,7 +38,7 @@ app.delete('/', function (req, res) {
 
         // sort them by end date
         result.sort(function (c1, c2) {
-            return c1.end - c2.end;
+            return c2.end - c1.end;
         });
 
         const id = result[0].id;
