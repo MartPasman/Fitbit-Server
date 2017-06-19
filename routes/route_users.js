@@ -28,7 +28,7 @@ app.get('/birthdays', function (req, res) {
     const dayFrom = day(new Date().setDate(new Date().getDate() - (weekDay - 1)));
     const dayTo = day(new Date().setDate(new Date().getDate() + (7 - weekDay)));
 
-    User.find({type: USER}, {birthday: 1, firstname: 1, lastname: 1}, function (err, users) {
+    User.find({type: USER, active: true}, {birthday: 1, firstname: 1, lastname: 1}, function (err, users) {
         var userBirthdays = [];
 
         if (err) {
@@ -37,12 +37,9 @@ app.get('/birthdays', function (req, res) {
         }
 
         for (var i = 0; i < users.length; i++) {
-            // var today = users[i].birthday.getDate();
-            // var month = users[i].birthday.getMonth();
             var birthday = getCompareDate(users[i].birthday);
 
             if (dayFrom <= birthday && birthday <= dayTo) {
-                //todo nodig? 
                 users[i].birthday = birthday;
                 userBirthdays.push(users[i]);
             }
@@ -542,11 +539,15 @@ app.put('/:id', function (req, res) {
     }
 
     if (!( req.body.firstname === '' || req.body.firstname === undefined)) {
-        json.firstname = req.body.firstname;
+        if(req.body.firstname.length < 50) {
+            json.firstname = req.body.firstname;
+        }
     }
 
     if (!( req.body.lastname === '' || req.body.lastname === undefined)) {
-        json.lastname = req.body.lastname;
+        if(req.body.firstname.length < 50) {
+            json.lastname = req.body.lastname;
+        }
     }
 
     if (!( req.body.handicap === '' || req.body.handicap === undefined)) {

@@ -21,6 +21,32 @@ const ADMIN = 2;
 const USER = 1;
 
 // app.get();
+// TODO: remove later
+app.delete('/', function (req, res) {
+    // get all competitions
+    Competition.find({}, {results: 0, length: 0, defaultGoal: 0, defaultLength: 0, goal: 0}, function (err, result) {
+        // MongoDB error
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({message: err.message});
+        }
+
+        // if no competitions were found
+        if (result.length === 0) {
+            logResponse(404, 'No competitions found.');
+            return res.status(404).send({message: 'No competitions found.'});
+        }
+
+        // sort them by end date
+        result.sort(function (c1, c2) {
+            return c2.end - c1.end;
+        });
+
+        const id = result[0].id;
+        Competition.findOne({id: id}).remove().exec();
+        console.log('Removed comp with id: ' + id);
+    });
+});
 
 /**
  * must be logged in as administrator
@@ -28,7 +54,6 @@ const USER = 1;
 app.use('/', function (req, res, next) {
 
     console.log('\tAuthentication required...');
-    console.log(req.app.get('private-key'));
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
@@ -41,6 +66,51 @@ app.use('/', function (req, res, next) {
         console.log('\tpassed');
 
         next();
+    });
+});
+
+/**
+ * Get the latest seven shared goals and there progress and score
+ */
+app.get('/shared', function (req, res) {
+
+    // get all competitions
+    Competition.find({}, {results: 0, length: 0, defaultGoal: 0, defaultLength: 0, goal: 0}, function (err, result) {
+        // MongoDB error
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({message: err.message});
+        }
+
+        // if no competitions were found
+        if (result.length === 0) {
+            logResponse(404, 'No competitions found.');
+            return res.status(404).send({message: 'No competitions found.'});
+        }
+
+        // sort them by end date
+        result.sort(function (c1, c2) {
+            return c1.end - c2.end;
+        });
+
+        console.log(result);
+
+        // just get seven
+        const lastSeven = [];
+        for (var i = Math.max(0, result.length - 7); (i < Math.max(0, result.length - 7) + 7 && i < result.length); i++) {
+            var start = getDDMM(result[i].start, '/');
+            var end = getDDMM(result[i].end, '/');
+            lastSeven.push({
+                goal: result[i].sharedGoal,
+                score: result[i].sharedScore,
+                period: start + ' - ' + end,
+                achieved: result[i].sharedGoalAchieved,
+                progress: result[i].sharedGoalProgress
+            });
+        }
+
+        logResponse(200, 'Returned goals');
+        return res.status(200).send({success: lastSeven});
     });
 });
 
@@ -132,12 +202,12 @@ app.get('/', function (req, res) {
             if (result[result.length - 1].end < today()) {
                 var defaultGoal = result[result.length - 1].defaultGoal;
                 var defaultLength = result[result.length - 1].defaultLength;
-                var defaultSharedGoal = result[result.length-1].defaultSharedGoal;
+                var defaultSharedGoal = result[result.length - 1].defaultSharedGoal;
 
                 //create new competition.
                 generatecompId(function (id) {
-                    var date = new Date();
-                    var end_date = new Date();
+                    var date = today();
+                    var end_date = today();
                     end_date = end_date.setDate(date.getDate() + defaultLength);
 
                     //create results
@@ -338,8 +408,8 @@ app.get('/sharedGoal', function (req, res) {
         });
         //create json
         var JSON = {
-            percentage: competitions[competitions.length-1].sharedGoalProcess,
-            achieved: competitions[competitions.length-1].sharedGoalAchieved
+            percentage: competitions[competitions.length - 1].sharedGoalProgress,
+            achieved: competitions[competitions.length - 1].sharedGoalAchieved
         };
 
         res.status(200).send({success: JSON});
@@ -364,7 +434,12 @@ app.put('/changelength', function (req, res) {
 
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length}}, {new: 1}, function (err, competition) {
+        Competition.findOneAndUpdate({id: compid}, {
+            $set: {
+                defaultLength: req.body.length,
+                length: req.body.length
+            }
+        }, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 logResponse(500, "Internal server error");
@@ -378,6 +453,7 @@ app.put('/changelength', function (req, res) {
         });
     });
 });
+
 function generatecompId(callback) {
     var id = Math.ceil((Math.random() * 200 ) + 100);
 
@@ -390,10 +466,22 @@ function generatecompId(callback) {
     });
 }
 
-Date.prototype.addDays = function (days) {
-    var dat = new Date(this.valueOf());
-    dat.setDate(dat.getDate() + days);
-    return dat;
-};
+/**
+ *
+ * @param date
+ * @param splitBy
+ * @returns {*}
+ */
+function getDDMM(date, splitBy) {
+    var day = date.getDate();
+    var month = date.getMonth() + 1;
+    if (day < 10) {
+        day = '0' + day;
+    }
+    if (month < 10) {
+        month = '0' + month;
+    }
+    return day + splitBy + month;
+}
 
 module.exports = app;

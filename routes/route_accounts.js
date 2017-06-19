@@ -13,8 +13,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-const WEBAPP = 'http://127.0.0.1';
-// const WEBAPP = 'http://178.21.116.109';
+// const WEBAPP = 'http://127.0.0.1';
+const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -277,7 +277,7 @@ app.post('/subscription_callback', function (req, res) {
                 return;
             }
 
-            if (user === undefined) {
+            if (user === undefined || user === null) {
                 console.error('User not found.');
                 return;
             }
@@ -335,8 +335,12 @@ app.post('/subscription_callback', function (req, res) {
                             return;
                         }
 
+                        console.log('Got results...');
+
                         // for every ongoing competition, save the stats of the user
                         comps.forEach(function (c) {
+                            console.log(c);
+
                             // calculate the total steps in the comps time period
                             var stepsSum = 0;
                             for (var j = 0; j < steps.length; j++) {
@@ -346,6 +350,8 @@ app.post('/subscription_callback', function (req, res) {
                                     stepsSum += parseInt(steps[j].value);
                                 }
                             }
+
+                            console.log(stepsSum);
 
                             // TODO: calculation subject to change
                             const newScore = user.handicap * stepsSum;
@@ -360,14 +366,18 @@ app.post('/subscription_callback', function (req, res) {
                                 }
                             }
 
+                            console.log(newScore);
+
                             // set the new scores and stats
                             const set = {
                                 'results.$.score': newScore,
                                 'results.$.goalAchieved': (newScore >= c.goal),
                                 sharedScore: newSharedScore,
-                                sharedGoalProgress: Math.floor(newSharedScore / c.sharedGoal * 100),
+                                sharedGoalProgress: Math.min(100, Math.floor(newSharedScore / c.sharedGoal * 100)),
                                 sharedGoalAchieved: (newSharedScore >= c.sharedGoal)
                             };
+
+                            console.log(set);
 
                             Competition.findOneAndUpdate({
                                 id: c.id,
@@ -397,7 +407,7 @@ app.post('/subscription_callback', function (req, res) {
                             const set = {
                                 'goals.$.progress': stepsSum,
                                 // max 100 percent
-                                'goals.$.percentage': Math.min(100, Math.round(stepsSum / g.goal * 100))
+                                'goals.$.percentage': Math.min(100, Math.floor(stepsSum / g.goal * 100))
                             };
 
                             console.log(set);
@@ -431,12 +441,14 @@ app.get('/:id/goals/ongoing', function (req, res) {
 function getOngoingCompetition(callback) {
     const where = {
         start: {
-            $lt: today()
+            $lte: today()
         },
         end: {
-            $gt: today()
+            $gte: today()
         }
     };
+
+    console.log(where);
 
     Competition.find(where, {}, function (err, comps) {
         if (err) {
@@ -499,18 +511,14 @@ app.post("/", function (req, res) {
 
     //check if all fields are entered
     if (req.body.firstname && req.body.lastname && req.body.password && req.body.birthday &&
-        req.body.type) {
+        req.body.type && req.body.firstname.length < 50 && req.body.lastname.length < 50) {
 
         if (req.body.password.length < 8) {
             logResponse(400, 'Password too short.');
             return res.status(400).send({error: "Password must be at least 8 characters long."});
         }
 
-        var day = req.body.birthday.substring(0, 2);
-        var month = req.body.birthday.substring(3, 5);
-        var year = req.body.birthday.substring(6, 10);
-        var dateOfBirth = new Date(month + '/' + day + '/' + year);
-
+        var dateOfBirth = new Date(req.body.birthday);
 
         if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 2) {
             logResponse(400, 'Type is not valid');
@@ -536,32 +544,22 @@ app.post("/", function (req, res) {
                         return res.status(500).send({error: err.message});
                     }
 
-                    var account;
-                    if (req.body.type === ADMIN) {
+                    const accountDetails = {
+                        firstname: req.body.firstname,
+                        lastname: req.body.lastname,
+                        id: id,
+                        birthday: dateOfBirth,
+                        password: hashed,
+                        active: true,
+                        type: req.body.type
+                    };
 
-                        account = new User({
-                            firstname: req.body.firstname,
-                            lastname: req.body.lastname,
-                            id: id,
-                            birthday: dateOfBirth,
-                            password: hashed,
-                            active: true,
-                            type: req.body.type
-                        });
-                    }
-                    else {
-                        account = new User({
-                            firstname: req.body.firstname,
-                            lastname: req.body.lastname,
-                            id: id,
-                            birthday: dateOfBirth,
-                            password: hashed,
-                            active: true,
-                            type: req.body.type,
-                            handicap: req.body.handicap
-                        });
+                    // if it is a user, add the handicap
+                    if (req.body.type === USER) {
+                        accountDetails.handicap = req.body.handicap;
                     }
 
+                    const account = new User(accountDetails);
 
                     account.save(function (err, result) {
                         if (err) {
