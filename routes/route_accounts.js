@@ -335,6 +335,8 @@ app.post('/subscription_callback', function (req, res) {
                             return;
                         }
 
+                        console.log('Got results...');
+
                         // for every ongoing competition, save the stats of the user
                         comps.forEach(function (c) {
                             console.log(c);
@@ -349,6 +351,8 @@ app.post('/subscription_callback', function (req, res) {
                                 }
                             }
 
+                            console.log(stepsSum);
+
                             // TODO: calculation subject to change
                             const newScore = user.handicap * stepsSum;
 
@@ -362,6 +366,8 @@ app.post('/subscription_callback', function (req, res) {
                                 }
                             }
 
+                            console.log(newScore);
+
                             // set the new scores and stats
                             const set = {
                                 'results.$.score': newScore,
@@ -370,6 +376,8 @@ app.post('/subscription_callback', function (req, res) {
                                 sharedGoalProgress: Math.min(100, Math.floor(newSharedScore / c.sharedGoal * 100)),
                                 sharedGoalAchieved: (newSharedScore >= c.sharedGoal)
                             };
+
+                            console.log(set);
 
                             Competition.findOneAndUpdate({
                                 id: c.id,
