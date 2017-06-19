@@ -20,6 +20,33 @@ const today = require('../support').today;
 const ADMIN = 2;
 const USER = 1;
 
+// TODO: remove later
+app.delete('/', function (req, res) {
+    // get all competitions
+    Competition.find({}, {results: 0, length: 0, defaultGoal: 0, defaultLength: 0, goal: 0}, function (err, result) {
+        // MongoDB error
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({message: err.message});
+        }
+
+        // if no competitions were found
+        if (result.length === 0) {
+            logResponse(404, 'No competitions found.');
+            return res.status(404).send({message: 'No competitions found.'});
+        }
+
+        // sort them by end date
+        result.sort(function (c1, c2) {
+            return c1.end - c2.end;
+        });
+
+        const id = result[0].id;
+        Competition.findOne({id: id}).remove().exec();
+        console.log('Removed comp with id: ' + id);
+    });
+});
+
 /**
  * must be logged in as administrator
  */
@@ -161,8 +188,8 @@ app.get('/', function (req, res) {
 
                 //create new competition.
                 generatecompId(function (id) {
-                    var date = new Date();
-                    var end_date = new Date();
+                    var date = today();
+                    var end_date = today();
                     end_date = end_date.setDate(date.getDate() + defaultLength);
 
                     //create results
