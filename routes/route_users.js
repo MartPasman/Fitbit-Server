@@ -33,7 +33,7 @@ app.get('/birthdays', function (req, res) {
 
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message})
+            return res.status(500).send({message: err.message})
         }
 
         for (var i = 0; i < users.length; i++) {
@@ -63,7 +63,7 @@ app.use('/', function (req, res, next) {
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
-            return res.status(401).send({error: 'User is not logged in'});
+            return res.status(401).send({message: 'User is not logged in'});
         }
 
         res.user = decoded._doc;
@@ -142,13 +142,13 @@ app.get('/:id/export/:start/:end', function (req, res) {
     // validate start date and end date
     if (isNaN(Date.parse(start)) || isNaN(Date.parse(end))) {
         logResponse(400, 'Required fields are missing or invalid.');
-        return res.status(400).send({error: 'Required fields are missing or invalid.'});
+        return res.status(400).send({message: 'Required fields are missing or invalid.'});
     }
 
     // if the end date lies in the future
     if (new Date(end) > today()) {
         logResponse(400, 'End date lies in the future.');
-        return res.status(400).send({error: 'End date lies in the future.'});
+        return res.status(400).send({message: 'End date lies in the future.'});
     }
 
     // note: Fitbit will check for us if the end date is before the start date
@@ -171,25 +171,25 @@ app.get('/:id/export/sincelast', function (req, res) {
     // validate id, start date and end date
     if (isNaN(id)) {
         logResponse(400, 'Required fields are missing or invalid.');
-        return res.status(400).send({error: 'Required fields are missing or invalid.'});
+        return res.status(400).send({message: 'Required fields are missing or invalid.'});
     }
 
     User.findOne({id: id}, {lastExport: true}, function (err, user) {
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         // if the user does not exist
         if (user === undefined || user === null) {
             logResponse(404, 'User not found.');
-            return res.status(404).send({error: 'User not found.'});
+            return res.status(404).send({message: 'User not found.'});
         }
 
         // if there has not been a previous export
         if (user.lastExport === undefined) {
             logResponse(412, 'User has not exported before.');
-            return res.status(412).send({error: 'User has not exported before.', type: 2});
+            return res.status(412).send({message: 'User has not exported before.', type: 2});
         }
 
         const start = getYYYYMMDD(user.lastExport, '-');
@@ -250,7 +250,7 @@ function getExportData(req, res, id, start, end, callback) {
             User.findOne({id: id}, {goals: true}, function (err, user) {
                 if (err) {
                     logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
+                    return res.status(500).send({message: err.message});
                 }
 
                 // fitbitCall() already checks if the user exists
@@ -258,7 +258,7 @@ function getExportData(req, res, id, start, end, callback) {
                 // if the goals do not exist
                 if (user.goals === undefined) {
                     logResponse(404, 'Goals not found.');
-                    return res.status(404).send({error: 'Goals not found.'});
+                    return res.status(404).send({message: 'Goals not found.'});
                 }
 
                 var startDate = day(start);
@@ -292,7 +292,7 @@ function getExportData(req, res, id, start, end, callback) {
 app.put('/:id/export', function (req, res) {
     if (isNaN(req.params.id)) {
         logResponse(400, 'Invalid id.');
-        res.status(400).send({error: 'Invalid id.'});
+        res.status(400).send({message: 'Invalid id.'});
     }
 
     updateLastExportDate(req.params.id);
@@ -310,13 +310,13 @@ app.get('/:id/goals/:gid?', function (req, res) {
             // Check to see whether an error occurred
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             // Check to see whether a user was found
             if (!result) {
                 logResponse(404, 'User or goal wasnot found');
-                return res.status(404).send({error: "User or goal was not found"});
+                return res.status(404).send({message: "User or goal was not found"});
             }
 
             logResponse(200, 'Goal found and send');
@@ -329,25 +329,25 @@ app.get('/:id/goals/:gid?', function (req, res) {
 
         if (req.query.offset === undefined || isNaN(req.query.offset) || req.query.limit === undefined || isNaN(req.query.limit)) {
             logResponse(400, 'No offset or limit supplied');
-            return res.status(400).send({error: "No offset or limit supplied"});
+            return res.status(400).send({message: "No offset or limit supplied"});
         }
 
         User.findOne({id: req.params.id}, function (err, result) {
             // Check to see whether an error occurred
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             // Check to see whether a user was found
             if (!result) {
                 logResponse(404, 'User not found');
-                return res.status(404).send({error: "User not found"});
+                return res.status(404).send({message: "User not found"});
             }
 
             if (req.query.offset > result.goals.length) {
                 logResponse(400, 'Offset exceeded goals');
-                return res.status(400).send({error: "Offset exceeded goals"});
+                return res.status(400).send({message: "Offset exceeded goals"});
             }
 
             // changed to sort End date to have pending goals next to each other
@@ -382,12 +382,12 @@ app.post('/:id/goals', function (req, res) {
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' ||
         req.body.goal === undefined || isNaN(req.body.goal) || req.body.goal < 1) {
         logResponse(400, 'Invalid request values.');
-        return res.status(400).send({error: 'Invalid request values.'});
+        return res.status(400).send({message: 'Invalid request values.'});
     }
 
     if ((new Date(req.body.start)) > (new Date(req.body.end))) {
         logResponse(400, 'End date is before start date.');
-        return res.status(400).send({error: 'End date is before start date.'});
+        return res.status(400).send({message: 'End date is before start date.'});
     }
 
     var json = {
@@ -400,13 +400,13 @@ app.post('/:id/goals', function (req, res) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         // Check to see whether a user was found
         if (!result) {
             logResponse(404, 'User not found');
-            return res.status(404).send({error: "User not found"});
+            return res.status(404).send({message: "User not found"});
         }
 
         logResponse(201, 'Goal saved.');
@@ -425,12 +425,12 @@ app.put('/:id/goals/:gid', function (req, res) {
         req.body.end === undefined || req.body.end === '' || req.body.id === '' || req.body.start === '' || req.body.goal === undefined || req.body.goal === ''
         || isNaN(req.body.goal) || req.params.gid === undefined) {
         logResponse(400, 'Invalid request values.');
-        return res.status(400).send({error: 'Invalid request values.'});
+        return res.status(400).send({message: 'Invalid request values.'});
     }
 
     if ((new Date(req.body.start)) < (new Date(req.body.end))) {
         logResponse(400, 'End date is before start date.');
-        return res.status(400).send({error: 'End date is before start date.'});
+        return res.status(400).send({message: 'End date is before start date.'});
     }
 
     User.findOneAndUpdate({id: req.params.id, 'goals._id': mongoose.Types.ObjectId(req.params.gid)},
@@ -444,13 +444,13 @@ app.put('/:id/goals/:gid', function (req, res) {
             // Check to see whether an error occurred
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             // Check to see whether a user was found
             if (!result) {
                 logResponse(404, 'User not found');
-                return res.status(404).send({error: "User not found"});
+                return res.status(404).send({message: "User not found"});
             }
 
             return res.status(201).send({
@@ -467,20 +467,20 @@ app.delete('/:id/goals/:gid', function (req, res) {
     if (req.params.id === undefined || isNaN(req.params.id) ||
         req.params.gid === undefined) {
         logResponse(400, 'No id supplied');
-        return res.status(400).send({error: "No id sup plied"});
+        return res.status(400).send({message: "No id sup plied"});
     }
 
     User.update({id: req.params.id}, {$pull: {goals: {_id: mongoose.Types.ObjectId(req.params.gid)}}}, function (err, result) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         // Check to see whether a user was found
         if (!result) {
             logResponse(404, 'User not found');
-            return res.status(404).send({error: "User not found"});
+            return res.status(404).send({message: "User not found"});
         }
 
         logResponse(201, 'Goal removed');
@@ -498,23 +498,23 @@ app.get('/:id', function (req, res) {
 
     if (isNaN(id)) {
         logResponse(400, 'id is not defined');
-        return res.status(400).send({error: 'id is not defined'});
+        return res.status(400).send({message: 'id is not defined'});
     }
 
     if (res.user.type !== ADMIN && +req.params.id !== +res.user.id) {
         logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: 'Not authorized to make this request'});
+        return res.status(403).send({message: 'Not authorized to make this request'});
     }
 
     User.findOne({id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message})
+            return res.status(500).send({message: err.message})
         }
 
         if (user === undefined) {
             logResponse(404, "User account could not be found");
-            return res.status(404).send({error: "User account could not be found"});
+            return res.status(404).send({message: "User account could not be found"});
         }
 
         logResponse(200, "user returned");
@@ -523,113 +523,109 @@ app.get('/:id', function (req, res) {
 });
 
 /**
- *
+ * Update the details of a user with a certain id
  */
 app.put('/:id', function (req, res) {
 
-    if (req.params.id === '' || req.params.id === undefined) {
+    // user must be an admin to change another user
+    if (res.user.type !== ADMIN && +req.params.id !== +res.user.id) {
+        logResponse(403, 'Not authorized to make this request');
+        return res.status(403).send({message: 'Not authorized to make this request.'});
+    }
+
+    if (req.params.id === '' || req.params.id === undefined || isNaN(parseInt(req.params.id))) {
         logResponse(400, 'id is not defined');
-        return res.status(400).send({error: 'Id is not defined.'});
+        return res.status(400).send({message: 'Id is not defined.'});
     }
 
     var json = {};
 
-    if (!(req.body.birthday === '' || req.body.birthday === undefined)) {
-        json.birthday = day(req.body.birthday);
-    }
-
-    if (!( req.body.firstname === '' || req.body.firstname === undefined)) {
-        if(req.body.firstname.length < 50) {
-            json.firstname = req.body.firstname;
+    // if the birthday was provided
+    if (req.body.birthday !== '' && req.body.birthday !== undefined) {
+        // if the birthday is in the future or before 1900
+        if (new Date(req.body.birthday) >= today() || new Date(req.body.birthday) < new Date('1900-01-01')) {
+            logResponse(400, 'Birthday is not valid.');
+            return res.status(400).send({message: 'Birthday is not valid.'});
         }
+        json.birthday = req.body.birthday;
     }
 
-    if (!( req.body.lastname === '' || req.body.lastname === undefined)) {
-        if(req.body.firstname.length < 50) {
-            json.lastname = req.body.lastname;
+    // if the first name was provided
+    if (req.body.firstname !== '' && req.body.firstname !== undefined) {
+        // if the first name is too long
+        if (req.body.firstname.length >= 50) {
+            logResponse(400, 'First name is too long.');
+            return res.status(400).send({message: 'First name is too long.'});
         }
+        json.firstname = req.body.firstname;
     }
 
-    if (!( req.body.handicap === '' || req.body.handicap === undefined)) {
+    // if the last name was provided
+    if (req.body.lastname !== '' && req.body.lastname !== undefined) {
+        // if the last name is too long
+        if (req.body.lastname.length >= 50) {
+            logResponse(400, 'Last name is too long.');
+            return res.status(400).send({message: 'Last name is too long.'});
+        }
+        json.lastname = req.body.lastname;
+    }
+
+    // if the handicap was provided
+    if (req.body.handicap !== '' && req.body.handicap !== undefined && !isNaN(parseInt(req.body.handicap))) {
+        // if the handicap is not valid
         if (req.body.handicap < 1 || req.body.handicap > 3) {
-            logResponse(400, "Handicap is not valid.");
-            return res.status(400).send({error: "Handicap is not valid."});
+            logResponse(400, 'Handicap is not valid.');
+            return res.status(400).send({message: 'Handicap is not valid.'});
         }
         json.handicap = req.body.handicap;
     }
 
+    // if the active state was provided
     if (!(req.body.active === undefined || req.body.active === '')) {
-        if (req.body.active || !req.body.active) {
+        // if it is a boolean
+        if (req.body.active instanceof Boolean) {
             json.active = req.body.active;
         }
     }
 
+    // if the password needs to be changed
     if (!(req.body.password === undefined || req.body.password === '')) {
+        // generate the salt
         genPassword(res, req.body.password, function (password) {
             json.password = password;
-            console.log(json);
 
-            if (res.user.type !== ADMIN) {
-                if (+req.params.id !== +res.user.id) {
-                    logResponse(403, "Not authorized to make this request");
-                    return res.status(403).send({error: 'Not authorized to make this request.'});
-                }
-            }
-
-            //Update user in database
-            User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
-                if (err) {
-                    logResponse(500, err.message);
-                    return res.status(500).send({error: err.message})
-                }
-
-                if (user === null) {
-                    logResponse(404, "User account could not be found.");
-                    return res.status(404).send({error: "User account could not be found."});
-                }
-
-                if (user.length === 0) {
-                    logResponse(404, "User account could not be found.");
-                    return res.status(404).send({error: "User account could not be found."});
-                }
-
-                logResponse(200, 'Information is updated.');
-                return res.status(200).send({success: 'Information is updated.'});
-            });
+            updateUser(req, res, req.params.id, json);
         });
     } else {
-
-        console.log(json);
-
-        if (res.user.type !== ADMIN) {
-            if (+req.params.id !== +res.user.id) {
-                logResponse(403, "Not authorized to make this request");
-                return res.status(403).send({error: 'Not authorized to make this request.'});
-            }
-        }
-
-        //Update user in database
-        User.findOneAndUpdate({id: req.params.id}, {$set: json}, function (err, user) {
-            if (err) {
-                logResponse(500, err.message);
-                return res.status(500).send({error: err.message})
-            }
-
-            if (user === null) {
-                logResponse(404, "User account could not be found.");
-                return res.status(404).send({error: "User account could not be found."});
-            }
-
-            if (user.length === 0) {
-                logResponse(404, "User account could not be found.");
-                return res.status(404).send({error: "User account could not be found."});
-            }
-
-            logResponse(200, 'Information is updated.');
-            return res.status(200).send({success: 'Information is updated.'});
-        });
+        // just update the user
+        updateUser(req, res, req.params.id, json);
     }
 });
+
+/**
+ * Update user in database
+ * @param req
+ * @param res
+ * @param id
+ * @param json
+ */
+function updateUser(req, res, id, json) {
+
+    User.findOneAndUpdate({id: id}, {$set: json}, function (err, user) {
+        if (err) {
+            logResponse(500, err.message);
+            return res.status(500).send({message: err.message})
+        }
+
+        if (user === undefined || user === null) {
+            logResponse(404, 'User account could not be found.');
+            return res.status(404).send({message: 'User account could not be found.'});
+        }
+
+        logResponse(200, 'Information is updated.');
+        return res.status(200).send({success: 'Information is updated.'});
+    });
+}
 
 /**
  *
@@ -638,23 +634,23 @@ app.put('/:id/handicap', function (req, res) {
 
     if (res.user.type !== ADMIN) {
         logResponse(403, "User is not authorized to make this request");
-        return res.status(403).send({error: "User is not authorized to make this request"});
+        return res.status(403).send({message: "User is not authorized to make this request"});
     }
 
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, "Id not provided or id is not a number.");
-        return res.status(400).send({error: "Id not provided or id is not a number."});
+        return res.status(400).send({message: "Id not provided or id is not a number."});
     }
     else {
 
         if (req.body.handicap === undefined) {
             logResponse(400, "Handicap is not given.");
-            return res.status(400).send({error: "Handicap is not given."});
+            return res.status(400).send({message: "Handicap is not given."});
         }
 
         if (req.body.handicap < 1 || req.body.handicap > 3) {
             logResponse(400, "Handicap is not valid.");
-            return res.status(400).send({error: "Handicap is not valid."});
+            return res.status(400).send({message: "Handicap is not valid."});
         }
 
         User.findOneAndUpdate({
@@ -663,11 +659,11 @@ app.put('/:id/handicap', function (req, res) {
         }, {$set: {handicap: req.body.handicap}}, function (err, result) {
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
             if (!result) {
                 logResponse(404, "User could not be found.");
-                return res.status(404).send({error: "User could not be found."});
+                return res.status(404).send({message: "User could not be found."});
             }
             logResponse(200, "User successfully updated.");
             return res.status(200).send({success: "User successfully updated."});
@@ -682,12 +678,12 @@ app.put('/:id/active/', function (req, res) {
 
     if (res.user.type !== 2) {
         logResponse(403, "User is not authorized to make this request");
-        return res.status(403).send({error: "User is not authorized to make this request"});
+        return res.status(403).send({message: "User is not authorized to make this request"});
     }
 
     if (req.params.id === undefined || req.body.id === '' || isNaN(req.params.id) || req.body.active == undefined || req.body.active == '') {
         logResponse(400, "Id not provided or id is not a number.");
-        return res.status(400).send({error: "Id not provided or id is not a number."});
+        return res.status(400).send({message: "Id not provided or id is not a number."});
     }
     else {
 
@@ -697,18 +693,18 @@ app.put('/:id/active/', function (req, res) {
             }, {$set: {active: req.body.active}}, function (err, result) {
                 if (err) {
                     logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
+                    return res.status(500).send({message: err.message});
                 }
                 if (!result) {
                     logResponse(404, "User could not be found.");
-                    return res.status(404).send({error: "User could not be found."});
+                    return res.status(404).send({message: "User could not be found."});
                 }
                 logResponse(200, "User successfully updated.");
                 return res.status(200).send({success: "User successfully updated."});
             })
         } else {
             logResponse(400, "active is not a boolean");
-            return res.status(400).send({error: "active is not a boolean"});
+            return res.status(400).send({message: "active is not a boolean"});
         }
     }
 });
@@ -719,13 +715,13 @@ function genPassword(res, password, callback) {
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, "Can not gen salt: " + err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         bcrypt.hash(password, salt, undefined, function (err, hashed) {
             if (err) {
                 logResponse(500, "Can not hash account: " + err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             callback(hashed);

@@ -17,7 +17,7 @@ app.get('/webhook', function (req, res) {
 
     if (req.query.verify === undefined) {
         logResponse(400, 'No verify query parameter provided.');
-        return res.status(400).send({error: 'No verify query parameter provided.'});
+        return res.status(400).send({message: 'No verify query parameter provided.'});
     }
 
     if (req.query.verify === verificationCode) {
@@ -25,7 +25,7 @@ app.get('/webhook', function (req, res) {
         return res.status(204).send();
     } else {
         logResponse(404, 'Verification code incorrect.');
-        return res.status(404).send({error: 'Verification code incorrect.'});
+        return res.status(404).send({message: 'Verification code incorrect.'});
     }
 });
 
@@ -35,18 +35,18 @@ app.get('/:id/refresh', function (req, res) {
     User.findOne({id: req.params.id}, {fitbit: 1}, function (error, result) {
         if (error) {
             logResponse(500, error.message);
-            return res.status(500).send({error: error.message});
+            return res.status(500).send({message: error.message});
         }
 
         if (result === undefined) {
             logResponse(404, 'User not found.');
-            return res.status(404).send({error: 'User not found.'});
+            return res.status(404).send({message: 'User not found.'});
         }
 
         if (result.fitbit === undefined || result.fitbit.userid === undefined ||
             result.fitbit.accessToken === undefined || result.fitbit.refreshToken === undefined) {
             logResponse(412, 'User not connected to a Fitbit.');
-            return res.status(412).send({error: 'User not connected to a Fitbit.'});
+            return res.status(412).send({message: 'User not connected to a Fitbit.'});
         }
 
         require('../fitbit').doRefreshToken(req.params.id, result.fitbit.accessToken, result.fitbit.refreshToken, function (success) {

@@ -38,13 +38,13 @@ app.get('/testnewuseradmin', function (req, res) {
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         bcrypt.hash(password, salt, undefined, function (err, hashed) {
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             var account = new User({
@@ -60,7 +60,7 @@ app.get('/testnewuseradmin', function (req, res) {
             account.save(function (err, result) {
                 if (err) {
                     logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
+                    return res.status(500).send({message: err.message});
                 }
                 logResponse(201, 'Admin added.');
                 res.status(201).send(result);
@@ -77,13 +77,13 @@ app.get('/testnewuser', function (req, res) {
     bcrypt.genSalt(10, function (err, salt) {
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         bcrypt.hash(password, salt, undefined, function (err, hashed) {
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             var account = new User({
@@ -99,7 +99,7 @@ app.get('/testnewuser', function (req, res) {
             account.save(function (err, result) {
                 if (err) {
                     logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
+                    return res.status(500).send({message: err.message});
                 }
                 logResponse(201, 'User added.');
                 res.status(201).send(result);
@@ -114,7 +114,7 @@ app.get('/testdeleteuser/:id', function (req, res) {
     User.find({id: req.params.id}, function (err, resss) {
         if (err) {
             logResponse(500, err.message);
-            res.status(500).send({error: err.message});
+            res.status(500).send({message: err.message});
         }
         logResponse(201, 'Deleted.');
         res.status(201).send({"message": "deleted user."});
@@ -128,7 +128,7 @@ app.post('/login', function (req, res) {
 
     if (req.body.id === undefined || req.body.password === undefined) {
         logResponse(400, 'Bad request');
-        return res.status(400).send({error: 'Bad request'});
+        return res.status(400).send({message: 'Bad request'});
     }
 
     console.log('\tID:\t' + req.body.id + '\n\tpassword:\t*****');
@@ -136,7 +136,7 @@ app.post('/login', function (req, res) {
     // Find the user
     if (isNaN(req.body.id)) {
         logResponse(400, 'ID not numerical');
-        return res.status(400).send({error: 'ID not numerical'});
+        return res.status(400).send({message: 'ID not numerical'});
     }
 
     User.findOne({id: req.body.id}, function (err, user) {
@@ -144,30 +144,30 @@ app.post('/login', function (req, res) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         // Check to see whether a user was found
         if (!user) {
             logResponse(401, 'Invalid credentials');
-            return res.status(401).send({error: "Invalid credentials"});
+            return res.status(401).send({message: "Invalid credentials"});
         }
 
         // Check to see whether the given password matches the password of the user
         bcrypt.compare(req.body.password, user.password, function (err, success) {
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
 
             if (!success) {
                 logResponse(401, 'Invalid credentials');
-                return res.status(401).send({error: "Invalid credentials"});
+                return res.status(401).send({message: "Invalid credentials"});
             }
 
             if (!user.active) {
                 logResponse(403, 'User inactive');
-                return res.status(403).send({error: "User inactive"});
+                return res.status(403).send({message: "User inactive"});
             }
             // remove sensitive data
             user.password = undefined;
@@ -256,7 +256,7 @@ app.post('/subscription_callback', function (req, res) {
 
     const notifications = req.body;
     if (!(notifications instanceof Array)) {
-        return res.status(400).send({error: 'No array in body'});
+        return res.status(400).send({message: 'No array in body'});
     }
 
     console.log('Received notification(s) from Fitbit.com');
@@ -489,7 +489,7 @@ app.use('/', function (req, res, next) {
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
-            return res.status(401).send({error: "User is not logged in."});
+            return res.status(401).send({message: "User is not logged in."});
         }
 
         // Save user for future purposes
@@ -506,7 +506,7 @@ app.post("/", function (req, res) {
 
     if (res.user.type !== ADMIN) {
         logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
+        return res.status(403).send({message: "Not authorized to make this request"});
     }
 
     //check if all fields are entered
@@ -515,19 +515,19 @@ app.post("/", function (req, res) {
 
         if (req.body.password.length < 8) {
             logResponse(400, 'Password too short.');
-            return res.status(400).send({error: "Password must be at least 8 characters long."});
+            return res.status(400).send({message: "Password must be at least 8 characters long."});
         }
 
         var dateOfBirth = new Date(req.body.birthday);
 
         if (req.body.type === undefined || isNaN(req.body.type) || req.body.type < 1 || req.body.type > 2) {
             logResponse(400, 'Type is not valid');
-            return res.status(400).send({error: "Type is not valid."});
+            return res.status(400).send({message: "Type is not valid."});
         }
 
         if (req.body.type === USER && req.body.handicap === undefined || isNaN(req.body.type) || req.body.handicap < 1 || req.body.handicap > 3) {
             logResponse(400, 'Handicap is not valid.');
-            return res.status(400).send({error: "Handicap is not valid."});
+            return res.status(400).send({message: "Handicap is not valid."});
         }
 
 
@@ -535,13 +535,13 @@ app.post("/", function (req, res) {
             bcrypt.genSalt(10, function (err, salt) {
                 if (err) {
                     logResponse(500, "Can not gen salt: " + err.message);
-                    return res.status(500).send({error: err.message});
+                    return res.status(500).send({message: err.message});
                 }
 
                 bcrypt.hash(req.body.password, salt, undefined, function (err, hashed) {
                     if (err) {
                         logResponse(500, "Can not hash account: " + err.message);
-                        return res.status(500).send({error: err.message});
+                        return res.status(500).send({message: err.message});
                     }
 
                     const accountDetails = {
@@ -564,7 +564,7 @@ app.post("/", function (req, res) {
                     account.save(function (err, result) {
                         if (err) {
                             logResponse(500, "Can not save account: " + err.message);
-                            return res.status(500).send({error: err.message});
+                            return res.status(500).send({message: err.message});
                         }
                         logResponse(201, "id given");
                         return res.status(201).send({id: id});
@@ -574,7 +574,7 @@ app.post("/", function (req, res) {
         });
     } else {
         logResponse(400, "Not every field is (correctly) filled in.");
-        return res.status(400).send({error: "Not every field is (correctly) filled in."});
+        return res.status(400).send({message: "Not every field is (correctly) filled in."});
     }
 });
 
@@ -585,7 +585,7 @@ app.put("/password", function (req, res) {
 
     if (req.body.old === undefined || req.body.new1 === undefined || req.body.new2 === undefined || req.body.new1 !== req.body.new2) {
         logResponse(400, 'Wrong information supplied');
-        return res.status(400).send({error: "Wrong information supplied"});
+        return res.status(400).send({message: "Wrong information supplied"});
     }
 
     User.findOne({id: res.user.id}, function (err, user) {
@@ -593,13 +593,13 @@ app.put("/password", function (req, res) {
         // Check to see whether an error occurred
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         // Check to see whether a user was found
         if (!user) {
             logResponse(404, 'User not found');
-            return res.status(404).send({error: "User not found"});
+            return res.status(404).send({message: "User not found"});
         }
 
         try {
@@ -607,18 +607,18 @@ app.put("/password", function (req, res) {
             bcrypt.compare(req.body.old, user.password, function (err, success) {
                 if (err) {
                     logResponse(500, err.message);
-                    return res.status(500).send({error: err.message});
+                    return res.status(500).send({message: err.message});
                 }
 
                 if (!success) {
                     logResponse(401, 'Invalid credentials');
-                    return res.status(401).send({error: "Invalid credentials"});
+                    return res.status(401).send({message: "Invalid credentials"});
                 }
 
                 //Chek if the user is active
                 if (!user.active) {
                     logResponse(403, 'User inactive');
-                    return res.status(403).send({error: "User inactive"});
+                    return res.status(403).send({message: "User inactive"});
                 }
                 // remove sensitive data
                 user.password = undefined;
@@ -627,14 +627,14 @@ app.put("/password", function (req, res) {
                 bcrypt.genSalt(10, function (err, salt) {
                     if (err) {
                         logResponse(500, err.message);
-                        return res.status(500).send({error: err.message});
+                        return res.status(500).send({message: err.message});
                     }
 
                     //Hash password
                     bcrypt.hash(req.body.new1, salt, undefined, function (err, hashed) {
                         if (err) {
                             logResponse(500, err.message);
-                            return res.status(500).send({error: err.message});
+                            return res.status(500).send({message: err.message});
                         }
 
                         //Update password in database
@@ -642,13 +642,13 @@ app.put("/password", function (req, res) {
                             // Check to see whether an error occurred
                             if (err) {
                                 logResponse(500, err.message);
-                                return res.status(500).send({error: err.message});
+                                return res.status(500).send({message: err.message});
                             }
 
                             // Check to see whether a user was found
                             if (!result) {
                                 logResponse(404, 'User not found');
-                                return res.status(404).send({error: "User not found"});
+                                return res.status(404).send({message: "User not found"});
                             }
 
                             logResponse(201, 'Password updated');
@@ -663,7 +663,7 @@ app.put("/password", function (req, res) {
         } catch (err) {
             // if the bcrypt fails
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
     });
 });
@@ -677,11 +677,11 @@ app.get('/', function (req, res) {
 
         if (err) {
             logResponse(500, "Something went wrong");
-            return res.status(500).send({error: "Something went wrong"})
+            return res.status(500).send({message: "Something went wrong"})
         }
         if (users.length === 0) {
             logResponse(404, "No users found");
-            return res.status(404).send({error: "No users found"});
+            return res.status(404).send({message: "No users found"});
         }
         logResponse(200, "User list sent");
         return res.status(200).send({success: users});
@@ -695,25 +695,25 @@ app.get('/:id/connect', function (req, res) {
 
     if (res.user.type !== ADMIN) {
         logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
+        return res.status(403).send({message: "Not authorized to make this request"});
     }
 
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, "Invalid id.");
-        return res.status(400).send({error: "Invalid id."});
+        return res.status(400).send({message: "Invalid id."});
     }
 
     // check if the account to be connected is a user
     User.findOne({id: req.params.id, type: USER}, {}, function (err, result) {
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message});
+            return res.status(500).send({message: err.message});
         }
 
         // the account was not found or is not a user
         if (result === undefined) {
             logResponse(404, 'Fitbit can only be connected to a user.');
-            return res.status(404).send({error: 'Fitbit can only be connected to a user.'});
+            return res.status(404).send({message: 'Fitbit can only be connected to a user.'});
         }
 
         const state = mapOAuthRequest(req.params.id);
@@ -734,28 +734,28 @@ app.post('/:id/revoke', function (req, res) {
 
     if (res.user.type !== ADMIN) {
         logResponse(403, "Not authorized to make this request.");
-        return res.status(403).send({error: "Not authorized to make this request."});
+        return res.status(403).send({message: "Not authorized to make this request."});
     }
 
     if (req.params.id === undefined || isNaN(req.params.id)) {
         logResponse(400, "Invalid id given.");
-        return res.status(400).send({error: "Invalid id given."});
+        return res.status(400).send({message: "Invalid id given."});
     }
 
     User.findOne({type: USER, id: req.params.id}, {password: 0, _id: 0, __v: 0}, function (err, user) {
         if (err) {
             logResponse(500, err.message);
-            return res.status(500).send({error: err.message})
+            return res.status(500).send({message: err.message})
         }
 
         if (user === undefined) {
             logResponse(404, "User account could not be found.");
-            return res.status(404).send({error: "User account could not be found."});
+            return res.status(404).send({message: "User account could not be found."});
         }
 
         if (user.fitbit === undefined) {
             logResponse(404, "No connected Fitbit found.");
-            return res.status(404).send({error: "No connected Fitbit found."});
+            return res.status(404).send({message: "No connected Fitbit found."});
         }
 
         const revoke = client.revokeAccessToken(user.fitbit.accessToken);
@@ -766,11 +766,11 @@ app.post('/:id/revoke', function (req, res) {
         User.findOneAndUpdate({id: req.params.id}, {$unset: {fitbit: 1}}, function (err, result) {
             if (err) {
                 logResponse(500, err.message);
-                return res.status(500).send({error: err.message});
+                return res.status(500).send({message: err.message});
             }
             if (result === undefined) {
-                logResponse(404, {error: "User account could not be found."});
-                return res.status(404).send({error: "User account could not be found."});
+                logResponse(404, {message: "User account could not be found."});
+                return res.status(404).send({message: "User account could not be found."});
             }
             return res.status(204).send();
         });
