@@ -450,7 +450,7 @@ function getOngoingCompetition(callback) {
 
     console.log(where);
 
-    Competition.find(where, {}, function (err, comps) {
+    Competition.find({}, {}, function (err, comps) {
         if (err) {
             console.error('Competitions: MongoDB: ' + err.message);
         }
