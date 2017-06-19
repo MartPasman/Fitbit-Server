@@ -337,6 +337,8 @@ app.post('/subscription_callback', function (req, res) {
 
                         // for every ongoing competition, save the stats of the user
                         comps.forEach(function (c) {
+                            console.log(c);
+
                             // calculate the total steps in the comps time period
                             var stepsSum = 0;
                             for (var j = 0; j < steps.length; j++) {
