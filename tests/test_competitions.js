@@ -65,6 +65,27 @@ describe('Add goal', function () {
     })
 });
 
+
+
+    /**
+     * Correct
+     */
+    context('PUT /competitions/lastlength/ Correct', function () {
+        it('Should response 201', function (done) {
+            server.put('/competitions/lastlength/')
+                .set("Authorization", token)
+                .send({length: 8})
+                .expect(201)
+                .end(function (err, res) {
+                    console.log(res.body.success.should.have.property('defaultLength', 8));
+                    done(err);
+                })
+        })
+    });
+
+
+
+
 /**
  * Testing getting latest seven shared goals
  */

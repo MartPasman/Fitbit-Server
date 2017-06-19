@@ -510,7 +510,7 @@ app.post("/", function (req, res) {
     }
 
     //check if all fields are entered
-    if (req.body.firstname && req.body.lastname && req.body.password && req.body.email && req.body.birthday &&
+    if (req.body.firstname && req.body.lastname && req.body.password && req.body.birthday &&
         req.body.type && req.body.firstname.length < 50 && req.body.lastname.length < 50) {
 
         if (req.body.password.length < 8) {
