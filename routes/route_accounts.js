@@ -441,12 +441,14 @@ app.get('/:id/goals/ongoing', function (req, res) {
 function getOngoingCompetition(callback) {
     const where = {
         start: {
-            $lt: today()
+            $lt: new Date()
         },
         end: {
-            $gt: today()
+            $gt: new Date()
         }
     };
+
+    console.log(where);
 
     Competition.find(where, {}, function (err, comps) {
         if (err) {
