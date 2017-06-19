@@ -63,4 +63,38 @@ describe('Add goal', function () {
         })
     })
 
+    /**
+     * Correct
+     */
+    context('PUT /competitions/lastgoal/ Correct', function () {
+        it('Should response 201', function (done) {
+            server.put('/competitions/lastgoal/')
+                .set("Authorization", token)
+                .send({goal: 30000})
+                .expect(201)
+                .end(function (err, res) {
+                    console.log(res.body.success.should.have.property('defaultGoal', 30000));
+                    done(err);
+                })
+        })
+    });
+
+    /**
+     * Correct
+     */
+    context('PUT /competitions/lastlength/ Correct', function () {
+        it('Should response 201', function (done) {
+            server.put('/competitions/lastlength/')
+                .set("Authorization", token)
+                .send({length: 8})
+                .expect(201)
+                .end(function (err, res) {
+                    console.log(res.body.success.should.have.property('defaultLength', 8));
+                    done(err);
+                })
+        })
+    });
+
+
+
 });
