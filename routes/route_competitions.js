@@ -426,28 +426,32 @@ app.put('/changelength', function (req, res) {
         if (err) {
             console.log(err);
             logResponse(500, "Internal server error.");
-            res.status(500).send(err);
-        } else if (comps.length === 0) {
-            logResponse(404, "Nu users where found");
-            res.status(404).send({message: "no users found"});
+            return res.status(500).send({message: err});
         }
+
+        if (comps.length === 0) {
+            logResponse(404, "Nu users where found");
+            return res.status(404).send({message: "no users found"});
+        }
+
+        comps.sort(function (c1, c2) {
+            return c1.start - c2.start;
+        });
 
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {
-            $set: {
-                defaultLength: req.body.length,
-                length: req.body.length
-            }
-        }, {new: 1}, function (err, competition) {
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length}}, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 logResponse(500, "Internal server error");
                 return res.status(500).send();
-            } else if (competition === undefined || competition === undefined) {
+            }
+
+            if (competition === undefined || competition === null) {
                 logResponse(404, "No competitions where found");
                 return res.status(404).send({message: "competition not found"})
             }
+
             logResponse(201, "Competition updated!");
             return res.status(201).send({success: competition});
         });
