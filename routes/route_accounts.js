@@ -143,8 +143,39 @@ app.get('/oauth_callback', function (req, res) {
                     return redirect(404, 'User could not be found.');
                 }
 
-                logResponse(201, 'Fitbit connected.');
-                redirect(201, 'Fitbit connected.');
+                // subscribe the user to notifications
+                // prepare the POST request
+                const options = {
+                    headers: {
+                        Authorization: 'Bearer ' + result.fitbit.accessToken
+                    }
+                };
+
+                const subscriptionId = (new Date()).getTime();
+
+                request.post(
+                    'https://api.fitbit.com/1/user/-/activities/apiSubscriptions/' + subscriptionId + '.json',
+                    options,
+                    function (error, response, body) {
+                        if (error) {
+                            logResponse(500, 'Fitbit not subscribed: ' + error);
+                            return redirect(500, 'Fitbit not subscribed: ' + error);
+                        }
+
+                        console.log(body);
+
+                        if (response.statusCode === 200 || response.statusCode === 201) {
+                            // success
+                            logResponse(201, 'Fitbit connected.');
+                            return redirect(201, 'Fitbit connected.');
+                        } else if (response.statusCode === 409) {
+                            logResponse(response.statusCode, 'Subscription not unique.');
+                            return redirect(response.statusCode, 'Subscription not unique.');
+                        } else {
+                            logResponse(response.statusCode, 'Unexpected response.');
+                            return redirect(response.statusCode, 'Unexpected response.');
+                        }
+                    });
             });
         });
     }, function (error) {
@@ -356,14 +387,6 @@ app.post('/subscription_callback', function (req, res) {
                 });
             });
         });
-    });
-});
-
-// TODO: move or delete later
-app.get('/:id/goals/ongoing', function (req, res) {
-    getUserWithOngoingGoals(req.params.id, function (goals) {
-        logResponse(200, 'Ongoing goals send.');
-        res.status(200).send(goals);
     });
 });
 
