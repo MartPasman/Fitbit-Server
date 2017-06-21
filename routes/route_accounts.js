@@ -13,8 +13,8 @@ const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 
-// const WEBAPP = 'http://127.0.0.1';
-const WEBAPP = 'http://178.21.116.109';
+const WEBAPP = 'http://127.0.0.1';
+// const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
 
@@ -774,6 +774,40 @@ app.post('/:id/revoke', function (req, res) {
             }
             return res.status(204).send();
         });
+    }
+});
+
+
+/**
+ * Check what authority user has and send back
+ */
+app.post('/authenticate', function (req, res) {
+
+    var url = req.body.url;
+
+    switch (url) {
+        case '/admin-dashboard.php':
+        case '/admin-settings.php':
+            if (res.user.type === ADMIN) {
+                return res.status(200).send();
+            } else if (res.user.type === USER) {
+                return res.status(403).send();
+            } else {
+                return res.status(401).send();
+            }
+            break;
+        case '/results.php':
+        case '/user-settings.php':
+            if (res.user.type === ADMIN) {
+                return res.status(403).send();
+            } else if (res.user.type === USER) {
+                return res.status(200).send();
+            } else {
+                return res.status(401).send();
+            }
+            break;
+        default:
+            return res.status(200).send();
     }
 });
 
