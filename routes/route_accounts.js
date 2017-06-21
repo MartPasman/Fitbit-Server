@@ -147,7 +147,7 @@ app.get('/oauth_callback', function (req, res) {
                 // prepare the POST request
                 const options = {
                     headers: {
-                        Authorization: 'Bearer ' + result.fitbit.accessToken
+                        Authorization: 'Bearer ' + json.accessToken
                     }
                 };
 
