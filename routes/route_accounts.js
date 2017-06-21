@@ -132,13 +132,13 @@ app.get('/oauth_callback', function (req, res) {
             }
 
             //find the requested user and add the fitbit
-            User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, result) {
+            User.findOneAndUpdate({id: userid}, {$set: {fitbit: json}}, function (err, n) {
                 if (err) {
                     logResponse(500, '2: ' + err.message);
                     return redirect(500, err.message);
                 }
 
-                if (result === undefined) {
+                if (n === undefined) {
                     logResponse(404, 'User could not be found.');
                     return redirect(404, 'User could not be found.');
                 }
