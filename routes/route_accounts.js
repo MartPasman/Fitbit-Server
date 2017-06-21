@@ -12,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const client_id = '228HTD';
 const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
+const verificationCode = 'f65cafbb1d326cd0a613038f9b7287406b83300fa3ec5db46c261288dc2aa543';
 
 // const WEBAPP = 'http://127.0.0.1';
 const WEBAPP = 'http://178.21.116.109';
@@ -30,96 +31,6 @@ const logResponse = require('../support').logResponse;
 
 const USER = 1;
 const ADMIN = 2;
-
-// TODO: delete later
-app.get('/testnewuseradmin', function (req, res) {
-
-    var password = "administrator";
-    bcrypt.genSalt(10, function (err, salt) {
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({message: err.message});
-        }
-
-        bcrypt.hash(password, salt, undefined, function (err, hashed) {
-            if (err) {
-                logResponse(500, err.message);
-                return res.status(500).send({message: err.message});
-            }
-
-            var account = new User({
-                firstname: "Admin",
-                lastname: "user",
-                id: 10001,
-                password: hashed,
-                active: true,
-                type: ADMIN,
-                birthday: new Date()
-            });
-
-            account.save(function (err, result) {
-                if (err) {
-                    logResponse(500, err.message);
-                    return res.status(500).send({message: err.message});
-                }
-                logResponse(201, 'Admin added.');
-                res.status(201).send(result);
-            });
-        });
-    });
-});
-
-// TODO: delete later
-app.get('/testnewuser', function (req, res) {
-
-    var password = "gebruiker";
-    var date = new Date();
-    bcrypt.genSalt(10, function (err, salt) {
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({message: err.message});
-        }
-
-        bcrypt.hash(password, salt, undefined, function (err, hashed) {
-            if (err) {
-                logResponse(500, err.message);
-                return res.status(500).send({message: err.message});
-            }
-
-            var account = new User({
-                firstname: "Martje",
-                lastname: "Kasii",
-                id: 10005,
-                password: hashed,
-                active: false,
-                type: USER,
-                birthday: date
-            });
-
-            account.save(function (err, result) {
-                if (err) {
-                    logResponse(500, err.message);
-                    return res.status(500).send({message: err.message});
-                }
-                logResponse(201, 'User added.');
-                res.status(201).send(result);
-            });
-
-        });
-    });
-});
-
-// TODO: delete later
-app.get('/testdeleteuser/:id', function (req, res) {
-    User.find({id: req.params.id}, function (err, resss) {
-        if (err) {
-            logResponse(500, err.message);
-            res.status(500).send({message: err.message});
-        }
-        logResponse(201, 'Deleted.');
-        res.status(201).send({"message": "deleted user."});
-    }).remove().exec()
-});
 
 /**
  * Login
@@ -243,6 +154,24 @@ app.get('/oauth_callback', function (req, res) {
 
     function redirect(code, message) {
         res.redirect(WEBAPP + '/admin-dashboard.php?id=' + userid + '&statusCode=' + code + '&message=' + encodeURI(message));
+    }
+});
+
+/**
+ * Fitbit.com subscriber verification
+ */
+app.get('/subscription_callback', function (req, res) {
+    if (req.query.verify === undefined) {
+        logResponse(400, 'No verify query parameter provided.');
+        return res.status(400).send({message: 'No verify query parameter provided.'});
+    }
+
+    if (req.query.verify === verificationCode) {
+        logResponse(204, 'Verification code correct.');
+        return res.status(204).send();
+    } else {
+        logResponse(404, 'Verification code incorrect.');
+        return res.status(404).send({message: 'Verification code incorrect.'});
     }
 });
 
