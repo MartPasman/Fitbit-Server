@@ -392,6 +392,42 @@ app.put('/changegoal', function (req, res) {
     });
 });
 
+
+/**
+ * change shared goal for next competition
+ */
+app.put('/changesharedgoal', function (req, res) {
+    //find the competition
+    Competition.find({}, function (err, comps) {
+        if (err) {
+            console.log(err);
+            logResponse(500, "Internal server error.");
+            res.status(500).send(err);
+        } else if (comps.length === 0) {
+            logResponse(404, "Nu users where found");
+            res.status(404).send({error: "no users found"});
+        }
+
+        //get id
+        var compid = comps[comps.length - 1].id;
+
+        //update competition
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultSharedGoal: req.body.goal}}, {new: 1}, function (err, competition) {
+            if (err) {
+                console.log(err);
+                logResponse(500, "Internal server error");
+                return res.status(500).send();
+            } else if (competition === undefined || competition === undefined) {
+                logResponse(404, "No competitions where found");
+                return res.status(404).send({error: "competition not found"})
+            }
+            logResponse(201, "Competition updated!");
+            return res.status(201).send({success: competition});
+        });
+    });
+});
+
+
 /**
  * Get the sharedGoal in %
  */
