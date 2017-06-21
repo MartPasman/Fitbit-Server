@@ -588,6 +588,8 @@ app.put('/:id', function (req, res) {
         }
     }
 
+    console.log(json);
+
     // if the password needs to be changed
     if (!(req.body.password === undefined || req.body.password === '')) {
         // generate the salt
