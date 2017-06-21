@@ -583,7 +583,7 @@ app.put('/:id', function (req, res) {
     // if the active state was provided
     if (!(req.body.active === undefined || req.body.active === '')) {
         // if it is a boolean
-        if (req.body.active instanceof Boolean) {
+        if (req.body.active === true || req.body.active === false) {
             json.active = req.body.active;
         }
     }
