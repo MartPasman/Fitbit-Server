@@ -20,6 +20,7 @@ const today = require('../support').today;
 const ADMIN = 2;
 const USER = 1;
 
+// app.get();
 // TODO: remove later
 app.delete('/', function (req, res) {
     // get all competitions
@@ -56,7 +57,7 @@ app.use('/', function (req, res, next) {
     jwt.verify(req.get("Authorization"), req.app.get('private-key'), function (err, decoded) {
         if (err) {
             logResponse(401, err.message);
-            return res.status(401).send({error: "User is not logged in."});
+            return res.status(401).send({message: 'User is not logged in.'});
         }
 
         // Save user for future purposes
@@ -124,14 +125,21 @@ app.get('/', function (req, res) {
             logResponse(500, "Internal server error!" + err);
             return res.status(500).send(err);
         }
+
+        //check if there are already competitions
         if (result.length === 0) {
             // create new competition
+
             generatecompId(function (id) {
+                //get today's date
                 var date = today();
                 var end_date = today();
+                //create competition for 7 days (this is the first, so standard = 7)
                 end_date = end_date.setDate(date.getDate() + 7);
 
                 //create results
+
+                //find users
                 User.find({type: USER}, function (err, usrs) {
                     if (err) {
                         logResponse(500, "Internal server error!" + err);
@@ -140,9 +148,10 @@ app.get('/', function (req, res) {
 
                     if (usrs.length === 0) {
                         logResponse(404, "No users found");
-                        return res.status(404).send({error: "no users found"});
+                        return res.status(404).send({message: "no users found"});
                     }
 
+                    //give the users results
                     for (var i = 0; i < usrs.length; i++) {
                         results[i] = {
                             userid: usrs[i].id,
@@ -151,6 +160,7 @@ app.get('/', function (req, res) {
                         }
                     }
 
+                    //create competition.
                     var comp = new Competition({
                         id: id,
                         goal: 100000,
@@ -166,6 +176,7 @@ app.get('/', function (req, res) {
                         sharedGoalAchieved: false
                     });
 
+                    //save competition.
                     comp.save(function (err, resp) {
                         if (err) {
                             logResponse(500, "Internal server error");
@@ -176,11 +187,18 @@ app.get('/', function (req, res) {
                     });
                 });
             });
+            /**
+             * When there already is an competition, and in this week
+             * return that competition. If competition is in the past then
+             * create a new one.
+             */
         } else {
+            //sort to get newest one up.
             result.sort(function (m1, m2) {
                 return m1.start - m2.start;
             });
 
+            //check wether competition is running right now.
             if (result[result.length - 1].end < today()) {
                 var defaultGoal = result[result.length - 1].defaultGoal;
                 var defaultLength = result[result.length - 1].defaultLength;
@@ -201,9 +219,10 @@ app.get('/', function (req, res) {
 
                         if (usrs.length === 0) {
                             logResponse(404, "No users where found.");
-                            return res.status(404).send({error: "no users found"});
+                            return res.status(404).send({message: "no users found"});
                         }
 
+                        //give users results
                         for (var i = 0; i < usrs.length; i++) {
                             results[i] = {
                                 userid: usrs[i].id,
@@ -212,6 +231,7 @@ app.get('/', function (req, res) {
                             }
                         }
 
+                        //create competition
                         var comp = new Competition({
                             id: id,
                             goal: defaultGoal,
@@ -227,6 +247,7 @@ app.get('/', function (req, res) {
                             sharedGoalAchieved: false
                         });
 
+                        //save competition
                         comp.save(function (err, resp) {
                             if (err) {
                                 console.log(err);
@@ -241,6 +262,7 @@ app.get('/', function (req, res) {
 
 
             } else {
+                //if competition is running right now, return that one.
                 logResponse(200, "Competition sent.");
                 res.status(200).send(result[result.length - 1]);
             }
@@ -256,7 +278,7 @@ app.post('/', function (req, res) {
 
     if (res.user.type !== ADMIN) {
         logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({error: "Not authorized to make this request"});
+        return res.status(403).send({message: "Not authorized to make this request"});
     }
 
     var goal = req.body.goal;
@@ -264,7 +286,7 @@ app.post('/', function (req, res) {
     var endDate = day(req.body.end);
 
     if (goal === undefined || startDate === undefined || endDate === undefined || !Date.parse(startDate) || !Date.parse(endDate)) {
-        return res.status(400).send({error: "Bad request, invalid parameters."});
+        return res.status(400).send({message: "Bad request, invalid parameters."});
     }
 
     generatecompId(function (id) {
@@ -296,7 +318,7 @@ app.post('/', function (req, res) {
 
             comp.save(function (err, resp) {
                 if (err) {
-                    return res.status(500).send({error: "..."});
+                    return res.status(500).send({message: "..."});
                 }
 
                 return res.status(201).send({succes: id});
@@ -325,7 +347,7 @@ app.put('/:id/score', function (req, res) {
     }, {$set: {"results.$.score": score}}, function (err, result) {
         if (err) {
             logResponse(500, "Internal server error.");
-            return res.status(500).send({error: 'Internal server error!'});
+            return res.status(500).send({message: 'Internal server error!'});
         } else if (result === null) {
             logResponse(404, "No users/competitions where found");
             return res.status(404).send("Competition/User not found!");
@@ -339,8 +361,43 @@ app.put('/:id/score', function (req, res) {
 /**
  * change goal for next competition
  */
-// TODO: rename
-app.put('/lastgoal', function (req, res) {
+app.put('/changegoal', function (req, res) {
+    //find the competition
+    Competition.find({}, function (err, comps) {
+        if (err) {
+            console.log(err);
+            logResponse(500, "Internal server error.");
+            res.status(500).send(err);
+        } else if (comps.length === 0) {
+            logResponse(404, "Nu users where found");
+            res.status(404).send({message: "no users found"});
+        }
+
+        //get id
+        var compid = comps[comps.length - 1].id;
+
+        //update competition
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultGoal: req.body.goal}}, {new: 1}, function (err, competition) {
+            if (err) {
+                console.log(err);
+                logResponse(500, "Internal server error");
+                return res.status(500).send();
+            } else if (competition === undefined || competition === undefined) {
+                logResponse(404, "No competitions where found");
+                return res.status(404).send({message: "competition not found"})
+            }
+            logResponse(201, "Competition updated!");
+            return res.status(201).send({success: competition});
+        });
+    });
+});
+
+
+/**
+ * change shared goal for next competition
+ */
+app.put('/changesharedgoal', function (req, res) {
+    //find the competition
     Competition.find({}, function (err, comps) {
         if (err) {
             console.log(err);
@@ -351,9 +408,11 @@ app.put('/lastgoal', function (req, res) {
             res.status(404).send({error: "no users found"});
         }
 
+        //get id
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {$set: {defaultGoal: req.body.goal}}, {new: 1}, function (err, competition) {
+        //update competition
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultSharedGoal: req.body.goal}}, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 logResponse(500, "Internal server error");
@@ -368,21 +427,22 @@ app.put('/lastgoal', function (req, res) {
     });
 });
 
+
 /**
  * Get the sharedGoal in %
  */
-// TODO: rename
 app.get('/sharedGoal', function (req, res) {
 
+    //find the competition
     Competition.find({}, function (err, competitions) {
         if (err) {
             logResponse(500, "Internal server error!");
-            res.status(500).send({error: 'Internal server error!'});
+            res.status(500).send({message: 'Internal server error!'});
         }
         competitions.sort(function (m1, m2) {
             return m1.start - m2.start;
         });
-
+        //create json
         var JSON = {
             percentage: competitions[competitions.length - 1].sharedGoalProgress,
             achieved: competitions[competitions.length - 1].sharedGoalAchieved
@@ -397,34 +457,37 @@ app.get('/sharedGoal', function (req, res) {
  * Change length for next competition
  *
  */
-// TODO: rename
-app.put('/lastlength', function (req, res) {
+app.put('/changelength', function (req, res) {
     Competition.find({}, function (err, comps) {
         if (err) {
             console.log(err);
             logResponse(500, "Internal server error.");
-            res.status(500).send(err);
-        } else if (comps.length === 0) {
-            logResponse(404, "Nu users where found");
-            res.status(404).send({error: "no users found"});
+            return res.status(500).send({message: err});
         }
+
+        if (comps.length === 0) {
+            logResponse(404, "Nu users where found");
+            return res.status(404).send({message: "no users found"});
+        }
+
+        comps.sort(function (c1, c2) {
+            return c1.start - c2.start;
+        });
 
         var compid = comps[comps.length - 1].id;
 
-        Competition.findOneAndUpdate({id: compid}, {
-            $set: {
-                defaultLength: req.body.length,
-                length: req.body.length
-            }
-        }, {new: 1}, function (err, competition) {
+        Competition.findOneAndUpdate({id: compid}, {$set: {defaultLength: req.body.length}}, {new: 1}, function (err, competition) {
             if (err) {
                 console.log(err);
                 logResponse(500, "Internal server error");
                 return res.status(500).send();
-            } else if (competition === undefined || competition === undefined) {
-                logResponse(404, "No competitions where found");
-                return res.status(404).send({error: "competition not found"})
             }
+
+            if (competition === undefined || competition === null) {
+                logResponse(404, "No competitions where found");
+                return res.status(404).send({message: "competition not found"})
+            }
+
             logResponse(201, "Competition updated!");
             return res.status(201).send({success: competition});
         });
