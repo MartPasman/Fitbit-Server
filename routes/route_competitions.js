@@ -12,41 +12,11 @@ const app = express.Router();
 const jwt = require('jsonwebtoken');
 const Competition = require('../model/model_competition');
 
-const fitbitCall = require('../fitbit.js').fitbitCall;
 const logResponse = require('../support').logResponse;
-const day = require('../support').day;
 const today = require('../support').today;
 
-const ADMIN = 2;
 const USER = 1;
 
-// app.get();
-// TODO: remove later
-app.delete('/', function (req, res) {
-    // get all competitions
-    Competition.find({}, {results: 0, length: 0, defaultGoal: 0, defaultLength: 0, goal: 0}, function (err, result) {
-        // MongoDB error
-        if (err) {
-            logResponse(500, err.message);
-            return res.status(500).send({message: err.message});
-        }
-
-        // if no competitions were found
-        if (result.length === 0) {
-            logResponse(404, 'No competitions found.');
-            return res.status(404).send({message: 'No competitions found.'});
-        }
-
-        // sort them by end date
-        result.sort(function (c1, c2) {
-            return c2.end - c1.end;
-        });
-
-        const id = result[0].id;
-        Competition.findOne({id: id}).remove().exec();
-        console.log('Removed comp with id: ' + id);
-    });
-});
 
 /**
  * must be logged in as administrator
@@ -271,94 +241,6 @@ app.get('/', function (req, res) {
 });
 
 /**
- * Create a competition.
- */
-//TODO: Delete this later.
-app.post('/', function (req, res) {
-
-    if (res.user.type !== ADMIN) {
-        logResponse(403, "Not authorized to make this request");
-        return res.status(403).send({message: "Not authorized to make this request"});
-    }
-
-    var goal = req.body.goal;
-    var startDate = day(req.body.start);
-    var endDate = day(req.body.end);
-
-    if (goal === undefined || startDate === undefined || endDate === undefined || !Date.parse(startDate) || !Date.parse(endDate)) {
-        return res.status(400).send({message: "Bad request, invalid parameters."});
-    }
-
-    generatecompId(function (id) {
-        var results = [];
-        //get all users and add them
-        User.find({type: USER}, function (err, result) {
-            if (err) {
-                return res.status(500).send();
-            }
-            console.log(result);
-
-            for (var i = 0; i < result.length; i++) {
-                results[i] = {
-                    name: result[i].firstname + ' ' + result[i].lastname,
-                    userid: result[i].id,
-                    score: 1300,
-                    goalAchieved: false
-                }
-            }
-
-            var comp = new Competition({
-                id: id,
-                goal: goal,
-                defaultgoal: goal,
-                start: startDate,
-                end: endDate,
-                results: results
-            });
-
-            comp.save(function (err, resp) {
-                if (err) {
-                    return res.status(500).send({message: "..."});
-                }
-
-                return res.status(201).send({succes: id});
-            });
-        })
-    });
-});
-
-
-/**
- * change score from specific user in competition
- */
-// TODO: Delete this later
-app.put('/:id/score', function (req, res) {
-    var userid = req.body.userid;
-    var score = req.body.score;
-
-    if (userid === undefined || score === undefined) {
-        logResponse(400, "Invalid parameters.");
-        return res.status(400).send("Invalid parameters!");
-    }
-
-    Competition.findOneAndUpdate({
-        id: req.params.id,
-        "results.userid": userid
-    }, {$set: {"results.$.score": score}}, function (err, result) {
-        if (err) {
-            logResponse(500, "Internal server error.");
-            return res.status(500).send({message: 'Internal server error!'});
-        } else if (result === null) {
-            logResponse(404, "No users/competitions where found");
-            return res.status(404).send("Competition/User not found!");
-        } else {
-            logResponse(200, "updated user score!");
-            return res.status(200).send({succes: 'updated!'});
-        }
-    })
-});
-
-/**
  * change goal for next competition
  */
 app.put('/changegoal', function (req, res) {
@@ -440,7 +322,7 @@ app.get('/sharedGoal', function (req, res) {
             res.status(500).send({message: 'Internal server error!'});
         }
 
-        if(competitions.length===0){
+        if (competitions.length === 0) {
             return res.status(404).send({message: "No competitions found!"});
         }
         competitions.sort(function (m1, m2) {

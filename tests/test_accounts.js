@@ -6,7 +6,6 @@
 var mocha = require('mocha');
 var supertest = require('supertest');
 var should = require('should');
-var User = require('../model/model_user');
 var server = supertest.agent("http://localhost:3000");
 
 
@@ -16,60 +15,6 @@ var testpassword = 'gebruiker';
 var testadmin = '10001';
 var testadminpassword = 'administrator';
 
-
-// describe("Fitbit connecting unittest", function () {
-//     before(function (done) {
-//         server.get('/accounts/testnewuser')
-//             .expect(201)
-//             .end(function (err, res) {
-//                 done(err);
-//             });
-//     });
-//
-//
-//     it("should connect a fitbit to a user and return 201", function (done) {
-//         server.get('/accounts/connect/123')
-//             .expect(302)
-//             .end(function (err) {
-//                 done(err);
-//             })
-//     });
-//
-//     /**
-//      * can't be tested
-//      */
-//     // context("GET accounts/connect/ User has fitbit already", function(){
-//     //     it("should try to connect a fitbit to a user and return 409", function (done) {
-//     //         server.get('/accounts/connect/123')
-//     //             .expect(409)
-//     //             .end(function (err) {
-//     //                 done(err);
-//     //             })
-//     //     });
-//     // });
-//
-//     context("GET accounts/connect/  wrong user", function () {
-//
-//         it("should connect a fitbit to a user and return 404", function (done) {
-//             server.get('/accounts/connect/12345')
-//                 .expect(404)
-//                 .end(function (err) {
-//                     done(err);
-//                 })
-//         });
-//     });
-//
-//
-//     // after(function (done) {
-//     //     server.get('/accounts/testdeleteuser/123')
-//     //         .expect(201)
-//     //         .end(function (err, res) {
-//     //             done(err);
-//     //         });
-//     // });
-//
-//
-// });
 
 /**
  * Test for testing the accounts/login/ path

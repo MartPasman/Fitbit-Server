@@ -1,7 +1,6 @@
 var mocha = require('mocha');
 var supertest = require('supertest');
 var should = require('should');
-var Competition = require('../model/model_competition');
 var server = supertest.agent("http://localhost:3000");
 
 var testadmin = 10001;

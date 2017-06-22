@@ -12,16 +12,13 @@ const User = require('../model/model_user');
 const shortid = require('shortid');
 const bcrypt = require('bcrypt-nodejs');
 const app = express.Router();
-const jwt = require('jsonwebtoken');
 const Competition = require('../model/model_competition');
 
-const fitbitCall = require('../fitbit.js').fitbitCall;
 const logResponse = require('../support').logResponse;
 const day = require('../support').day;
 const today = require('../support').today;
 
 const ADMIN = 2;
-const USER = 1;
 
 app.get('/', function (req, res) {
 

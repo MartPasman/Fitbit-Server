@@ -14,7 +14,6 @@ const client_secret = '41764caf3b48fa811ce514ef38c62791';
 const client = new fitbitClient(client_id, client_secret);
 const verificationCode = 'f65cafbb1d326cd0a613038f9b7287406b83300fa3ec5db46c261288dc2aa543';
 
-// const WEBAPP = 'http://127.0.0.1';
 const WEBAPP = 'http://178.21.116.109';
 const REST = WEBAPP + ':3000';
 const redirectURL = REST + '/accounts/oauth_callback';
@@ -211,9 +210,6 @@ app.get('/subscription_callback', function (req, res) {
  */
 app.post('/subscription_callback', function (req, res) {
 
-    // TODO: remove later
-    console.log(req.body);
-
     const notifications = req.body;
     if (!(notifications instanceof Array)) {
         return res.status(400).send({message: 'No array in body'});
@@ -313,7 +309,6 @@ app.post('/subscription_callback', function (req, res) {
 
                             console.log(stepsSum);
 
-                            // TODO: calculation subject to change
                             const newScore = user.handicap * stepsSum;
 
                             // calculate new shared score
@@ -482,7 +477,6 @@ app.post("/", function (req, res) {
             return res.status(400).send({message: "Handicap is not valid."});
         }
 
-
         generateId(function (id) {
             bcrypt.genSalt(10, function (err, salt) {
                 if (err) {
@@ -507,7 +501,7 @@ app.post("/", function (req, res) {
                     };
 
                     // if it is a user, add the handicap
-                    if (req.body.type === USER) {
+                    if (parseInt(req.body.type) === USER) {
                         accountDetails.handicap = req.body.handicap;
                     }
 
