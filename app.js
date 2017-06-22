@@ -9,6 +9,7 @@ var privateKey = 'r2f9u0rcqjucr98cr2yc890qu98cr3qr93c298mq';
 // set private key:
 app.set('private-key', privateKey);
 
+
 // Parse application/json
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
@@ -42,6 +43,10 @@ app.use(function (req, res, next) {
     }
     return next();
 });
+
+// set fitbit routes
+var setupRoutes = require('./routes/route_setup');
+app.use('/setup', setupRoutes);
 
 // set fitbit routes
 var fitbitRoutes = require('./routes/route_fitbit');
