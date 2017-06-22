@@ -439,6 +439,10 @@ app.get('/sharedGoal', function (req, res) {
             logResponse(500, "Internal server error!");
             res.status(500).send({message: 'Internal server error!'});
         }
+
+        if(competitions.length===0){
+            return res.status(404).send({message: "No competitions found!"});
+        }
         competitions.sort(function (m1, m2) {
             return m1.start - m2.start;
         });

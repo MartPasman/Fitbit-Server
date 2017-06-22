@@ -11,8 +11,8 @@ module.exports = mongoose.model('result', resultSchema);
 
 var competitionSchema = new Schema({
     id: {type: Number, required: true, unique: true},
-    start: {type: Date, required: true, default: new Date()},
-    end: {type: Date, required: true, default: new Date().setDate(new Date().getDate() + 6)},
+    start: {type: Date, required: true},
+    end: {type: Date, required: true},
     goal: {type: Number, required: true, default: 3000},
     defaultGoal: {type: Number, required: true, default: 3000},
     sharedGoal: {type: Number, required: true, default: 50000},
@@ -20,8 +20,8 @@ var competitionSchema = new Schema({
     defaultSharedGoal: {type: Number, required: true, default: 50000},
     sharedGoalProgress: {type: Number, required: true, default: 0},
     sharedGoalAchieved: {type: Boolean, required: true, default: false},
-    defaultLength: {type: Number, required: true, default: 7},
-    length: {type: Number, required: true, default: 7},
+    defaultLength: {type: Number, required: true, default: 1},
+    length: {type: Number, required: true, default: 1},
     results: [resultSchema]
 });
 

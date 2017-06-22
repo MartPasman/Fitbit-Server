@@ -48,7 +48,7 @@ app.get('/', function (req, res) {
                 password: hashed,
                 active: true,
                 type: ADMIN,
-                birthday: new Date()
+                birthday: today()
             });
 
             account.save(function (err, result) {
@@ -57,14 +57,55 @@ app.get('/', function (req, res) {
                     return res.status(500).send("Set up has failed");
                 }
                 logResponse(201, 'Admin added.');
-                logResponse(200, 'The system has succesfully been setup, you can login now with: ID: 10001, PASSWORD: administrator ' +
-                    'do not forget to change your information.');
-                res.status(201).send('The system has succesfully been setup, you can login now with: ID: 10001, PASSWORD: administrator ' +
-                'do not forget to change your information.');
+
+                generatecompId(function (id) {
+                    //get today's date
+                    var date = today();
+                    var end_date = today();
+                    //create competition for 7 days (this is the first, so standard = 7)
+                    end_date = end_date.setDate(date.getDate() + 1);
+
+
+                    //create competition.
+                    var comp = new Competition({
+                        id: id,
+                        start: date,
+                        end: end_date,
+                        results: []
+                    });
+
+                    //save competition.
+                    comp.save(function (err, resp) {
+                        if (err) {
+                            logResponse(500, "Internal server error");
+                            return res.status(500).send(err);
+                        }
+                        logResponse(200, "Competition added.");
+                        logResponse(200, 'The system has succesfully been setup, you can login now with: ID: 10001, PASSWORD: administrator ' +
+                            'do not forget to change your information.');
+                        res.status(201).send('The system has succesfully been setup, you can login now with: ID: 10001, PASSWORD: administrator ' +
+                            'do not forget to change your information. A standard competition with length: 1 day has been created.');
+                    });
+
+                });
+
+
             });
         });
     });
 
 });
+
+function generatecompId(callback) {
+    var id = Math.ceil((Math.random() * 200 ) + 100);
+
+    Competition.find({id: id}, function (err, user) {
+        if (user.length === 0) {
+            callback(id);
+        } else {
+            generateId(callback);
+        }
+    });
+}
 
 module.exports = app;
