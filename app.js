@@ -48,10 +48,6 @@ app.use(function (req, res, next) {
 var setupRoutes = require('./routes/route_setup');
 app.use('/setup', setupRoutes);
 
-// // set fitbit routes
-// var fitbitRoutes = require('./routes/route_fitbit');
-// app.use('/fitbit', fitbitRoutes);
-
 //set user routes
 var userRoutes = require('./routes/route_users');
 app.use('/users', userRoutes);
